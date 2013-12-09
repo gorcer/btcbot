@@ -106,4 +106,24 @@ class SiteController extends Controller
 		Yii::app()->user->logout();
 		$this->redirect(Yii::app()->homeUrl);
 	}
+	
+	public function actionCron()
+	{
+		$BTCeAPI = new BTCeAPI(
+				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
+				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
+		);
+		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $ticker['ticker'];
+		Dump::d($ticker['buy']);
+		$exchange = new Exchange();
+		$exchange->buy = $ticker['buy'];
+		$exchange->sell = $ticker['sell'];
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']);
+		$exchange->save();
+		Dump::d($exchange->errors);
+		
+		
+		
+	}
 }
