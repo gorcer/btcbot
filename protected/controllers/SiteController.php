@@ -115,13 +115,13 @@ class SiteController extends Controller
 		);
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
-		Dump::d($ticker['buy']);
+		
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
 		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']);
 		$exchange->save();
-		Dump::d($exchange->errors);
+		
 		
 		
 		
