@@ -18,14 +18,41 @@ class Bot {
 	public function __construct()
 	{
 		//Инициализируем переменные
-		$this->imp_div = 1/100; 	   // Процент при котором считать подъем/падение = 1%
-		$this->buy_sum = 100; // Покупать на 100 руб.
 		$this->fee = 0.2/100; // Комиссия за операцию
-		$this->buystep_n = 5; // Смотрим по 5 блоков
+		$this->imp_div = 0.5/100; 	   // Процент при котором считать подъем/падение = 1%
+		$this->buy_sum = 100; // Покупать на 100 руб.		
+		$this->buystep_n = 10; // Смотрим по 5 блоков
 		$this->analize_period = 60*60*6*10; // Период за который анализируем график (6 часов)
+		
 		$this->bought = array(); // Список покупок
 		$this->order_cnt=0;		
 		$this->bounght = Btc::model()->findAll();
+	}
+	
+	private function AnalizeSell($exdata)
+	{
+		
+	}
+	
+	private function getDirection($exdata, $type)
+	{
+		
+		$len = sizeof($exdata);
+		$last = $exdata[$len-1];
+		
+		// Определяем отклонение за период
+		$dif = $last[$type]-$exdata[0][$type];
+		Log::Add($last['dt'], 'Сравниваем: ');
+		Log::Add($last['dt'], 'Отличие '.$last[$type].' - '.$exdata[0][$type].' = '.$dif);
+		$dif = round($dif /$last[$type],4); // доля от последнего значения
+		Log::Add($last['dt'], 'Средний % отличия: '.$dif*100);
+			
+		// Определяем направление кривой
+		if ($dif<-1*$this->imp_div) $stok_direction=-1;
+		elseif($dif>$this->imp_div) $stok_direction=1;
+		else $stok_direction=0;
+		
+		return $stok_direction;
 	}
 	
 	private function AnalizeBuy($exdata)
@@ -42,18 +69,10 @@ class Bot {
 		// Если есть что анализировать
 		if ($i<=$this->buystep_n+1) continue;
 			
-		// Определяем реальное отклонение за период
-		$dif = $exdata[$i]['buy']-$exdata[$i-$this->buystep_n]['buy'];
-		Log::Add($exitem['dt'], 'Сравниваем: ');
-		Log::Add($exitem['dt'], 'Отличие '.$exdata[$i]['buy'].' - '.$exdata[$i-$this->buystep_n]['buy'].' = '.$dif);			
-		$dif = round($dif / $exitem['buy'],4); // доля от последнего значения
-		Log::Add($exitem['dt'], 'Средний % отличия: '.$dif*100);
-			
-		// Определяем направление кривой
-		if ($dif<-1*$this->imp_div) $stok_direction=-1;
-		elseif($dif>$this->imp_div) $stok_direction=1;
-		else $stok_direction=0;
-			
+
+		//Определяем направление
+		$exstep = array_slice($exdata, $i-$this->buystep_n, $this->buystep_n);
+		$stok_direction = $this->getDirection($exstep, 'buy');
 		Log::Add($exitem['dt'], 'Направление курса: '.$stok_direction);
 
 		// Изменение курса
@@ -71,15 +90,14 @@ class Bot {
 
 		// Если сумма покупки больше баланса то уменьшить до баланса		
 		if ($this->buy_sum>$this->balance)
-			$this->buy_sum=$this->balance;
+			$this->buy_sum=$this->balance;		
 		 
-		$buy_value = floor($this->buy_sum / $exitem['buy']*(1+$this->fee)*1000)/10000;
+		$buy_value = floor(($this->buy_sum / $exitem['buy']*(1+$this->fee))*10000)/10000;
 		
 		// Если 0 то поищем подешевле
 		if ($buy_value == 0) continue;		
 		
-		$price = $exitem['buy']*$buy_value*(1+$this->fee);
-		
+		$price = $exitem['buy']*$buy_value*(1+$this->fee);		
 		// Првоеряем остаток денег на балансе, если кончились - выходим
 			if ($this->balance-$price<0) break;
 
