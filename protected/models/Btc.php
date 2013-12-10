@@ -8,6 +8,7 @@
  * @property string $count
  * @property string $price
  * @property string $summ
+ * @property string $dtm
  */
 class Btc extends CActiveRecord
 {
@@ -37,12 +38,12 @@ class Btc extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('id, count, price, summ', 'required'),
+			array('count, price, summ, dtm', 'required'),
 			array('id', 'numerical', 'integerOnly'=>true),
-			array('count, price, summ', 'length', 'max'=>10),
+			array('count, price, summ', 'length', 'max'=>30),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('id, count, price, summ', 'safe', 'on'=>'search'),
+			array('id, count, price, summ, dtm', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -67,6 +68,7 @@ class Btc extends CActiveRecord
 			'count' => 'Count',
 			'price' => 'Price',
 			'summ' => 'Summ',
+			'dtm' => 'Dtm',
 		);
 	}
 
@@ -85,9 +87,19 @@ class Btc extends CActiveRecord
 		$criteria->compare('count',$this->count,true);
 		$criteria->compare('price',$this->price,true);
 		$criteria->compare('summ',$this->summ,true);
+		$criteria->compare('dtm',$this->dtm,true);
 
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
 		));
+	}
+	
+	public static function getLastBuy()
+	{
+		$buy = Btc::model()->find(array(
+				'order' => 'dtm desc'			
+		));
+		return $buy;
+		
 	}
 }

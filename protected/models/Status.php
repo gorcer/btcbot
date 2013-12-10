@@ -4,8 +4,9 @@
  * This is the model class for table "status".
  *
  * The followings are the available columns in table 'status':
- * @property string $balance_RUB
- * @property string $balance_BTC
+ * @property string $param
+ * @property string $title
+ * @property string $value
  */
 class Status extends CActiveRecord
 {
@@ -35,10 +36,12 @@ class Status extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('balance_RUB, balance_BTC', 'length', 'max'=>10),
+			array('param, title, value', 'required'),
+			array('param', 'length', 'max'=>50),
+			array('title, value', 'length', 'max'=>150),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('balance_RUB, balance_BTC', 'safe', 'on'=>'search'),
+			array('param, title, value', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -59,8 +62,9 @@ class Status extends CActiveRecord
 	public function attributeLabels()
 	{
 		return array(
-			'balance_RUB' => 'Balance Rub',
-			'balance_BTC' => 'Balance Btc',
+			'param' => 'Param',
+			'title' => 'Title',
+			'value' => 'Value',
 		);
 	}
 
@@ -75,11 +79,24 @@ class Status extends CActiveRecord
 
 		$criteria=new CDbCriteria;
 
-		$criteria->compare('balance_RUB',$this->balance_RUB,true);
-		$criteria->compare('balance_BTC',$this->balance_BTC,true);
+		$criteria->compare('param',$this->param,true);
+		$criteria->compare('title',$this->title,true);
+		$criteria->compare('value',$this->value,true);
 
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
 		));
+	}
+	
+	public static function getParam($param)
+	{
+		return(Status::model()->findByPk($param)->value);
+	}
+	
+	public static function setParam($param, $val)
+	{
+		$obj = Status::model()->findByPk($param);
+		$obj->value = $val;
+		$obj->save();
 	}
 }

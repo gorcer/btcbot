@@ -1,19 +1,22 @@
 <?php
 
 /**
- * This is the model class for table "exchange".
+ * This is the model class for table "sell".
  *
- * The followings are the available columns in table 'exchange':
- * @property string $dt
- * @property string $buy
- * @property string $sell
+ * The followings are the available columns in table 'sell':
+ * @property integer $id
+ * @property integer $btc_id
+ * @property string $price
+ * @property string $count
+ * @property string $summ
+ * @property string $income
  */
-class Exchange extends CActiveRecord
+class Sell extends CActiveRecord
 {
 	/**
 	 * Returns the static model of the specified AR class.
 	 * @param string $className active record class name.
-	 * @return Exchange the static model class
+	 * @return Sell the static model class
 	 */
 	public static function model($className=__CLASS__)
 	{
@@ -25,7 +28,7 @@ class Exchange extends CActiveRecord
 	 */
 	public function tableName()
 	{
-		return 'exchange';
+		return 'sell';
 	}
 
 	/**
@@ -36,11 +39,12 @@ class Exchange extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('buy, sell', 'required'),
-			array('buy, sell', 'length', 'max'=>30),
+			array('btc_id, price, count, summ, income', 'required'),
+			array('btc_id', 'numerical', 'integerOnly'=>true),
+			array('price, count, summ, income', 'length', 'max'=>30),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('dt, buy, sell', 'safe', 'on'=>'search'),
+			array('id, btc_id, price, count, summ, income', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -61,9 +65,12 @@ class Exchange extends CActiveRecord
 	public function attributeLabels()
 	{
 		return array(
-			'dt' => 'Dt',
-			'buy' => 'Buy',
-			'sell' => 'Sell',
+			'id' => 'ID',
+			'btc_id' => 'Btc',
+			'price' => 'Price',
+			'count' => 'Count',
+			'summ' => 'Summ',
+			'income' => 'Income',
 		);
 	}
 
@@ -78,27 +85,15 @@ class Exchange extends CActiveRecord
 
 		$criteria=new CDbCriteria;
 
-		$criteria->compare('dt',$this->dt,true);
-		$criteria->compare('buy',$this->buy,true);
-		$criteria->compare('sell',$this->sell,true);
+		$criteria->compare('id',$this->id);
+		$criteria->compare('btc_id',$this->btc_id);
+		$criteria->compare('price',$this->price,true);
+		$criteria->compare('count',$this->count,true);
+		$criteria->compare('summ',$this->summ,true);
+		$criteria->compare('income',$this->income,true);
 
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
 		));
-	}
-	
-	public static function getDataFrom($dt)
-	{
-		$connection = Yii::app()->db;
-		$sql = "
-				select dt, buy, sell
-				from exchange
-				where
-				dt>'".$dt."'
-				order by dt 
-				";
-		
-		$command = $connection->createCommand($sql);
-		return($command->queryAll());
 	}
 }
