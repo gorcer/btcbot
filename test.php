@@ -18,7 +18,7 @@ $stok=array();
 $bought = array();
 
 // Процент при котором считать подъем/падение
-$imp_div = 5/100;
+$imp_div = 1/100;
 
 // Число шагов для просмотра
 $step_cnt = 2;
@@ -28,13 +28,13 @@ $stok_direction=0;
 $prev_stok_direction=0;
 
 // Сколько покупать
-$buy_value=0.1;
+$buy_value=0.01;
 
 // Комиссия за операцию
 $fee = 0.2/100; //0.2%
 
 // Мин. заработок (руб.)
-$min_income = 100;
+$min_income = 1;
 
 // Всего заработано
 $total_income=0;
@@ -53,6 +53,10 @@ $dt_from=$dt_to=false;
 // Число сделок
 $order_cnt=0;
 
+// Разрешено покупать/продавать
+$canbuy = true;
+$cansell = true;
+
 if (($handle = fopen("data.csv", "r")) !== FALSE) {
     while (($data = fgetcsv($handle, 100, ";")) !== FALSE) {
        
@@ -64,31 +68,53 @@ if (($handle = fopen("data.csv", "r")) !== FALSE) {
     	
     	
     	// Если есть что анализировать
-    	if (sizeof($stok)<=$step_cnt) continue;    	
+    	if (sizeof($stok)<=$step_cnt+1) continue;    	
     	
+    	
+    	
+    	/*
     	// Определяем среднее отклонение
-    	$pos = sizeof($stok)-1;
-    	//logit($data[0], 'Проверяем период '.$stok[$pos][0].' - '.$stok[$pos-$step_cnt][0]);
+    	$pos = sizeof($stok)-1;    	
+    	logit($data[0], 'Проверяем период '.$stok[$pos][0].' - '.$stok[$pos-$step_cnt][0]);
     	
-    	//logit($data[0], 'Рассматриваем значения:');
-    	for ($i=0;$i<$step_cnt;$i++)
+    	logit($data[0], 'Рассматриваем значения:');
+    	$sum_dif=0;
+    	for ($i=$step_cnt;$i>0;$i--)
     	{	
-    		$sum_dif = $stok[$pos-$i][1]-$stok[$pos-$i-1][1];
-    	//	logit($data[0], $stok[$pos-$i][1]);
+    		$sum_dif+= $stok[$pos-$i][1]-$stok[$pos-$i-1][1];    		
+    		logit($data[0], 'Cумма отличий '.$sum_dif.' = '.$stok[$pos-$i][1].' - '.$stok[$pos-$i-1][1]);
     	}
     	$dif = $sum_dif / $step_cnt; // номинальное отличие
-    	//logit($data[0], 'Среднее номинальное отличие: '.$dif);
+    	logit($data[0], 'Среднее номинальное отличие: '.$dif);
+    	*/
+    	
+    	// Определяем реальное отклонение за период
+    	$pos = sizeof($stok)-1;
+    	$dif = $stok[$pos][1]-$stok[$pos-$step_cnt][1];    	
+    	logit($data[0], 'Сравниваем: ');
+    	logit($data[0], 'Отличие '.$stok[$pos][1].' - '.$stok[$pos-$step_cnt][1].' = '.$dif);
+    	
+    	
     	$dif = round($dif / $stok[$pos][1],4); // доля от последнего значения
-    	//logit($data[0], 'Среднее % отличие: '.$dif*100);
+    	logit($data[0], 'Среднее % отличие: '.$dif*100);
     	
     	// Определяем направление кривой
     	if ($dif<-1*$imp_div) $stok_direction=-1;
     	elseif($dif>$imp_div) $stok_direction=1;
     	else $stok_direction=0;
-    	//logit($data[0], 'Направление курса: '.$stok_direction);
+    	logit($data[0], 'Направление курса: '.$stok_direction);
+    	
+    	// Изменение курса
+    	if ($prev_stok_direction!=$stok_direction)
+    	{
+    		$canbuy=true;
+    		$cansell=true;
+    	}
+    	
+    	
     	
     	// Проверяем покупку
-    	if ($stok_direction == 1 && ($prev_stok_direction == 0 || $prev_stok_direction == -1)) // если график начал рост
+    	if ($stok_direction == 1 && $canbuy) // если график начал рост
     	{
     		$price = $data[1]*$buy_value*(1+$fee);
     		
@@ -102,35 +128,37 @@ if (($handle = fopen("data.csv", "r")) !== FALSE) {
     				'price'=>$data[1],
     				'summ'=>$price
     				);
-    		logit($data[0], '<b>Купили '.$buy_value.' ед. за '.$data[1].' на сумму '.$price.'</b>');
-    		$total_buy+=$price;
-    		$balance-=$price;
-    		$balance_btc+=$buy_value;
-    		$order_cnt++;
     		
+    		
+    		$total_buy+=$price; // Всего куплено
+    		$balance-=$price; // Актуализируем баланс RUB
+    		$balance_btc+=$buy_value; // Актуализируем баланс BTC
+    		$order_cnt++;   // Увеличиваем число сделок
+    		$canbuy=false; // Блокируем покупки до конца роста
+    		logit($data[0], '<b>Купили '.$buy_value.' ед. за '.$data[1].' на сумму '.$price.'</b>');
     	}
     	
     	// Првоеряем продажу
-    	if ($stok_direction == -1 && ($prev_stok_direction == 0 || $prev_stok_direction == 1)) // если график начал падение
+    	if ($stok_direction == -1 && $cansell) // если график начал падение
     	{
     		// Ищем что продать
     		foreach($bought as &$item)
     		{
     			if (isset($item['sell'])) continue;
     			
-    			$curcost = $item['cnt']*$data[1]*(1-$fee);
+    			$curcost = $item['cnt']*$data[2]*(1-$fee);
     			// Сколько заработаем при продаже
     			$income = $curcost - $item['summ'];
     			
-    			// Если доход устраивает покупаем
+    			// Если доход устраивает продаем
     			if ($income>$min_income)
     			{
-    				$balance+=$income;
-    				$balance_btc-=$item['cnt'];
-    				$total_income+=$income;
+    				$balance+=$income; // Актуализируем баланс RUB
+    				$balance_btc-=$item['cnt']; // Актуализируем баланс BTC
+    				$total_income+=$income; // Актуализируем доход
     				$item['sell']=$income;
-    				logit($data[0], '<b>Продали '. $item['cnt'].' ед. (куплено за '.$item['summ'].') за '.$curcost.', доход = '.$income.'</b>');
-    				
+    				$cansell=false; // блокируем продажи до конца падения
+    				logit($data[0], '<b>Продали '. $item['cnt'].' ед. (куплено за '.$item['summ'].') за '.$curcost.', доход = '.$income.'</b>');    				
     			}
     		}
     	}

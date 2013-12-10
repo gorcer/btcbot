@@ -40,3 +40,35 @@ Stack trace:
 REQUEST_URI=/index.php?r=site/cron
 in C:\www\btcbot\protected\controllers\SiteController.php (112)
 in C:\www\btcbot\index.php (13)
+2013/12/10 04:50:45 [error] [exception.CException] exception 'CException' with message 'CAssetManager.basePath "C:\www\tmp\btc\assets" is invalid. Please make sure the directory exists and is writable by the Web server process.' in C:\www\tmp\yii\framework\web\CAssetManager.php:138
+Stack trace:
+#0 C:\www\tmp\yii\framework\web\CAssetManager.php(123): CAssetManager->setBasePath('C:\www\tmp\btc\...')
+#1 C:\www\tmp\yii\framework\web\CAssetManager.php(217): CAssetManager->getBasePath()
+#2 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbar.php(81): CAssetManager->publish('C:\www\tmp\btc\...', false, -1, true)
+#3 C:\www\tmp\yii\framework\base\CComponent.php(111): YiiDebugToolbar->getAssetsUrl()
+#4 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbar.php(139): CComponent->__get('assetsUrl')
+#5 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbar.php(112): YiiDebugToolbar->registerClientScripts()
+#6 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbarRoute.php(133): YiiDebugToolbar->init()
+#7 C:\www\tmp\yii\framework\base\CComponent.php(558): YiiDebugToolbarRoute->onBeginRequest(Object(CEvent))
+#8 C:\www\tmp\yii\framework\base\CApplication.php(196): CComponent->raiseEvent('onBeginRequest', Object(CEvent))
+#9 C:\www\tmp\yii\framework\base\CApplication.php(167): CApplication->onBeginRequest(Object(CEvent))
+#10 C:\www\tmp\btc\index.php(26): CApplication->run()
+#11 {main}
+REQUEST_URI=/
+---
+2013/12/10 04:50:45 [error] [exception.CException] exception 'CException' with message 'CAssetManager.basePath "C:\www\tmp\btc\assets" is invalid. Please make sure the directory exists and is writable by the Web server process.' in C:\www\tmp\yii\framework\web\CAssetManager.php:138
+Stack trace:
+#0 C:\www\tmp\yii\framework\web\CAssetManager.php(123): CAssetManager->setBasePath('C:\www\tmp\btc\...')
+#1 C:\www\tmp\yii\framework\web\CAssetManager.php(217): CAssetManager->getBasePath()
+#2 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbar.php(81): CAssetManager->publish('C:\www\tmp\btc\...', false, -1, true)
+#3 C:\www\tmp\yii\framework\base\CComponent.php(111): YiiDebugToolbar->getAssetsUrl()
+#4 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbar.php(139): CComponent->__get('assetsUrl')
+#5 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbar.php(112): YiiDebugToolbar->registerClientScripts()
+#6 C:\www\tmp\btc\protected\extensions\yii-debug-toolbar\YiiDebugToolbarRoute.php(133): YiiDebugToolbar->init()
+#7 C:\www\tmp\yii\framework\base\CComponent.php(558): YiiDebugToolbarRoute->onBeginRequest(Object(CEvent))
+#8 C:\www\tmp\yii\framework\base\CApplication.php(196): CComponent->raiseEvent('onBeginRequest', Object(CEvent))
+#9 C:\www\tmp\yii\framework\base\CApplication.php(167): CApplication->onBeginRequest(Object(CEvent))
+#10 C:\www\tmp\btc\index.php(26): CApplication->run()
+#11 {main}
+REQUEST_URI=/
+---
