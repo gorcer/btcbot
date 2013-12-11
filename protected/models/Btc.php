@@ -9,6 +9,7 @@
  * @property string $price
  * @property string $summ
  * @property string $dtm
+ * @property integer $sold
  */
 class Btc extends CActiveRecord
 {
@@ -43,7 +44,7 @@ class Btc extends CActiveRecord
 			array('count, price, summ', 'length', 'max'=>30),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('id, count, price, summ, dtm', 'safe', 'on'=>'search'),
+			array('id, count, price, summ, dtm, sold', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -55,6 +56,7 @@ class Btc extends CActiveRecord
 		// NOTE: you may need to adjust the relation name and the related
 		// class name for the relations automatically generated below.
 		return array(
+			'sell'=>array(self::HAS_MANY, 'Sell', 'btc_id'),
 		);
 	}
 
@@ -69,6 +71,7 @@ class Btc extends CActiveRecord
 			'price' => 'Price',
 			'summ' => 'Summ',
 			'dtm' => 'Dtm',
+			'sold' => 'Sold',
 		);
 	}
 
@@ -88,6 +91,7 @@ class Btc extends CActiveRecord
 		$criteria->compare('price',$this->price,true);
 		$criteria->compare('summ',$this->summ,true);
 		$criteria->compare('dtm',$this->dtm,true);
+		$criteria->compare('sold',$this->sold,true);
 
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
@@ -99,7 +103,22 @@ class Btc extends CActiveRecord
 		$buy = Btc::model()->find(array(
 				'order' => 'dtm desc'			
 		));
-		return $buy;
+		return $buy;		
+	}
+	
+	public function SellIt($price, $cnt, $income)
+	{
+		$sell = new Sell();
+		$sell->btc_id = $this->id;
+		$sell->price=$price;
+		$sell->count = $cnt;
+		$sell->summ = $price*$cnt;
+		$sell->income = $income;
+		$sell->save();			
+		
+		$this->sold = 1;
+		$this->update(array('sold')); 
+		
 		
 	}
 }

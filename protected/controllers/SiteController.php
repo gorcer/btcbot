@@ -120,12 +120,16 @@ class SiteController extends Controller
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
 		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']);
-		$exchange->save();		
+		$exchange->save();
+
+		$bot = new Bot();
+		$bot->runTest();
 	}
 	
 	public function actionRun()
 	{
 		$bot = new Bot();
 		$bot->runTest();
+		//$this->render('index');
 	}
 }

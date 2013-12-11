@@ -101,4 +101,31 @@ class Exchange extends CActiveRecord
 		$command = $connection->createCommand($sql);
 		return($command->queryAll());
 	}
+	
+	public static function getTestData()
+	{
+		
+		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
+		Status::setParam('balance', 1000);
+		
+		
+		$result[]=array('dt'	=>	'2013-01-01',		'buy'	=>	5000,		'sell'	=>	5000);
+		$result[]=array('dt'	=>	'2013-01-02',		'buy'	=>	5000,		'sell'	=>	5000);
+		$result[]=array('dt'	=>	'2013-01-03',		'buy'	=>	5000,		'sell'	=>	5000);
+		$result[]=array('dt'	=>	'2013-01-04',		'buy'	=>	5000,		'sell'	=>	5000);
+		$result[]=array('dt'	=>	'2013-01-05',		'buy'	=>	5000,		'sell'	=>	5000);
+		$result[]=array('dt'	=>	'2013-01-06',		'buy'	=>	5110,		'sell'	=>	5100);
+		$result[]=array('dt'	=>	'2013-01-07',		'buy'	=>	5210,		'sell'	=>	5200);
+		$result[]=array('dt'	=>	'2013-01-08',		'buy'	=>	5310,		'sell'	=>	5300);
+		$result[]=array('dt'	=>	'2013-01-09',		'buy'	=>	5410,		'sell'	=>	5400);
+		$result[]=array('dt'	=>	'2013-01-10',		'buy'	=>	5510,		'sell'	=>	5500); //+1
+		$result[]=array('dt'	=>	'2013-01-11',		'buy'	=>	6010,		'sell'	=>	6000); //0
+		$result[]=array('dt'	=>	'2013-01-11',		'buy'	=>	6010,		'sell'	=>	6000); //0
+		$result[]=array('dt'	=>	'2013-01-12',		'buy'	=>	5910,		'sell'	=>	5900); //-1
+		$result[]=array('dt'	=>	'2013-01-13',		'buy'	=>	5810,		'sell'	=>	5800); 
+		$result[]=array('dt'	=>	'2013-01-14',		'buy'	=>	5710,		'sell'	=>	5700);
+		$result[]=array('dt'	=>	'2013-01-15',		'buy'	=>	5610,		'sell'	=>	5600);
+		return($result);
+	}
 }
