@@ -1,6 +1,11 @@
 <?php
 
-
+/**
+ * Первая версия бота
+ * Работает с циклами
+ * @author Zaretskiy.E
+ *
+ */
 class Bot {
 	
 	//Инициализируем переменные
@@ -25,14 +30,15 @@ class Bot {
 	{
 		//Инициализируем переменные
 		$this->fee = 0.2/100; // Комиссия за операцию
-		$this->imp_div = 0.5/100; 	   // Процент при котором считать подъем/падение = 1%
-		$this->buy_sum = 100; // Покупать на 100 руб.		
-		$this->buystep_n = 5; // Смотрим по 10 блоков
-		$this->sellstep_n = 4; // Смотрим по 10 блоков
-		$this->analize_period = 60*60*6; // Период за который анализируем график (6 часов)
+		$this->imp_div = 1/100; 	   // Процент при котором считать подъем/падение = 1%
+		$this->buy_sum = 250; // Покупать на 100 руб.		
+		$this->buystep_n = 5; // Смотрим по ... блоков
+		$this->sellstep_n = 4; // Смотрим по ... блоков
+		$this->analize_period = 60*60*1; // Период за который анализируем график (6 часов)
 		$this->total_income=0;
-		$this->min_income = 1;
-		$this->balance = Status::getParam('balance');		
+		$this->min_income = 5; // Мин. доход
+		$this->balance = Status::getParam('balance');
+		$this->balance_btc = Status::getParam('balance_btc');
 		
 		$this->order_cnt=0;		
 		$this->bought = Btc::model()->with('sell')->findAll();	
@@ -90,7 +96,7 @@ class Bot {
 		if ($this->virtual == 1) {
 			// Пока не дошли до последнего (актуального) элемента не продаем
 			if ($i < $exlen-1)
-				$canbuy=false;
+				$cansell=false;
 		}
 		
 		
@@ -121,10 +127,10 @@ class Bot {
 					$item->SellIt($exitem['sell']*(1-$this->fee), $item->count, $income);
 					$this->order_cnt++;
 					$cansell=false; // блокируем продажи до конца падения
-					Log::Add($exitem['dt'], '<b>Продал id'.$item->id.'  '. $item->count.' ед. (куплено за '.$item->summ.') за '.$curcost.', доход = '.$income.'</b>', 1);
+					Log::Add($exitem['dt'], '<b>Продал (№'.$item->id.')  '. $item->count.' ед. (куплено за '.$item->summ.') за '.$curcost.', доход = '.$income.' руб.</b>', 1);
 				}
 				else
-					Log::Add($exitem['dt'], 'Не продали '.$item->id.', доход слишком мал '.$income.' < '.$this->min_income, 1);
+					Log::Add($exitem['dt'], 'Не продали (№'.$item->id.'), доход слишком мал '.$income.' < '.$this->min_income, 1);
 			}
 		}
 		
@@ -203,7 +209,7 @@ class Bot {
 					$this->balance_btc+=$buy_value; // Актуализируем баланс BTC				
 					$this->order_cnt++;   // Увеличиваем число сделок
 					$canbuy=false; // Блокируем покупки до конца роста
-					Log::Add($exitem['dt'], '<b>Купил '.$buy_value.' ед. за '.$exitem['buy'].' +('.$exitem['buy']*($this->fee).') на сумму '.$price.'</b>', 1);
+					Log::Add($exitem['dt'], '<b>Купил (№'.$btc->id.') '.$buy_value.' ед. за '.$exitem['buy'].' ('.$exitem['buy']*($this->fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
 				}
 		}
 		
@@ -230,9 +236,11 @@ class Bot {
 		$this->AnalizeSell($exdata);
 				
 		Status::setParam('balance', $this->balance);
+		Status::setParam('balance_btc', $this->balance_btc);
 		
 		if ($this->order_cnt>0)
 		{		
+			
 			Log::Add(0, 'Баланс (руб.): '.$this->balance, 1);
 			Log::Add(0, 'Всего заработано: '.$this->total_income, 1);
 			Log::Add(0, 'Остаток btc: '.round($this->balance_btc, 5), 1);		

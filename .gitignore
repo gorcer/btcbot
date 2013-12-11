@@ -1,3 +1,5 @@
 /assets/*
 *.log
 /protected/runtime/*
+log.html
+log_all.html

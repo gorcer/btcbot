@@ -119,7 +119,8 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']);
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']+9*60*60);
+		Dump::d($exchange->dt);
 		$exchange->save();
 
 		$bot = new Bot();
@@ -128,8 +129,22 @@ class SiteController extends Controller
 	
 	public function actionRun()
 	{
-		$bot = new Bot();
-		$bot->runTest();
-		//$this->render('index');
+
+		$BTCeAPI = new BTCeAPI(
+				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
+				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
+		);
+		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $ticker['ticker'];
+		
+		$exchange = new Exchange();
+		$exchange->buy = $ticker['buy'];
+		$exchange->sell = $ticker['sell'];
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']+9*60*60);
+		$exchange->save();
+		
+		$bot = new Bot2($exchange);
+		$bot->NeedBuy();
+		$this->render('index');
 	}
 }
