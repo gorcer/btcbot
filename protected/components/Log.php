@@ -18,4 +18,11 @@ class Log {
 		//if ($priority == 1)
 		//echo '<i>'.$dt.'</i> '.$data.'<br/>';
 	} 
+	
+	public static function AddText($data)
+	{
+		$cdt = date('Y-m-d H:i:s');		
+		$text=  '<i>'.$cdt.'</i> :'.$data.'<br/>';
+		echo $data.'<br/>';
+	}
 }

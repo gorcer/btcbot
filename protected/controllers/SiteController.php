@@ -119,8 +119,8 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']+9*60*60);
-		Dump::d($exchange->dt);
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		
 		$exchange->save();
 
 		$bot = new Bot();
@@ -129,7 +129,7 @@ class SiteController extends Controller
 	
 	public function actionRun()
 	{
-
+	
 		$BTCeAPI = new BTCeAPI(
 				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
 				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
@@ -140,11 +140,47 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']+9*60*60);
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);		
 		$exchange->save();
 		
 		$bot = new Bot2($exchange);
-		$bot->NeedBuy();
+		$bot->NeedBuy($ticker['updated']);
 		$this->render('index');
+	}
+	
+	public function actionTest()
+	{
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 08:00:01"'));
+		foreach($exs as $exchange)
+		{
+			$bot = new Bot2($exchange);
+			$bot->NeedBuy(strtotime($exchange->dt));
+			//$this->render('index');
+		}
+	}
+	
+	public function actionBuy()
+	{
+	die();
+	
+		$BTCeAPI = new BTCeAPI(
+				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
+				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
+		);
+		
+		// Making an order
+		try {
+			/*
+			 * CAUTION: THIS IS COMMENTED OUT SO YOU CAN READ HOW TO DO IT!
+			*/
+			// $BTCeAPI->makeOrder(---AMOUNT---, ---PAIR---, BTCeAPI::DIRECTION_BUY/BTCeAPI::DIRECTION_SELL, ---PRICE---);
+			// Example: to buy a bitcoin for $100
+			 $BTCeAPI->makeOrder(0.01, 'btc_rur', BTCeAPI::DIRECTION_BUY, 29298.99);
+			 
+		} catch(BTCeAPIInvalidParameterException $e) {
+			echo $e->getMessage();
+		} catch(BTCeAPIException $e) {
+			echo $e->getMessage();
+		}
 	}
 }

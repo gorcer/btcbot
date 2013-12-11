@@ -10,7 +10,7 @@
 return CMap::mergeArray(
 		require(dirname(__FILE__).'/main.php'),
 		array(
-	
+	'timeZone' => 'Europe/Moscow',
 
 	'modules'=>array(		
 		'gii'=>array(
@@ -34,7 +34,7 @@ return CMap::mergeArray(
 			'tablePrefix' => 'aim_',
 			'enableProfiling' => true,
 			'enableParamLogging' => true,
-			'schemaCachingDuration' => 60*60*24,
+			'schemaCachingDuration' => 60*60*24,			
 		),
 		
 		

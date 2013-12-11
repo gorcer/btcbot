@@ -11,7 +11,7 @@ class Bot {
 	//Инициализируем переменные
 	private $imp_div; 	   // Процент при котором считать подъем/падение = 1%	
 	private $buy_value;
-	private $buy_sum;
+	//private $buy_sum;
 	private $fee; // Комиссия за операцию
 	private $buystep_n; // Число просматриваемых блоков при анализе покупки
 	private $sellstep_n; // Число просматриваемых при анализе продажи 
@@ -22,6 +22,7 @@ class Bot {
 	private $balance_btc; // Текущий баланс
 	private $total_income; // Всего заработано
 	private $min_income; // Мин. доход
+	private $min_buy;
 	
 	public $virtual = 1; // 0 - реальная работа, 1 - виртуальная работа, 2 - расчет по статистике
 	
@@ -31,7 +32,8 @@ class Bot {
 		//Инициализируем переменные
 		$this->fee = 0.2/100; // Комиссия за операцию
 		$this->imp_div = 1/100; 	   // Процент при котором считать подъем/падение = 1%
-		$this->buy_sum = 250; // Покупать на 100 руб.		
+		//$this->buy_sum = 350; // Покупать на 300 руб.
+		$this->buy_value = 0.01;
 		$this->buystep_n = 5; // Смотрим по ... блоков
 		$this->sellstep_n = 4; // Смотрим по ... блоков
 		$this->analize_period = 60*60*1; // Период за который анализируем график (6 часов)
@@ -182,22 +184,24 @@ class Bot {
 		{
 		
 			// Если сумма покупки больше баланса то уменьшить до баланса		
-			if ($this->buy_sum>$this->balance)
-				$this->buy_sum=$this->balance;		
-			 
-			$buy_value = floor(($this->buy_sum / $exitem['buy']*(1+$this->fee))*10000)/10000;
-			
+			/*if ($this->buy_sum>$this->balance)
+				$this->buy_sum=$this->balance;
+				
+				$buy_value = floor(($this->buy_sum / $exitem['buy']*(1+$this->fee))*10000)/10000;
+
 			// Если 0 то поищем подешевле
-			if ($buy_value == 0) continue;		
+			if ($buy_value == 0) continue;
+						*/		 
 			
-			$price = $exitem['buy']*$buy_value*(1+$this->fee);		
+						
+			$price = $exitem['buy']*$this->buy_value*(1+$this->fee);		
 			// Првоеряем остаток денег на балансе, если кончились - выходим
 				if ($this->balance-$price<0) break;
 	
 				// Покупаем
 				$btc = new Btc();
 				$btc->dtm = $exitem['dt'];
-				$btc->count = $buy_value;
+				$btc->count = $this->buy_value;
 				$btc->price = $exitem['buy'];
 				$btc->summ = $price;
 				if($btc->save())
@@ -206,10 +210,10 @@ class Bot {
 						
 					$this->total_buy+=$price; // Всего куплено
 					$this->balance-=$price; // Актуализируем баланс RUB
-					$this->balance_btc+=$buy_value; // Актуализируем баланс BTC				
+					$this->balance_btc+=$this->buy_value; // Актуализируем баланс BTC				
 					$this->order_cnt++;   // Увеличиваем число сделок
 					$canbuy=false; // Блокируем покупки до конца роста
-					Log::Add($exitem['dt'], '<b>Купил (№'.$btc->id.') '.$buy_value.' ед. за '.$exitem['buy'].' ('.$exitem['buy']*($this->fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+					Log::Add($exitem['dt'], '<b>Купил (№'.$btc->id.') '.$this->buy_value.' ед. за '.$exitem['buy'].' ('.$exitem['buy']*($this->fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
 				}
 		}
 		

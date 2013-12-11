@@ -7,33 +7,38 @@
  */
 class Bot2 {
 	
-	private $last_ex;
+	private $current_exchange;
 	
 	const imp_div = 0.01; // Видимые изменения
+	const min_buy = 0.01; // Мин. сумма покупки
+	const buy_value = 0.01; // Сколько покупать
+	const fee = 0.002; // Комиссия
+	const min_buy_interval = 120; // Мин. интервал совершения покупок = 2 мин. 
 	
-	
-	public function __construct($last_ex)
+	public function __construct($exchange)
 	{
-		$this->last_ex = $last_ex;
+		$this->current_exchange = $exchange;
 	}
 	
 	/**
-	 * Получает изображение графика за период - \_/
+	 * Получает изображение графика за период - -0+
 	 * @param  $period - период расчета в сек.
 	 * @param $name - buy, sell
 	 */
-	public function getGraphImage($period, $name)
+	public function getGraphImage($curtime, $period, $name)
 	{
 		$step = round($period/4);
+		$from = date('Y-m-d H:i:s', $curtime-$period);
+		$to = date('Y-m-d H:i:s', $curtime);
 		
 		$connection = Yii::app()->db;
 		$sql = "
 				SELECT 
 					avg(".$name.") as val,
-					from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y.%m.%d %H:%i:%s')as dtm 
+					from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y-%m-%d %H:%i:%s')as dtm 
 				FROM `exchange`
 				where
-					UNIX_TIMESTAMP(dt)>UNIX_TIMESTAMP('".$this->last_ex->dt."')-".$period."
+					dt between '".$from."' and '".$to."' 
 				group by dtm
 				order by dt
 				";
@@ -42,10 +47,12 @@ class Bot2 {
 		$list=$command->queryAll();
 		
 		$track="";
-		$prev=false;
-		Dump::d($list);
+		$prev=false;		
 		foreach($list as $item)
 		{
+			// Откидываем мусор
+			if ($item['dtm']<$from || $item['dtm']>$to) continue;
+			
 			if (!$prev)
 			{
 				$prev = $item['val'];
@@ -68,14 +75,61 @@ class Bot2 {
 		return($result);
 	} 
 	
-	public function NeedBuy()
+	private function isRealyNeedBuy($tracks)
 	{
+		foreach($tracks as $track)
+		{
+			$ret = false;
+			switch($track['track']){
+				case '-0+':	$ret = true; break; // \_/
+				case '--+':	$ret = true; break; // \_/
+				case '00+':	$ret = true; break; // __/
+				case '0-+':	$ret = true; break; // _\/
+				default: $ret = false; break;
+			}
+			
+			if ($ret) 
+			{
+				Log::AddText(0, "Выгодный рисунок ".$track['track'].' начиная с '.$track['from'], 3);
+				return $ret;
+			}
+		}
+	}
+	
+	private function Buy()
+	{
+		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);	
+		Log::AddText('<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+	}
+	
+	public function NeedBuy($curtime)
+	{
+		//Дата операции
+		$dt = date('Y-m-d H:i:s', $curtime);
+		Log::AddText($dt);
+		// Защита от зациклившейся покупки
+		$lastbuy = Btc::getLastBuy(); // Получаем дату последней продажи
+		if (time()-strtotime($lastbuy->dtm)<self::min_buy_interval) return;
+		
+		//Перебираем периоды 15 мину, 30 мину, 1 час
 		$periods = array(15*60, 30*60, 60*60);
+		$tracks=array();
 		foreach($periods as $period)
 		{
-			$track = $this->getGraphImage($period, 'buy');
-			Dump::d($track);
+			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		}
+		Log::AddText('Треки'.print_r($tracks, true));
+		//Dump::d($tracks);
+		
+		// @todo Решить проблему с дублированием покупок на одном подъеме
+		
+		//Анализируем картинки, если выгодное положение - покупаем
+		if($this->isRealyNeedBuy($tracks))
+		{
+			$this->buy();
+		}
+		Log::AddText('Нет интересных покупок');
+		
 		
 	}
 	
