@@ -38,9 +38,9 @@ return array(
 			// enable cookie-based authentication
 			'allowAutoLogin'=>true,
 		),
-		/*'cache'=>array(
+		'cache'=>array(
 					'class'=>'system.caching.CFileCache',
-		),*/
+		),
 		// uncomment the following to enable URLs in path-format
 		/*
 		'urlManager'=>array(
@@ -75,6 +75,11 @@ return array(
 				array(
 					'class'=>'CFileLogRoute',
 					'levels'=>'error, warning',
+				),
+				array(
+						'class' => 'CFileLogRoute',
+						'logFile' => 'yii-error.log',						
+						'levels' => 'error, warning, info',
 				),
 			/*	array(
 						'class'=>'ext.yii-debug-toolbar.YiiDebugToolbarRoute',

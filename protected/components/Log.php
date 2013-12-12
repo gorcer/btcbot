@@ -19,10 +19,10 @@ class Log {
 		//echo '<i>'.$dt.'</i> '.$data.'<br/>';
 	} 
 	
-	public static function AddText($data)
+	public static function AddText($tm, $data)
 	{
-		$cdt = date('Y-m-d H:i:s');		
+		$cdt = date('Y-m-d H:i:s', $tm);		
 		$text=  '<i>'.$cdt.'</i> :'.$data.'<br/>';
-		echo $data.'<br/>';
+		echo $text.'<br/>';
 	}
 }

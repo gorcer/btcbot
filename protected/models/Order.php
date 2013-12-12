@@ -1,22 +1,25 @@
 <?php
 
 /**
- * This is the model class for table "sell".
+ * This is the model class for table "order".
  *
- * The followings are the available columns in table 'sell':
+ * The followings are the available columns in table 'order':
  * @property integer $id
- * @property integer $btc_id
+ * @property string $create_dtm
  * @property string $price
  * @property string $count
+ * @property string $fee
  * @property string $summ
- * @property string $income
+ * @property string $status
+ * @property string $close_dtm
+ * @property string $type
  */
-class Sell extends CActiveRecord
+class Order extends CActiveRecord
 {
 	/**
 	 * Returns the static model of the specified AR class.
 	 * @param string $className active record class name.
-	 * @return Sell the static model class
+	 * @return Order the static model class
 	 */
 	public static function model($className=__CLASS__)
 	{
@@ -28,7 +31,7 @@ class Sell extends CActiveRecord
 	 */
 	public function tableName()
 	{
-		return 'sell';
+		return 'order';
 	}
 
 	/**
@@ -39,12 +42,13 @@ class Sell extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('btc_id, price, count, summ, income', 'required'),
-			array('btc_id', 'numerical', 'integerOnly'=>true),
-			array('price, count, summ, income', 'length', 'max'=>30),
+			array('price, count, summ, type', 'required'),
+			array('price, count, fee, summ', 'length', 'max'=>30),
+			array('status', 'length', 'max'=>50),
+			array('close_dtm', 'safe'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('id, btc_id, price, count, summ, income', 'safe', 'on'=>'search'),
+			array('type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -55,7 +59,7 @@ class Sell extends CActiveRecord
 	{
 		// NOTE: you may need to adjust the relation name and the related
 		// class name for the relations automatically generated below.
-		return array(				
+		return array(
 		);
 	}
 
@@ -66,11 +70,14 @@ class Sell extends CActiveRecord
 	{
 		return array(
 			'id' => 'ID',
-			'btc_id' => 'Btc',
+			'create_dtm' => 'Create Dtm',
 			'price' => 'Price',
 			'count' => 'Count',
+			'fee' => 'Fee',
 			'summ' => 'Summ',
-			'income' => 'Income',
+			'status' => 'Status',
+			'type' => 'Type',
+			'close_dtm' => 'Close Stamp',
 		);
 	}
 
@@ -86,27 +93,29 @@ class Sell extends CActiveRecord
 		$criteria=new CDbCriteria;
 
 		$criteria->compare('id',$this->id);
-		$criteria->compare('btc_id',$this->btc_id);
+		$criteria->compare('create_dtm',$this->create_dtm,true);
 		$criteria->compare('price',$this->price,true);
 		$criteria->compare('count',$this->count,true);
+		$criteria->compare('fee',$this->fee,true);
 		$criteria->compare('summ',$this->summ,true);
-		$criteria->compare('income',$this->income,true);
+		$criteria->compare('status',$this->status,true);
+		$criteria->compare('close_dtm',$this->close_dtm,true);
+		$criteria->compare('type',$this->type,true);
 
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
 		));
 	}
-	
-	public function getTotalIncome()
+	public static function makeOrder($exchange, $cnt, $type)
 	{
-		$connection = Yii::app()->db;
-		$sql = "
-				select sum(income)
-				from sell				
-				";
+		$order = new Order();
+		$order->price = $exchange->buy;
+		$order->count = $cnt;
+		$order->fee = Bot2::fee;
+		$order->summ = $cnt*$exchange->buy;
+		$order->type = $type;
 		
-		$command = $connection->createCommand($sql);
-		return($command->queryScalar());
+		return $order->save();		
 	}
 	
 	

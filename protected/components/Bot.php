@@ -33,18 +33,18 @@ class Bot {
 		$this->fee = 0.2/100; // Комиссия за операцию
 		$this->imp_div = 1/100; 	   // Процент при котором считать подъем/падение = 1%
 		//$this->buy_sum = 350; // Покупать на 300 руб.
-		$this->buy_value = 0.01;
+		$this->buy_value = 0.01; // Сколько покупать
 		$this->buystep_n = 5; // Смотрим по ... блоков
 		$this->sellstep_n = 4; // Смотрим по ... блоков
 		$this->analize_period = 60*60*1; // Период за который анализируем график (6 часов)
-		$this->total_income=0;
-		$this->min_income = 5; // Мин. доход
+		
+		$this->min_income = 10; // Мин. доход
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		
 		$this->order_cnt=0;		
 		$this->bought = Btc::model()->with('sell')->findAll();	
-		
+		$this->total_income=Sell::getTotalIncome();
 	}
 	
 	private function getDirection($exdata, $type)
@@ -131,7 +131,7 @@ class Bot {
 					$cansell=false; // блокируем продажи до конца падения
 					Log::Add($exitem['dt'], '<b>Продал (№'.$item->id.')  '. $item->count.' ед. (куплено за '.$item->summ.') за '.$curcost.', доход = '.$income.' руб.</b>', 1);
 				}
-				else
+				elseif($income>0)
 					Log::Add($exitem['dt'], 'Не продали (№'.$item->id.'), доход слишком мал '.$income.' < '.$this->min_income, 1);
 			}
 		}
@@ -163,7 +163,7 @@ class Bot {
 
 		// Изменение курса
 		if ($prev_stok_direction!=$stok_direction)
-		$canbuy=true;
+			$canbuy=true;
 		
 		// Если анализ до последней покупки - ничего не покупаем
 		if ($exitem['dt']<=$lastbuy->dtm)

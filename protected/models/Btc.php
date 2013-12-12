@@ -117,8 +117,17 @@ class Btc extends CActiveRecord
 		$sell->save();			
 		
 		$this->sold = 1;
-		$this->update(array('sold')); 
-		
-		
+		$this->update(array('sold'));
+	}
+	
+	public static function buy($order)
+	{
+		// Покупаем
+		$btc = new Btc();
+		$btc->dtm = $order->close_dtm;
+		$btc->count = $order->count;
+		$btc->price =$order->price;
+		$btc->summ = $order->summ;
+		$btc->save();
 	}
 }

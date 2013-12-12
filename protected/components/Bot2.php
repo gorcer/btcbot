@@ -4,12 +4,18 @@
  * Аналитика на MySQL
  * @author Zaretskiy.E
  *
+ * @todo Определение кол.ва закупа - когда курс падает от среднего за двое суток на 20%, пускай бот покупает 5 минимумов
+ * 
  */
 class Bot2 {
 	
 	private $current_exchange;
+	private $curtime;
+	private $balance;
+	private $balance_btc;
+	private $order_cnt;
 	
-	const imp_div = 0.01; // Видимые изменения
+	const imp_dif = 0.02; // Видимые изменения
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
@@ -18,6 +24,12 @@ class Bot2 {
 	public function __construct($exchange)
 	{
 		$this->current_exchange = $exchange;
+		$this->curtime = strtotime($exchange->dt);
+		
+		$this->balance = Status::getParam('balance');
+		$this->balance_btc = Status::getParam('balance_btc');
+		
+		$this->order_cnt=0;
 	}
 	
 	/**
@@ -59,57 +71,87 @@ class Bot2 {
 				continue;
 			}
 			
+			
 			// Определяем направление
-			$dif = $item['val']-$prev;			
-			if ($dif<(-1*self::imp_div)) $track.="-";
-			elseif ($dif>self::imp_div) $track.="+";
-			else $track.="0";			
+			$dif = ($item['val']-$prev)/$item['val'];			
+			if ($dif<(-1*self::imp_dif)) $track.="-";
+			elseif ($dif>self::imp_dif) $track.="+";
+			else $track.="0";
+
+			//Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
+			
 		}
 		
 		$result = array(
 				'track'=>$track,
 				'from' => date('Y-m-d H:i:s', time()-$period),
 				'step' => $step,
+				'period'=>$period,
 				);
 		
 		return($result);
 	} 
 	
-	private function isRealyNeedBuy($tracks)
+	private function getProfitableTracks($tracks)
 	{
+		$result = array();
 		foreach($tracks as $track)
 		{
 			$ret = false;
 			switch($track['track']){
-				case '-0+':	$ret = true; break; // \_/
-				case '--+':	$ret = true; break; // \_/
-				case '00+':	$ret = true; break; // __/
-				case '0-+':	$ret = true; break; // _\/
-				default: $ret = false; break;
-			}
-			
-			if ($ret) 
-			{
-				Log::AddText(0, "Выгодный рисунок ".$track['track'].' начиная с '.$track['from'], 3);
-				return $ret;
-			}
+				case '-0+':	$result[] = $track; break; // \_/
+				case '--+':	$result[] = $track; break; // \_/
+				case '00+':	$result[] = $track; break; // __/
+				case '0-+':	$result[] = $track; break; // _\/				
+			}			
 		}
+		
+		return $result;
+		
+	}
+	
+	private function AlreadyBought($period)
+	{
+		$key = 'track.'.$period;
+		$tm = Yii::app()->cache->get($key);
+		if (!$tm || $tm<$this->curtime)
+			return false;
+		else 
+			return true;			
+	}
+	
+	private function ReservePeriod($period)
+	{
+		$key = 'track.'.$period;
+		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
 	}
 	
 	private function Buy()
 	{
-		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);	
-		Log::AddText('<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+		
+
+		if ($order=Order::makeOrder($this->current_exchange, self::buy_value, 'buy'))
+		{	 
+		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
+		$this->balance-=$price;
+		Log::AddText($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>');
+		return(true);
+		}
+		
+		return false;
 	}
 	
-	public function NeedBuy($curtime)
-	{
-		//Дата операции
+	public function NeedBuy()
+	{		
+		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);
-		Log::AddText($dt);
-		// Защита от зациклившейся покупки
-		$lastbuy = Btc::getLastBuy(); // Получаем дату последней продажи
-		if (time()-strtotime($lastbuy->dtm)<self::min_buy_interval) return;
+		
+		// Есть ли деньги
+		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
+		{
+			Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			return false;
+		}
 		
 		//Перебираем периоды 15 мину, 30 мину, 1 час
 		$periods = array(15*60, 30*60, 60*60);
@@ -118,18 +160,77 @@ class Bot2 {
 		{
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		}
-		Log::AddText('Треки'.print_r($tracks, true));
-		//Dump::d($tracks);
+		// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+		// Dump::d($tracks);
 		
-		// @todo Решить проблему с дублированием покупок на одном подъеме
+		//Анализируем треки
+		$tracks = $this->getProfitableTracks($tracks);
+		if (sizeof($tracks) == 0) return false;		
+		//Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
 		
-		//Анализируем картинки, если выгодное положение - покупаем
-		if($this->isRealyNeedBuy($tracks))
+		//Удаляем треки по которым уже были покупки
+		foreach($tracks as $key=>$track)		
+			if ($this->AlreadyBought($track['period']))		
+			{
+			//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
+				unset($tracks[$key]);
+			}
+		//Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
+			
+		// Если остались треки
+		if (sizeof($tracks)>0)
 		{
-			$this->buy();
+			// Покупаем
+			if ($this->buy())			
+			// Резервируем время покупки
+				foreach($tracks as $track)	
+				{
+					Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
+					$this->ReservePeriod($track['period']);
+				}			
+		}				
+		else
+		Log::AddText($this->curtime, 'Нет интересных покупок');		
+	}
+	
+
+	public function checkOrders()
+	{
+		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
+	
+		foreach($orders as $order)
+		{
+			// @todo - если не ОК - вернуть деньги, заказ закрыть
+			// @todo - получить из ЛК реальный баланс
+				
+			// проверяем состояние заказа через API
+			// допустим все ок			
+			$order->status='close';
+			$order->close_dtm=date("Y-m-d H:i:s", $this->curtime);
+			$order->update(array('status', 'close_dtm'));
+			
+			Btc::buy($order);			
+			
+			$this->balance_btc+=$order->count; 
+			$this->order_cnt++;
 		}
-		Log::AddText('Нет интересных покупок');
+	}
+	
+	public function run()
+	{
+		$this->NeedBuy();
+		$this->checkOrders();
 		
+		Status::setParam('balance', $this->balance);
+		Status::setParam('balance_btc', $this->balance_btc);
+		
+		if ($this->order_cnt>0)
+		{
+				
+			Log::AddText($this->curtime, 'Баланс (руб.): '.$this->balance, 1);
+			//Log::Add(0, 'Всего заработано: '.$this->total_income, 1);
+			Log::AddText($this->curtime, 'Остаток btc: '.round($this->balance_btc, 5), 1);
+		}
 		
 	}
 	

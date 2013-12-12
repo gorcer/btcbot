@@ -109,6 +109,7 @@ class SiteController extends Controller
 	
 	public function actionCron()
 	{
+		die();
 		$BTCeAPI = new BTCeAPI(
 				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
 				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
@@ -150,13 +151,26 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 08:00:01"'));
+		
+		
+		
+		
+		Yii::app()->cache->flush();
+		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
+		Status::setParam('balance', 5000);
+		Status::setParam('balance_btc', 0);
+		
+				
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-11 08:00:01"'));
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
-			$bot->NeedBuy(strtotime($exchange->dt));
-			//$this->render('index');
+			$bot->run();
+			
 		}
+		
+		//$this->render('index');
 	}
 	
 	public function actionBuy()
