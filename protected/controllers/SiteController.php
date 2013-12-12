@@ -162,7 +162,7 @@ class SiteController extends Controller
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-11 08:00:01"'));
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-10 00:00:01"'));
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
