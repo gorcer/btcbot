@@ -159,7 +159,7 @@ class SiteController extends Controller
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-11 16:00:01"'));
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 09:00:01"'));
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
@@ -210,7 +210,7 @@ class SiteController extends Controller
 		}
 				
 		// Покупки
-		$bought = Btc::model()->findAll();
+		$orders = Order::model()->findAll();
 		
 		/*$btces=false;
 		foreach($bought as $btc)
@@ -224,7 +224,7 @@ class SiteController extends Controller
 				array(
 						'data_buy'	=> json_encode($data_buy),
 						'data_sell'	=> json_encode($data_sell),
-						'buy'	=>$bought
+						'orders'	=>$orders
 						));
 	}
 }

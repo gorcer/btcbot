@@ -7,11 +7,11 @@ $flags=", {
 		        type: 'flags',
 		        name: 'Flags on series',
 		        data: [";
-foreach ($buy as $btc)
+foreach ($orders as $order)
 {
 	$flags.="{
-					x: ".(strtotime($btc->dtm)*1000+4*60*60*1000).",
-					title: 'B'
+					x: ".(strtotime($order->close_dtm)*1000+4*60*60*1000).",
+					title: '".$order->type."'
 				}, ";
 }
 $flags.="],

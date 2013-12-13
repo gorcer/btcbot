@@ -16,7 +16,7 @@ class Bot2 {
 	private $order_cnt;
 	private $total_income;
 	
-	const imp_dif = 0.02; // Видимые изменения
+	const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
@@ -71,10 +71,10 @@ class Bot2 {
 		
 		$track="";
 		$prev=false;		
-		foreach($list as $item)
+		foreach($list as $k=>$item)
 		{
 			// Откидываем мусор
-			if ($item['dtm']<$from || $item['dtm']>$to) continue;
+			if ($item['dtm']<$from || $item['dtm']>$to) {unset($list[$k]);continue;}
 			
 			if (!$prev)
 			{
@@ -89,9 +89,10 @@ class Bot2 {
 			elseif ($dif>self::imp_dif) $track.="+";
 			else $track.="0";
 			
-			//if ($name == 'sell' && $track=='00-')
+			//if ($from == '2013-12-11 16:15:01')			
 			//Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
 			
+			$prev = $item['val'];
 		}
 		
 		$result = array(
@@ -119,7 +120,7 @@ class Bot2 {
 			switch($track['track']){
 				case '-0+':	$result[] = $track; break; // \_/
 				case '--+':	$result[] = $track; break; // \\/
-				//case '00+':	$result[] = $track; break; // __/
+				case '00+':	$result[] = $track; break; // __/
 				case '0-+':	$result[] = $track; break; // _\/				
 			}			
 		}		
@@ -182,7 +183,7 @@ class Bot2 {
 	{	
 		if ($order=Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id))
 		{
-			$price = $this->current_exchange->buy*$btc->count*(1-self::fee);			
+			$price = $this->current_exchange->sell*$btc->count*(1-self::fee);			
 			Log::AddText($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $item->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>');
 			$this->total_income+=$price-$btc->summ;
 			return(true);
@@ -225,7 +226,7 @@ class Bot2 {
 			//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
-		//Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
+		Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
 			
 		// Если остались треки
 		if (sizeof($tracks)>0)
@@ -259,6 +260,8 @@ class Bot2 {
 		{
 			$tracks[] = $this->getGraphImage($curtime, $period, 'sell');
 		}	
+		//Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+		//Dump::d($tracks);
 		
 		//Анализируем треки
 		$tracks = $this->getSellTracks($tracks);
@@ -283,13 +286,16 @@ class Bot2 {
 			if ($income < self::min_income)
 			{
 				//if ($income>0)
-				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income);
+				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' $curcost='.$curcost.' sell='.$this->current_exchange->sell);
+				
+				//Dump::d($btc->attributes);
 				continue;
 			}
 			
 			Log::AddText($this->curtime, 'Выгодная цена, пробуем купить и получить доход'.$income);
 			
 			$this->sell($btc);
+			//Dump::d($tracks);
 		}
 		
 		
