@@ -136,5 +136,14 @@ class Btc extends CActiveRecord
 		$btc = Btc::model()->findByPk($order->btc_id);
 		$btc->sold=1;
 		$btc->update(array('sold'));
+		
+		$sell = new Sell();
+		$sell->btc_id = $btc->id;
+		$sell->price = $order->price;
+		$sell->count = $order->count;
+		$sell->summ = $order->summ;
+		$sell->income = $order->summ-$btc->summ;
+		$sell->save();
+	
 	}
 }

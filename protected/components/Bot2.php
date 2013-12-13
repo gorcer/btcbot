@@ -15,8 +15,9 @@ class Bot2 {
 	private $balance_btc;
 	private $order_cnt;
 	private $total_income;
+	private $imp_dif;
 	
-	const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
+	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
@@ -32,6 +33,7 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
+		$this->imp_dif = 50; //self::min_income*(1+2*self::fee);
 		
 		$this->order_cnt=0;
 		
@@ -84,9 +86,9 @@ class Bot2 {
 			
 			
 			// Определяем направление
-			$dif = ($item['val']-$prev)/$item['val'];			
-			if ($dif<(-1*self::imp_dif)) $track.="-";
-			elseif ($dif>self::imp_dif) $track.="+";
+			$dif = ($item['val']-$prev);			
+			if ($dif<(-1*$this->imp_dif)) $track.="-";
+			elseif ($dif>$this->imp_dif) $track.="+";
 			else $track.="0";
 			
 			//if ($from == '2013-12-11 16:15:01')			
@@ -120,7 +122,7 @@ class Bot2 {
 			switch($track['track']){
 				case '-0+':	$result[] = $track; break; // \_/
 				case '--+':	$result[] = $track; break; // \\/
-				case '00+':	$result[] = $track; break; // __/
+			//	case '00+':	$result[] = $track; break; // __/
 				case '0-+':	$result[] = $track; break; // _\/				
 			}			
 		}		
@@ -141,7 +143,7 @@ class Bot2 {
 			switch($track['track']){
 				case '+0-':	$result[] = $track; break; // /-\
 				case '++-':	$result[] = $track; break; // //\
-				case '00-':	$result[] = $track; break; // --\
+			//	case '00-':	$result[] = $track; break; // --\
 				case '0+-':	$result[] = $track; break; // -/\
 			}
 		}
