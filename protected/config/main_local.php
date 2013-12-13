@@ -41,14 +41,15 @@ return CMap::mergeArray(
 		'log'=>array(
 			'class'=>'CLogRouter',
 			'routes'=>array(
-					array(
+		/*		array(
 						'class'=>'ext.yii-debug-toolbar.YiiDebugToolbarRoute',
 						'ipFilters'=>array('85.95.152.244', '95.154.72.96', 'localhost', '127.0.0.1'),
-				),
+				),*/
 				array(
-					'class'=>'CFileLogRoute',
-					'levels'=>'error, warning',
-				),				
+						'class' => 'CFileLogRoute',
+						'logFile' => 'yii-error.log',						
+						'levels' => 'error, warning, info',
+				),			
 			),
 		),
 	),

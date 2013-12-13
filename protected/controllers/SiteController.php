@@ -150,14 +150,11 @@ class SiteController extends Controller
 	}
 	
 	public function actionTest()
-	{
-		
-		
-		
-		
+	{	
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Status::setParam('balance', 5000);
 		Status::setParam('balance_btc', 0);
 		
@@ -166,8 +163,7 @@ class SiteController extends Controller
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
-			$bot->run();
-			
+			$bot->run();			
 		}
 		
 		//$this->render('index');

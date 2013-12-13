@@ -81,7 +81,7 @@ return array(
 						'logFile' => 'yii-error.log',						
 						'levels' => 'error, warning, info',
 				),
-			/*	array(
+				/*array(
 						'class'=>'ext.yii-debug-toolbar.YiiDebugToolbarRoute',
 						'ipFilters'=>array('127.0.0.1'),
 				),*/

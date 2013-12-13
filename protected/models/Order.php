@@ -13,6 +13,7 @@
  * @property string $status
  * @property string $close_dtm
  * @property string $type
+ * @property string $btc_id 
  */
 class Order extends CActiveRecord
 {
@@ -48,7 +49,7 @@ class Order extends CActiveRecord
 			array('close_dtm', 'safe'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
+			array('btc_id, type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -106,7 +107,7 @@ class Order extends CActiveRecord
 			'criteria'=>$criteria,
 		));
 	}
-	public static function makeOrder($exchange, $cnt, $type)
+	public static function makeOrder($exchange, $cnt, $type, $btc_id=false)
 	{
 		$order = new Order();
 		$order->price = $exchange->buy;
@@ -114,6 +115,7 @@ class Order extends CActiveRecord
 		$order->fee = Bot2::fee;
 		$order->summ = $cnt*$exchange->buy;
 		$order->type = $type;
+		if ($btc_id) $order->btc_id = $btc_id;
 		
 		return $order->save();		
 	}

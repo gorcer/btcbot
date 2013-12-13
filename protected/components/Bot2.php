@@ -14,12 +14,15 @@ class Bot2 {
 	private $balance;
 	private $balance_btc;
 	private $order_cnt;
+	private $total_income;
 	
 	const imp_dif = 0.02; // Видимые изменения
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
-	const min_buy_interval = 120; // Мин. интервал совершения покупок = 2 мин. 
+	const min_buy_interval = 120; // Мин. интервал совершения покупок = 2 мин.
+	const min_income = 10; // Мин. доход в рублях
+	 
 	
 	public function __construct($exchange)
 	{
@@ -28,8 +31,10 @@ class Bot2 {
 		
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
+		$this->total_income=0;
 		
 		$this->order_cnt=0;
+		
 	}
 	
 	/**
@@ -55,6 +60,8 @@ class Bot2 {
 				order by dt
 				";
 		
+		
+		
 		$command = $connection->createCommand($sql);
 		$list=$command->queryAll();
 		
@@ -77,8 +84,9 @@ class Bot2 {
 			if ($dif<(-1*self::imp_dif)) $track.="-";
 			elseif ($dif>self::imp_dif) $track.="+";
 			else $track.="0";
-
-			//Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
+			
+			if ($name == 'sell' && $track=='00-')
+			Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
 			
 		}
 		
@@ -92,7 +100,12 @@ class Bot2 {
 		return($result);
 	} 
 	
-	private function getProfitableTracks($tracks)
+	/**
+	 * Формирует список треков на которых выгодно покупать
+	 * @param unknown_type $tracks
+	 * @return multitype:unknown
+	 */
+	private function getBuyTracks($tracks)
 	{
 		$result = array();
 		foreach($tracks as $track)
@@ -100,14 +113,33 @@ class Bot2 {
 			$ret = false;
 			switch($track['track']){
 				case '-0+':	$result[] = $track; break; // \_/
-				case '--+':	$result[] = $track; break; // \_/
+				case '--+':	$result[] = $track; break; // \\/
 				case '00+':	$result[] = $track; break; // __/
 				case '0-+':	$result[] = $track; break; // _\/				
 			}			
+		}		
+		return $result;		
+	}
+	
+	/**
+	 * Формирует список треков на которых выгодно продавать
+	 * @param unknown_type $tracks
+	 * @return multitype:unknown
+	 */
+	private function getSellTracks($tracks)
+	{
+		$result = array();
+		foreach($tracks as $track)
+		{
+			$ret = false;
+			switch($track['track']){
+				case '+0-':	$result[] = $track; break; // /-\
+				case '++-':	$result[] = $track; break; // //\
+				case '00-':	$result[] = $track; break; // --\
+				case '0+-':	$result[] = $track; break; // -/\
+			}
 		}
-		
 		return $result;
-		
 	}
 	
 	private function AlreadyBought($period)
@@ -141,6 +173,19 @@ class Bot2 {
 		return false;
 	}
 	
+	private function Sell($btc)
+	{	
+		if ($order=Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id))
+		{
+			$price = $this->current_exchange->buy*$btc->count*(1-self::fee);			
+			Log::AddText($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $item->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>');
+			$this->total_income+=$price-$btc->summ;
+			return(true);
+		}
+	
+		return false;
+	}
+	
 	public function NeedBuy()
 	{		
 		$curtime = $this->curtime; //Дата операции
@@ -164,7 +209,7 @@ class Bot2 {
 		// Dump::d($tracks);
 		
 		//Анализируем треки
-		$tracks = $this->getProfitableTracks($tracks);
+		$tracks = $this->getBuyTracks($tracks);
 		if (sizeof($tracks) == 0) return false;		
 		//Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
 		
@@ -193,6 +238,56 @@ class Bot2 {
 		Log::AddText($this->curtime, 'Нет интересных покупок');		
 	}
 	
+	public function NeedSell()
+	{
+		Log::Add($this->curtime, 'ПРОДАЖИ');
+		$curtime = $this->curtime; //Дата операции
+		$dt = date('Y-m-d H:i:s', $curtime);		
+		
+		//Перебираем периоды 15 мину, 30 мину, 1 час
+		$periods = array(15*60, 30*60, 60*60);
+		$tracks=array();
+		foreach($periods as $period)
+		{
+			$tracks[] = $this->getGraphImage($curtime, $period, 'sell');
+		}		
+		
+		
+		//Анализируем треки
+		$tracks = $this->getSellTracks($tracks);
+		
+		if (sizeof($tracks) == 0) return false;
+		
+		Log::Add($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
+		
+		
+		//Смотрим что продать
+		$bought = Btc::model()->with('sell')->findAll(array('condition'=>'sold=0'));
+		
+		foreach($bought as $btc)
+		{
+			// Цена продажи
+			$curcost = $btc->count*$this->current_exchange->sell*(1-self::fee);
+						
+			// Сколько заработаем при продаже
+			$income = $curcost - $btc->summ;
+						
+			// Достаточно ли заработаем
+			if ($income < self::min_income)
+			{
+				//if ($income>0)
+				Log::Add($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income);
+				continue;
+			}
+			
+			Log::Add($this->curtime, 'Выгодная цена, пробуем купить и получить доход'.$income);
+			
+			$this->sell($btc);
+		}
+		
+		
+	}
+	
 
 	public function checkOrders()
 	{
@@ -200,25 +295,45 @@ class Bot2 {
 	
 		foreach($orders as $order)
 		{
-			// @todo - если не ОК - вернуть деньги, заказ закрыть
-			// @todo - получить из ЛК реальный баланс
+			
+			if ($order->type == 'buy')
+			{
+				// @todo - если не ОК - вернуть деньги, заказ закрыть
+				// @todo - получить из ЛК реальный баланс
+					
+				// проверяем состояние заказа через API
+				// допустим все ок			
+				$order->status='close';
+				$order->close_dtm=date("Y-m-d H:i:s", $this->curtime);
+				$order->update(array('status', 'close_dtm'));
 				
-			// проверяем состояние заказа через API
-			// допустим все ок			
-			$order->status='close';
-			$order->close_dtm=date("Y-m-d H:i:s", $this->curtime);
-			$order->update(array('status', 'close_dtm'));
-			
-			Btc::buy($order);			
-			
-			$this->balance_btc+=$order->count; 
-			$this->order_cnt++;
+				Btc::buy($order);			
+				
+				$this->balance_btc+=$order->count; 
+				$this->order_cnt++;
+			} elseif ($order->type == 'sell')
+			{
+				$order->status='close';
+				$order->close_dtm=date("Y-m-d H:i:s", $this->curtime);
+				$order->update(array('status', 'close_dtm'));
+				
+				if ($order->btc_id)
+				{					
+					Btc::sell($order);
+				}			
+				
+				$this->balance_btc-=$order->count;
+				$this->balance+=$order->summ;
+				$this->order_cnt++;
+				
+			}
 		}
 	}
 	
 	public function run()
 	{
 		$this->NeedBuy();
+		$this->NeedSell();
 		$this->checkOrders();
 		
 		Status::setParam('balance', $this->balance);
