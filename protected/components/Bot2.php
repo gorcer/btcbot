@@ -44,9 +44,13 @@ class Bot2 {
 	 */
 	public function getGraphImage($curtime, $period, $name)
 	{
+		
 		$step = round($period/4);
 		$from = date('Y-m-d H:i:s', $curtime-$period);
+		
 		$to = date('Y-m-d H:i:s', $curtime);
+		
+		
 		
 		$connection = Yii::app()->db;
 		$sql = "
@@ -85,16 +89,17 @@ class Bot2 {
 			elseif ($dif>self::imp_dif) $track.="+";
 			else $track.="0";
 			
-			if ($name == 'sell' && $track=='00-')
-			Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
+			//if ($name == 'sell' && $track=='00-')
+			//Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
 			
 		}
 		
 		$result = array(
 				'track'=>$track,
-				'from' => date('Y-m-d H:i:s', time()-$period),
+				'from' => $from,
 				'step' => $step,
-				'period'=>$period,
+				'period'=>$period,			
+				'items' =>$list,	
 				);
 		
 		return($result);
@@ -114,7 +119,7 @@ class Bot2 {
 			switch($track['track']){
 				case '-0+':	$result[] = $track; break; // \_/
 				case '--+':	$result[] = $track; break; // \\/
-				case '00+':	$result[] = $track; break; // __/
+				//case '00+':	$result[] = $track; break; // __/
 				case '0-+':	$result[] = $track; break; // _\/				
 			}			
 		}		
@@ -199,19 +204,19 @@ class Bot2 {
 		}
 		
 		//Перебираем периоды 15 мину, 30 мину, 1 час
-		$periods = array(15*60, 30*60, 60*60);
+		$periods = array(8*60, 15*60, 30*60, 60*60);
 		$tracks=array();
 		foreach($periods as $period)
 		{
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		}
-		// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-		// Dump::d($tracks);
+		 Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+		 Dump::d($tracks);
 		
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
 		if (sizeof($tracks) == 0) return false;		
-		//Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
+		Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
 		
 		//Удаляем треки по которым уже были покупки
 		foreach($tracks as $key=>$track)		
@@ -231,8 +236,11 @@ class Bot2 {
 				foreach($tracks as $track)	
 				{
 					Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
+					Dump::d($track);
 					$this->ReservePeriod($track['period']);
-				}			
+				}	
+
+				
 		}				
 		else
 		Log::AddText($this->curtime, 'Нет интересных покупок');		
@@ -240,25 +248,24 @@ class Bot2 {
 	
 	public function NeedSell()
 	{
-		Log::Add($this->curtime, 'ПРОДАЖИ');
+		//Log::AddText($this->curtime, 'ПРОДАЖИ');
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);		
 		
-		//Перебираем периоды 15 мину, 30 мину, 1 час
-		$periods = array(15*60, 30*60, 60*60);
+		//Перебираем периоды 9, 15, 30 минут, 1 час
+		$periods = array(9*60, 15*60, 30*60, 60*60);
 		$tracks=array();
 		foreach($periods as $period)
 		{
 			$tracks[] = $this->getGraphImage($curtime, $period, 'sell');
-		}		
-		
+		}	
 		
 		//Анализируем треки
 		$tracks = $this->getSellTracks($tracks);
 		
 		if (sizeof($tracks) == 0) return false;
 		
-		Log::Add($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
+	//	Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
 		
 		
 		//Смотрим что продать
@@ -276,11 +283,11 @@ class Bot2 {
 			if ($income < self::min_income)
 			{
 				//if ($income>0)
-				Log::Add($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income);
+				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income);
 				continue;
 			}
 			
-			Log::Add($this->curtime, 'Выгодная цена, пробуем купить и получить доход'.$income);
+			Log::AddText($this->curtime, 'Выгодная цена, пробуем купить и получить доход'.$income);
 			
 			$this->sell($btc);
 		}

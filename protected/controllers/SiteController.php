@@ -159,7 +159,7 @@ class SiteController extends Controller
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-10 00:00:01"'));
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-11 16:00:01"'));
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
@@ -192,5 +192,39 @@ class SiteController extends Controller
 		} catch(BTCeAPIException $e) {
 			echo $e->getMessage();
 		}
+	}
+	
+	public function actionChart()
+	{	
+		$exch = Exchange::model()->findAll();
+		
+		
+		$data_buy=array();
+		$data_sell=array();
+		
+		foreach($exch as $item)
+		{
+			$data_buy[]=array(strtotime($item->dt)*1000+4*60*60*1000, (float)$item->buy);
+			$data_sell[]=array(strtotime($item->dt)*1000+4*60*60*1000, (float)$item->sell);
+			
+		}
+				
+		// Покупки
+		$bought = Btc::model()->findAll();
+		
+		/*$btces=false;
+		foreach($bought as $btc)
+		{
+			$btces[]=array(strtotime($btc->dtm)*1000, 'Купил за '.$btc->price.' руб. на '.$btc->summ.' руб.');
+		}*/
+		
+		
+		
+		$this->render('chart',
+				array(
+						'data_buy'	=> json_encode($data_buy),
+						'data_sell'	=> json_encode($data_sell),
+						'buy'	=>$bought
+						));
 	}
 }
