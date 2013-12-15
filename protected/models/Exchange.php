@@ -128,4 +128,13 @@ class Exchange extends CActiveRecord
 		$result[]=array('dt'	=>	'2013-01-15',		'buy'	=>	5610,		'sell'	=>	5600);
 		return($result);
 	}
+	
+	public static function getLast()
+	{
+		$buy = Exchange::model()->find(array(
+				'order' => 'dt desc'
+		));
+		return $buy;
+	}
+	
 }

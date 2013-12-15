@@ -97,7 +97,7 @@ class Sell extends CActiveRecord
 		));
 	}
 	
-	public function getTotalIncome()
+	public static function getTotalIncome()
 	{
 		$connection = Yii::app()->db;
 		$sql = "

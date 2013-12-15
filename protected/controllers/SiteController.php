@@ -109,7 +109,7 @@ class SiteController extends Controller
 	
 	public function actionCron()
 	{
-		die();
+		
 		$BTCeAPI = new BTCeAPI(
 				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
 				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
@@ -123,9 +123,10 @@ class SiteController extends Controller
 		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		
 		$exchange->save();
-
+/*
 		$bot = new Bot();
 		$bot->runTest();
+		*/
 	}
 	
 	public function actionRun()
@@ -159,7 +160,7 @@ class SiteController extends Controller
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-10 00:00:01"'));
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 08:00:02"', 'limit'=>20000000));
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
@@ -192,5 +193,42 @@ class SiteController extends Controller
 		} catch(BTCeAPIException $e) {
 			echo $e->getMessage();
 		}
+	}
+	
+	public function actionChart()
+	{	
+		$exch = Exchange::model()->findAll();
+		
+		
+		$data_buy=array();
+		$data_sell=array();
+		$data_avg=array();
+		
+		foreach($exch as $item)
+		{
+			$tm = strtotime($item->dt)*1000+4*60*60*1000;
+			$data_buy[]=array($tm, (float)$item->buy);
+			$data_sell[]=array($tm, (float)$item->sell);
+			$data_avg[]=array($tm, ($item->buy + $item->sell)/2);
+			
+		}
+				
+		// Ïîêóïêè
+		$orders = Order::model()->findAll();
+		
+		$lastEx = Exchange::getLast();
+		$status['total_income'] = Sell::getTotalIncome();
+		$status['balance'] = Status::getParam('balance');
+		$status['balance_btc'] = Status::getParam('balance_btc');
+		$status['total_balance'] = $status['balance'] + $status['balance_btc']*$lastEx->sell;
+		
+		$this->render('chart',
+				array(
+						'data_buy'	=> 	json_encode($data_buy),
+						'data_sell'	=> 	json_encode($data_sell),
+						'data_avg'	=> 	json_encode($data_avg),
+						'orders'	=>	$orders,
+						'status'	=>	$status,
+						));
 	}
 }
