@@ -85,8 +85,9 @@ class Bot2 {
 			elseif ($dif>self::imp_dif) $track.="+";
 			else $track.="0";
 			
-			if ($name == 'sell' && $track=='00-')
+			/*if ($name == 'sell' && $track=='00-')
 			Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
+			*/
 			
 		}
 		
