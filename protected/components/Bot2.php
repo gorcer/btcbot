@@ -15,15 +15,15 @@ class Bot2 {
 	private $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	private $imp_dif;
+	private $imp_dif; // Видимость различий, при превышении парога фиксируются изменения
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
-	const min_buy_interval = 120; // Мин. интервал совершения покупок = 2 мин.
+	const min_buy_interval = 900; // Мин. интервал совершения покупок = 15 мин.
 	const min_income = 10; // Мин. доход в рублях
-	 
+	const long_time =  1800; // Понятие долгосрочный период - больше 30 минут
 	
 	public function __construct($exchange)
 	{
@@ -33,10 +33,9 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 50; //self::min_income*(1+2*self::fee);
+		$this->imp_dif = 25; //self::min_income*(1+2*self::fee);
 		
-		$this->order_cnt=0;
-		
+		$this->order_cnt=0;		
 	}
 	
 	/**
@@ -66,14 +65,16 @@ class Bot2 {
 			$sql = "
 					SELECT 
 						avg(".$name.") as val						
-						/*".$step_dt." from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y-%m-%d %H:%i:%s')as dtm*/					 
+						/*".date('Y-m-d H:i:s', $curtime)." - ".$step_dt." - ".$period." from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y-%m-%d %H:%i:%s')as dtm*/					 
 					FROM `exchange`
 					where
 						dt >= '".$step_ut_f."' and dt <= '".$step_ut_t."'								
 					order by dt
 					limit 1
 					";	
+			//if ($curtime == '2013-12-11 16:42:00')
 			//Dump::d($sql);
+			
 			$command = $connection->createCommand($sql);
 			$val=$command->queryScalar();	
 			if (!$val) return false;
@@ -140,7 +141,14 @@ class Bot2 {
 							if($track['items'][1]['val'] - $track['items'][3]['val']>$this->imp_dif)
 								$result[] = $track; 
 							//Log::AddText(0, $track['items'][1]['val'] - $track['items'][3]['val'].' > '.$this->imp_dif);
-							break; 				
+							break; 
+			// Если есть долгосрочное падение, не покупать 
+				case '---':								// \\\
+							if ($track['period']>self::long_time) {
+								Log::AddText(0, 'Замечено долгосрочное падение в течении '.($track['period']/60).' мин., не покупаем');
+								return false;								
+							}
+							break;				
 			}			
 		}		
 		return $result;		
@@ -211,10 +219,37 @@ class Bot2 {
 		return false;
 	}
 	
+	public function NeedBuyRandom()
+	{
+		$curtime = $this->curtime; //Дата операции
+		$dt = date('Y-m-d H:i:s', $curtime);
+	
+		// Проверяем была ли уже покупка за последнее время
+		$key = 'last_buy';
+		$tm = Yii::app()->cache->get($key);
+		if ($tm && $tm>$this->curtime)	return false;
+		Yii::app()->cache->set($key, $this->curtime+self::min_buy_interval, self::min_buy_interval);
+		
+		if ($this->balance<$this->current_exchange->buy*self::buy_value)
+		{
+			Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			return false;
+		}
+		
+		if (rand(0, 100) == 1)
+			$this->buy();
+	}
+	
 	public function NeedBuy()
 	{		
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);
+		
+		// Проверяем была ли уже покупка за последнее время
+		$key = 'last_buy';
+		$tm = Yii::app()->cache->get($key);
+		if ($tm && $tm>$this->curtime)	return false;
+		
 		
 		// Есть ли деньги
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
@@ -223,19 +258,19 @@ class Bot2 {
 			return false;
 		}
 		
-		//Перебираем периоды 8 минут, 15 мину, 30 мину, 1 час, 6 часов
-		$periods = array(8*60, 15*60, 30*60, 60*60, 6*60*60);
+		//Перебираем в статистике периоды 8 минут, 15 мину, 30 мину, 1 час, 2 часов
+		$periods = array(8*60, 15*60, 30*60, 60*60, 2*60*60);
 		$tracks=array();
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
-								 Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-								 Dump::d($tracks);
+								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								// Dump::d($tracks);
 								
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
-		if (sizeof($tracks) == 0) return false;		
-								Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
+		if (!$tracks || sizeof($tracks) == 0) return false;		
+								//Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
 		
 		//Удаляем треки по которым уже были покупки
 		foreach($tracks as $key=>$track)		
@@ -244,7 +279,7 @@ class Bot2 {
 								//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
-		Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
+								//Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
 			
 		// Если остались треки
 		if (sizeof($tracks)>0)
@@ -254,10 +289,11 @@ class Bot2 {
 			// Резервируем время покупки
 				foreach($tracks as $track)	
 				{
-					Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
-					Dump::d($track);
-					$this->ReservePeriod($track['period']);
+					//Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
+					//Dump::d($track);
+					$this->ReservePeriod($track['period']);					
 				}	
+				Yii::app()->cache->set($key, $this->curtime+self::min_buy_interval, self::min_buy_interval);
 
 				
 		}				
@@ -286,7 +322,7 @@ class Bot2 {
 		
 		if (sizeof($tracks) == 0) return false;
 		
-	//	Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
+		//Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
 		
 		
 		//Смотрим что продать
@@ -309,8 +345,6 @@ class Bot2 {
 				//Dump::d($btc->attributes);
 				continue;
 			}
-			
-			Log::AddText($this->curtime, 'Выгодная цена, пробуем купить и получить доход'.$income);
 			
 			$this->sell($btc);
 			//Dump::d($tracks);

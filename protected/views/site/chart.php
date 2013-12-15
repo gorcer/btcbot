@@ -3,6 +3,7 @@
 
 $this->pageTitle=Yii::app()->name;
 
+
 $flags=", {
 		        type: 'flags',
 		        name: 'Flags on series',
@@ -28,6 +29,7 @@ $flags.="],
 Баланс (руб.): <?php echo $status['balance']; ?><br/>
 Баланс (btc): <?php echo $status['balance_btc']; ?><br/>
 Заработано (руб.): <?php echo $status['total_income']; ?><br/>
+Общие активы (руб.): <?php echo $status['total_balance']; ?><br/>
 <script>
 $(function() {
 	
@@ -61,6 +63,13 @@ $(function() {
 		    }, {
 		        name: 'sell',
 		        data: <?php echo $data_sell; ?>,
+				id: 'dataseries',
+				tooltip: {
+					valueDecimals: 4
+				}
+		    }, {
+		        name: 'average',
+		        data: <?php echo $data_avg; ?>,
 				id: 'dataseries',
 				tooltip: {
 					valueDecimals: 4
