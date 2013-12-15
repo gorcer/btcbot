@@ -159,7 +159,7 @@ class SiteController extends Controller
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 09:00:01"'));
+		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 09:00:02"', 'limit'=>50000));
 		foreach($exs as $exchange)
 		{
 			$bot = new Bot2($exchange);
@@ -212,19 +212,17 @@ class SiteController extends Controller
 		// Ïîêóïêè
 		$orders = Order::model()->findAll();
 		
-		/*$btces=false;
-		foreach($bought as $btc)
-		{
-			$btces[]=array(strtotime($btc->dtm)*1000, 'Êóïèë çà '.$btc->price.' ğóá. íà '.$btc->summ.' ğóá.');
-		}*/
-		
+		$status['total_income'] = Sell::getTotalIncome();
+		$status['balance'] = Status::getParam('balance');
+		$status['balance_btc'] = Status::getParam('balance_btc');
 		
 		
 		$this->render('chart',
 				array(
-						'data_buy'	=> json_encode($data_buy),
-						'data_sell'	=> json_encode($data_sell),
-						'orders'	=>$orders
+						'data_buy'	=> 	json_encode($data_buy),
+						'data_sell'	=> 	json_encode($data_sell),
+						'orders'	=>	$orders,
+						'status'	=>	$status,
 						));
 	}
 }

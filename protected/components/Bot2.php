@@ -45,57 +45,65 @@ class Bot2 {
 	 * @param $name - buy, sell
 	 */
 	public function getGraphImage($curtime, $period, $name)
-	{
+	{		
+		// @todo переделать - диапазоны расчитывать более точно
 		
-		$step = round($period/4);
-		$from = date('Y-m-d H:i:s', $curtime-$period);
-		
-		$to = date('Y-m-d H:i:s', $curtime);
-		
-		
+		$step = round($period/3);
+		$from_tm = $curtime-$period;
+		$from = date('Y-m-d H:i:s', $from_tm);		
+		$to = date('Y-m-d H:i:s', $curtime);		
 		
 		$connection = Yii::app()->db;
-		$sql = "
-				SELECT 
-					avg(".$name.") as val,
-					from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y-%m-%d %H:%i:%s')as dtm 
-				FROM `exchange`
-				where
-					dt between '".$from."' and '".$to."' 
-				group by dtm
-				order by dt
-				";
-		
-		
-		
-		$command = $connection->createCommand($sql);
-		$list=$command->queryAll();
-		
 		$track="";
-		$prev=false;		
-		foreach($list as $k=>$item)
-		{
-			// Откидываем мусор
-			if ($item['dtm']<$from || $item['dtm']>$to) {unset($list[$k]);continue;}
+		$prev=false;
+		for($i=0;$i<=3;$i++)
+		{			 			
+			$step_ut = $from_tm+$step*$i;
+			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
+			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
+			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);
+			
+			$sql = "
+					SELECT 
+						avg(".$name.") as val						
+						/*".$step_dt." from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y-%m-%d %H:%i:%s')as dtm*/					 
+					FROM `exchange`
+					where
+						dt >= '".$step_ut_f."' and dt <= '".$step_ut_t."'								
+					order by dt
+					limit 1
+					";	
+			//Dump::d($sql);
+			$command = $connection->createCommand($sql);
+			$val=$command->queryScalar();	
+			if (!$val) return false;
+				
+			$list[]=array(
+					'dtm'=>$step_dt,
+					'val'=>$val,
+			);
+				
 			
 			if (!$prev)
 			{
-				$prev = $item['val'];
+				$prev = $val;
 				continue;
-			}
-			
+			}		
 			
 			// Определяем направление
-			$dif = ($item['val']-$prev);			
+			$dif = ($val-$prev);			
 			if ($dif<(-1*$this->imp_dif)) $track.="-";
 			elseif ($dif>$this->imp_dif) $track.="+";
 			else $track.="0";
 			
 			//if ($from == '2013-12-11 16:15:01')			
-			//Log::AddText($this->curtime, 'тек='.$item['val'].' пред='.$prev.' разн='.$dif.' => '.$track);
+			//Log::AddText($this->curtime, 'тек='.$val.' пред='.$prev.' разн='.$dif.' => '.$track);
 			
-			$prev = $item['val'];
+			$prev = $val;
 		}
+		
+		// Восстанавливаем нумерацию ключей
+		//$list = array_values($list);
 		
 		$result = array(
 				'track'=>$track,
@@ -120,10 +128,19 @@ class Bot2 {
 		{
 			$ret = false;
 			switch($track['track']){
-				case '-0+':	$result[] = $track; break; // \_/
-				case '--+':	$result[] = $track; break; // \\/
+				case '-0+':								 // \_/
+				case '--+':								 // \\/
+							// Если трек при падении не вернулся в исходную точку
+							if($track['items'][0]['val'] - $track['items'][3]['val']>$this->imp_dif)							
+								$result[] = $track; 
+							break; 
 			//	case '00+':	$result[] = $track; break; // __/
-				case '0-+':	$result[] = $track; break; // _\/				
+				case '0-+':							   // _\/
+							// Если трек при падении не вернулся в исходную точку
+							if($track['items'][1]['val'] - $track['items'][3]['val']>$this->imp_dif)
+								$result[] = $track; 
+							//Log::AddText(0, $track['items'][1]['val'] - $track['items'][3]['val'].' > '.$this->imp_dif);
+							break; 				
 			}			
 		}		
 		return $result;		
@@ -206,26 +223,25 @@ class Bot2 {
 			return false;
 		}
 		
-		//Перебираем периоды 15 мину, 30 мину, 1 час
-		$periods = array(8*60, 15*60, 30*60, 60*60);
+		//Перебираем периоды 8 минут, 15 мину, 30 мину, 1 час, 6 часов
+		$periods = array(8*60, 15*60, 30*60, 60*60, 6*60*60);
 		$tracks=array();
-		foreach($periods as $period)
-		{
+		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
-		}
-		 Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-		 Dump::d($tracks);
 		
+								 Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								 Dump::d($tracks);
+								
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
 		if (sizeof($tracks) == 0) return false;		
-		Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
+								Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
 		
 		//Удаляем треки по которым уже были покупки
 		foreach($tracks as $key=>$track)		
 			if ($this->AlreadyBought($track['period']))		
 			{
-			//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
+								//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
 		Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
@@ -287,7 +303,7 @@ class Bot2 {
 			// Достаточно ли заработаем
 			if ($income < self::min_income)
 			{
-				//if ($income>0)
+				if ($income>0)
 				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' $curcost='.$curcost.' sell='.$this->current_exchange->sell);
 				
 				//Dump::d($btc->attributes);

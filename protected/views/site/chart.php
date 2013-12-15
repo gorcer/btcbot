@@ -11,7 +11,7 @@ foreach ($orders as $order)
 {
 	$flags.="{
 					x: ".(strtotime($order->close_dtm)*1000+4*60*60*1000).",
-					title: '".$order->type."'
+					title: '".substr($order->type, 0, 1)."'
 				}, ";
 }
 $flags.="],
@@ -24,6 +24,10 @@ $flags.="],
 <script src="http://code.highcharts.com/stock/highstock.js"></script>
 
 <div id="container" style="height: 500px; min-width: 500px"></div>
+
+Баланс (руб.): <?php echo $status['balance']; ?><br/>
+Баланс (btc): <?php echo $status['balance_btc']; ?><br/>
+Заработано (руб.): <?php echo $status['total_income']; ?><br/>
 <script>
 $(function() {
 	

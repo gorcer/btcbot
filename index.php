@@ -1,5 +1,5 @@
 <?php
-
+ini_set('max_execution_time', 40*60);
 // change the following paths if necessary
 
 //$config=dirname(__FILE__).'/protected/config/main.php';
