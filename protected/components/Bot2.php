@@ -20,12 +20,13 @@ class Bot2 {
 	private $avg_sell;// Средняя цена продажи
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
-	const min_buy = 0.01; // Мин. сумма покупки
-	const buy_value = 0.01; // Сколько покупать
+	const min_buy = 0.015; // Мин. сумма покупки
+	const buy_value = 0.015; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 3600; // Мин. интервал совершения покупок = 60 мин.
-	const min_income = 10; // Мин. доход в рублях
+	const min_income = 5; // Мин. доход в рублях
 	const long_time =  1800; // Понятие долгосрочный период - больше 30 минут
+	
 	
 	public function __construct($exchange)
 	{
@@ -247,31 +248,32 @@ class Bot2 {
 		// Проверяем была ли уже покупка за последнее время, если была и цена была более выгодная чем текущая то не покупаем
 		$cache_key = 'last_buy';
 		$tm = Yii::app()->cache->get($cache_key);		
-		if ($tm && $tm>$this->curtime && $this->current_exchange->buy > $lastBuy->price)	return false;
+		
+		if ($tm && $tm>$this->curtime && $lastBuy->price - $this->current_exchange->buy < $this->imp_dif) return false;
 		
 		
 		// Есть ли деньги
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
 		{
-			//Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
 			return false;
 		}
 		
 		// Если текущая цена выше средней не покупаем		
-		if ($this->avg_buy<$this->current_exchange->buy)
+		if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
 		{
-			//Log::AddText($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
+			Log::AddText($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
 			return false;
 		}
 		
-		//Перебираем в статистике периоды 8 минут, 15 мину, 30 мину, 1 час, 2 часов
-		$periods = array(15*60, 30*60, 60*60, 2*60*60);
+		//Перебираем в статистике периоды 15 мину, 30 мину, 1 час, 2 часов
+		$periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60);
 		$tracks=array();
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
-								 //Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-								 //Dump::d($tracks);
+								 Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								 Dump::d($tracks);
 								
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
