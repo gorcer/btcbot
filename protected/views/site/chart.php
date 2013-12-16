@@ -44,7 +44,7 @@ $(function() {
 		    },
 
 		    title: {
-		        text: 'BTC to RUR exchange rate'
+		        text: 'BTC-RUR'
 		    },
 
 		    yAxis: {
@@ -63,13 +63,6 @@ $(function() {
 		    }, {
 		        name: 'sell',
 		        data: <?php echo $data_sell; ?>,
-				id: 'dataseries',
-				tooltip: {
-					valueDecimals: 4
-				}
-		    }, {
-		        name: 'average',
-		        data: <?php echo $data_avg; ?>,
 				id: 'dataseries',
 				tooltip: {
 					valueDecimals: 4

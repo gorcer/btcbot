@@ -139,7 +139,23 @@ class Exchange extends CActiveRecord
 	
 	public static function getAll()
 	{
-		return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 10:00:02"', 'limit'=>10000000));
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						dt, buy, sell		
+					FROM `exchange`
+					where
+						dt >= '2013-12-09 09:00:02'
+					order by dt
+					limit 100000000 
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$list=$command->queryAll();
+		return($list);
+		
+		//return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 10:00:02"', 'limit'=>10000000));
 	}
 	
 	public static function NOSQL_getAvg($name, $from, $to)
@@ -155,22 +171,42 @@ class Exchange extends CActiveRecord
 		foreach($list as $item)
 		{
 			
-			if ($item->dt>=$from && $item->dt<=$to)
+			if ($item['dt']>=$from && $item['dt']<=$to)
 			{
-				$sum+=$item->$name;
+				$sum+=$item[$name];
 				$cnt++;
 			}
-			elseif ($item->dt > $to)
+			elseif ($item['dt'] > $to)
 				break;
 		}
 		if ($cnt>0)
 			$val = $sum/$cnt;
 		else 
 			$val=false;
+		
 		Yii::app()->cache->set($key, $val, 60*60);
 		
-		
 		return ($val);
+	}
+	
+	public static function getAvg($name, $from, $to)
+	{
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						avg(".$name.") as val
+		
+					FROM `exchange`
+					where
+						dt >= '".$from."' and dt <= '".$to."'
+					order by dt
+					limit 1
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$val=$command->queryScalar();
+		return($val);
 	}
 	
 }

@@ -15,13 +15,15 @@ class Bot2 {
 	private $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	private $imp_dif; // Видимость различий, при превышении парога фиксируются изменения
+	private $imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	private $avg_buy; // Средняя цена покупки
+	private $avg_sell;// Средняя цена продажи
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
-	const min_buy_interval = 900; // Мин. интервал совершения покупок = 15 мин.
+	const min_buy_interval = 3600; // Мин. интервал совершения покупок = 60 мин.
 	const min_income = 10; // Мин. доход в рублях
 	const long_time =  1800; // Понятие долгосрочный период - больше 30 минут
 	
@@ -33,9 +35,14 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 25; //self::min_income*(1+2*self::fee);
+		$this->imp_dif = 100;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
 		
 		$this->order_cnt=0;		
+		
+		$from = date('Y-m-d H:i:s', time()-60*60*24*7);
+		$this->avg_buy = Exchange::getAvg('buy', $from,  date('Y-m-d H:i:s', $this->curtime));
+		$this->avg_sell = Exchange::getAvg('sell', $from,  date('Y-m-d H:i:s', $this->curtime));
+		
 	}
 	
 	/**
@@ -52,7 +59,7 @@ class Bot2 {
 		$from = date('Y-m-d H:i:s', $from_tm);		
 		$to = date('Y-m-d H:i:s', $curtime);		
 		
-		$connection = Yii::app()->db;
+		
 		$track="";
 		$prev=false;
 		for($i=0;$i<=3;$i++)
@@ -62,24 +69,8 @@ class Bot2 {
 			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
 			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);
 			
-			
-			/*
-			$sql = "
-					SELECT 
-						avg(".$name.") as val					
-											 
-					FROM `exchange`
-					where
-						dt >= '".$step_ut_f."' and dt <= '".$step_ut_t."'								
-					order by dt
-					limit 1
-					";	
-			//if ($curtime == '2013-12-11 16:42:00')
-			//Dump::d($sql);			
-			$command = $connection->createCommand($sql);
-			$val=$command->queryScalar();	
-			*/
-			$val=Exchange::NOSQL_getAvg($name, $step_ut_f, $step_ut_t);
+			//$val=Exchange::NOSQL_getAvg($name, $step_ut_f, $step_ut_t);
+			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
 			
 			if (!$val) return false;
 				
@@ -149,8 +140,10 @@ class Bot2 {
 							break; 
 			// Если есть долгосрочное падение, не покупать 
 				case '---':								// \\\
+				case '+--':								// /\\
+				case '0--':								// /\\
 							if ($track['period']>self::long_time) {
-								Log::AddText($this->curtime, 'Замечено долгосрочное падение в течении '.($track['period']/60).' мин., не покупаем');
+								Log::AddText($this->curtime, 'Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
 								return false;								
 							}
 							break;				
@@ -174,7 +167,7 @@ class Bot2 {
 				case '+0-':	$result[] = $track; break; // /-\
 				case '++-':	$result[] = $track; break; // //\
 			//	case '00-':	$result[] = $track; break; // --\
-				case '0+-':	$result[] = $track; break; // -/\
+			//	case '0+-':	$result[] = $track; break; // -/\
 			}
 		}
 		return $result;
@@ -216,7 +209,7 @@ class Bot2 {
 		if ($order=Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id))
 		{
 			$price = $this->current_exchange->sell*$btc->count*(1-self::fee);			
-			Log::AddText($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $item->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>');
+			Log::AddText($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $btc->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>');
 			$this->total_income+=$price-$btc->summ;
 			return(true);
 		}
@@ -249,17 +242,25 @@ class Bot2 {
 	{		
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);
+		$lastBuy = Btc::getLastBuy();
 		
-		// Проверяем была ли уже покупка за последнее время
-		$key = 'last_buy';
-		$tm = Yii::app()->cache->get($key);
-		if ($tm && $tm>$this->curtime)	return false;
+		// Проверяем была ли уже покупка за последнее время, если была и цена была более выгодная чем текущая то не покупаем
+		$cache_key = 'last_buy';
+		$tm = Yii::app()->cache->get($cache_key);		
+		if ($tm && $tm>$this->curtime && $this->current_exchange->buy > $lastBuy->price)	return false;
 		
 		
 		// Есть ли деньги
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
 		{
-			Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			//Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			return false;
+		}
+		
+		// Если текущая цена выше средней не покупаем		
+		if ($this->avg_buy<$this->current_exchange->buy)
+		{
+			//Log::AddText($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
 			return false;
 		}
 		
@@ -269,8 +270,8 @@ class Bot2 {
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
-								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-								// Dump::d($tracks);
+								 //Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								 //Dump::d($tracks);
 								
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
@@ -284,7 +285,7 @@ class Bot2 {
 								//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
-								//Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
+								//	Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
 			
 		// Если остались треки
 		if (sizeof($tracks)>0)
@@ -298,7 +299,8 @@ class Bot2 {
 					//Dump::d($track);
 					$this->ReservePeriod($track['period']);					
 				}	
-				Yii::app()->cache->set($key, $this->curtime+self::min_buy_interval, self::min_buy_interval);
+					//Log::AddText($this->curtime, 'Резерв времени до: '. date('Y-m-d H:i:s',$this->curtime+self::min_buy_interval));
+				Yii::app()->cache->set($cache_key, $this->curtime+self::min_buy_interval, self::min_buy_interval);
 
 				
 		}				
@@ -311,6 +313,15 @@ class Bot2 {
 		//Log::AddText($this->curtime, 'ПРОДАЖИ');
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);		
+		
+		
+		// Если текущая цена ниже средней не продаем
+		if ($this->avg_sell>$this->current_exchange->sell)
+		{
+			Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
+			return false;
+		}
+		
 		
 		//Перебираем периоды 9, 15, 30 минут, 1 час
 		$periods = array(9*60, 15*60, 30*60, 60*60);
@@ -345,7 +356,7 @@ class Bot2 {
 			if ($income < self::min_income)
 			{
 				if ($income>0)
-				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' $curcost='.$curcost.' sell='.$this->current_exchange->sell);
+				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' купил за '.$btc->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
 				
 				//Dump::d($btc->attributes);
 				continue;

@@ -115,6 +115,7 @@ class Order extends CActiveRecord
 		$order->fee = Bot2::fee;
 		$order->summ = $cnt*$exchange->buy;
 		$order->type = $type;
+		$order->create_dtm = $exchange->dt;
 		if ($btc_id) $order->btc_id = $btc_id;
 		
 		return $order->save();		

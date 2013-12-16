@@ -138,16 +138,17 @@ class SiteController extends Controller
 		);
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
-		
+	/*	
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);		
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']);		
 		$exchange->save();
 		
 		$bot = new Bot2($exchange);
 		$bot->NeedBuy($ticker['updated']);
 		$this->render('index');
+		*/
 	}
 	
 	public function actionTest()
@@ -167,8 +168,13 @@ class SiteController extends Controller
 		$cnt=0;
 		foreach($exs as $exchange)
 		{
+			$obj = new stdClass;
+			$obj->dt = $exchange['dt'];
+			$obj->buy = $exchange['buy'];
+			$obj->sell = $exchange['sell'];
+			
 			$cnt++;
-			$bot = new Bot2($exchange);
+			$bot = new Bot2($obj);
 			$bot->run();			
 		}
 		
@@ -211,15 +217,13 @@ class SiteController extends Controller
 		
 		$data_buy=array();
 		$data_sell=array();
-		$data_avg=array();
+		
 		
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item->dt)*1000+4*60*60*1000;
 			$data_buy[]=array($tm, (float)$item->buy);
 			$data_sell[]=array($tm, (float)$item->sell);
-			$data_avg[]=array($tm, ($item->buy + $item->sell)/2);
-			
 		}
 				
 		// Ïîêóïêè
@@ -234,8 +238,7 @@ class SiteController extends Controller
 		$this->render('chart',
 				array(
 						'data_buy'	=> 	json_encode($data_buy),
-						'data_sell'	=> 	json_encode($data_sell),
-						'data_avg'	=> 	json_encode($data_avg),
+						'data_sell'	=> 	json_encode($data_sell),						
 						'orders'	=>	$orders,
 						'status'	=>	$status,
 						));
