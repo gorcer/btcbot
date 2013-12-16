@@ -137,4 +137,40 @@ class Exchange extends CActiveRecord
 		return $buy;
 	}
 	
+	public static function getAll()
+	{
+		return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 09:00:02"', 'limit'=>10000000));
+	}
+	
+	public static function NOSQL_getAvg($name, $from, $to)
+	{
+		$key = 'nosql.exchange.getavg.'.$name.'-'.$from.'-'.$to;		
+		$val = Yii::app()->cache->get($key);
+		
+		if ($val) return $val;
+		
+		$list = Exchange::getAll();
+		$sum=0;
+		$cnt=0;
+		foreach($list as $item)
+		{
+			
+			if ($item->dt>=$from && $item->dt<=$to)
+			{
+				$sum+=$item->$name;
+				$cnt++;
+			}
+			elseif ($item->dt > $to)
+				break;
+		}
+		if ($cnt>0)
+			$val = $sum/$cnt;
+		else 
+			$val=false;
+		Yii::app()->cache->set($key, $val, 60*60);
+		
+		
+		return ($val);
+	}
+	
 }

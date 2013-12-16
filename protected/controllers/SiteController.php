@@ -152,6 +152,9 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{	
+		
+		$start = time();
+		
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
@@ -160,13 +163,19 @@ class SiteController extends Controller
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::model()->findAll(array('condition'=>'dt>"2013-12-09 08:00:02"', 'limit'=>20000000));
+		$exs = Exchange::getAll();
+		$cnt=0;
 		foreach($exs as $exchange)
 		{
+			$cnt++;
 			$bot = new Bot2($exchange);
 			$bot->run();			
 		}
 		
+		$end = time();
+		
+		echo '<b>Время выполнения: '.(($end-$start)/60).' мин.<br/>';
+		echo '<b>Сделано шагов: '.($cnt).'<br/>';
 		//$this->render('index');
 	}
 	

@@ -62,10 +62,12 @@ class Bot2 {
 			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // ¬округ каждой точки отмер€ем назад и вперед половину шага
 			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);
 			
+			
+			/*
 			$sql = "
 					SELECT 
-						avg(".$name.") as val						
-						/*".date('Y-m-d H:i:s', $curtime)." - ".$step_dt." - ".$period." from_unixtime(round(UNIX_TIMESTAMP(dt)/(".$step."))*".$step.", '%Y-%m-%d %H:%i:%s')as dtm*/					 
+						avg(".$name.") as val					
+											 
 					FROM `exchange`
 					where
 						dt >= '".$step_ut_f."' and dt <= '".$step_ut_t."'								
@@ -73,10 +75,12 @@ class Bot2 {
 					limit 1
 					";	
 			//if ($curtime == '2013-12-11 16:42:00')
-			//Dump::d($sql);
-			
+			//Dump::d($sql);			
 			$command = $connection->createCommand($sql);
 			$val=$command->queryScalar();	
+			*/
+			$val=Exchange::NOSQL_getAvg($name, $step_ut_f, $step_ut_t);
+			
 			if (!$val) return false;
 				
 			$list[]=array(
@@ -260,7 +264,7 @@ class Bot2 {
 		}
 		
 		//ѕеребираем в статистике периоды 8 минут, 15 мину, 30 мину, 1 час, 2 часов
-		$periods = array(8*60, 15*60, 30*60, 60*60, 2*60*60);
+		$periods = array(15*60, 30*60, 60*60, 2*60*60);
 		$tracks=array();
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
