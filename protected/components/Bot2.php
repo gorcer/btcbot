@@ -150,7 +150,7 @@ class Bot2 {
 			// Если есть долгосрочное падение, не покупать 
 				case '---':								// \\\
 							if ($track['period']>self::long_time) {
-								Log::AddText(0, 'Замечено долгосрочное падение в течении '.($track['period']/60).' мин., не покупаем');
+								Log::AddText($this->curtime, 'Замечено долгосрочное падение в течении '.($track['period']/60).' мин., не покупаем');
 								return false;								
 							}
 							break;				

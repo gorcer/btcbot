@@ -139,7 +139,7 @@ class Exchange extends CActiveRecord
 	
 	public static function getAll()
 	{
-		return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 09:00:02"', 'limit'=>10000000));
+		return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 10:00:02"', 'limit'=>10000000));
 	}
 	
 	public static function NOSQL_getAvg($name, $from, $to)
