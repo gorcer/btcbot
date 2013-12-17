@@ -198,7 +198,7 @@ class Bot2 {
 		{	 
 		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
 		$this->balance-=$price;
-		Log::AddText($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>');
+		Log::Add($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
 		return(true);
 		}
 		
@@ -210,7 +210,7 @@ class Bot2 {
 		if ($order=Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id))
 		{
 			$price = $this->current_exchange->sell*$btc->count*(1-self::fee);			
-			Log::AddText($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $btc->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>');
+			Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $btc->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>', 1);
 			$this->total_income+=$price-$btc->summ;
 			return(true);
 		}
@@ -255,14 +255,14 @@ class Bot2 {
 		// Есть ли деньги
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
 		{
-			Log::AddText($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			Log::Add($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
 			return false;
 		}
 		
 		// Если текущая цена выше средней не покупаем		
 		if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
 		{
-			Log::AddText($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
+			Log::Add($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
 			return false;
 		}
 		
@@ -272,8 +272,8 @@ class Bot2 {
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
-								 Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-								 Dump::d($tracks);
+								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								// Dump::d($tracks);
 								
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
@@ -320,7 +320,7 @@ class Bot2 {
 		// Если текущая цена ниже средней не продаем
 		if ($this->avg_sell>$this->current_exchange->sell)
 		{
-			Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
+			//Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
 			return false;
 		}		
 		
@@ -357,7 +357,7 @@ class Bot2 {
 			if ($income < self::min_income)
 			{
 				if ($income>0)
-				Log::AddText($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' купил за '.$btc->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
+				Log::Add($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' купил за '.$btc->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
 				
 				//Dump::d($btc->attributes);
 				continue;
