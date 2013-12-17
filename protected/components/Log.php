@@ -6,10 +6,10 @@ class Log {
 	{
 		$cdt = date('Y-m-d H:i:s');
 		
-		$fn = 'log.txt';
-		$fn_all = 'log_all.txt';
+		$fn = 'log.html';
+		$fn_all = 'log_all.html';
 		
-		$text=  '<i>'.$cdt.'</i> : ['.date('Y-m-d H:i:s', $dt).']'.$data.'<br/>';
+		$text=  '<i>'.$cdt.'</i> : ['.date('Y-m-d H:i:s', $dt).'] '.$data.'<br/>';
 		
 		if ($priority == 1)
 		file_put_contents($fn, $text, FILE_APPEND);
