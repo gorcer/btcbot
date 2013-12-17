@@ -109,16 +109,126 @@ class Order extends CActiveRecord
 	}
 	public static function makeOrder($exchange, $cnt, $type, $btc_id=false)
 	{
+		
+		// -
+		/*
+		 * array
+				(
+				    'success' => 1
+				    'return' => array
+				    (
+				        'received' => 0
+				        'remains' => 0.01
+				        'order_id' => 87715140
+				        'funds' => array
+				        (
+				            'usd' => 0
+				            'btc' => 0.077844
+				            'ltc' => 0
+				            'nmc' => 0
+				            'rur' => 4343.61904536
+				            'eur' => 0
+				            'nvc' => 0
+				            'trc' => 0
+				            'ppc' => 0
+				            'ftc' => 0
+				            'xpm' => 0
+				        )
+				    )
+				) 
+				
+				
+				array
+				(
+				    'success' => 1
+				    'return' => array
+				    (
+				        'received' => 0.01
+				        'remains' => 0
+				        'order_id' => 0
+				        'funds' => array
+				        (
+				            'usd' => 0
+				            'btc' => 0.087824
+				            'ltc' => 0
+				            'nmc' => 0
+				            'rur' => 4101.10904536
+				            'eur' => 0
+				            'nvc' => 0
+				            'trc' => 0
+				            'ppc' => 0
+				            'ftc' => 0
+				            'xpm' => 0
+				        )
+				    )
+				) 
+
+		 */
+		
+		
+		$BTCeAPI = new BTCeAPI();
+		try {		
+		
+		//$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', BTCeAPI::DIRECTION_BUY, $exchange->$type);
+		$btce = array
+				(
+				    'success' => 1,
+				    'return' => array
+				    (
+				        'received' => 0.01,
+				        'remains' => 0,
+				        'order_id' => 0,
+				        'funds' => array
+				        (				            
+				            'btc' => 0.087824,
+				            'rur' => 4101.10904536,				            
+				        )
+				    )
+				) ;
+			
+		Dump::d($btce);
+		} catch(BTCeAPIInvalidParameterException $e) {			
+			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$e->getMessage());
+			return false;			
+		} catch(BTCeAPIException $e) {
+			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$e->getMessage());
+			return false;
+		}
+		
+		// Ошибка создания ордера
+		if($btce['success'] == 0)
+		{
+			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$btce['error']);
+			return false;
+		}
+		
 		$order = new Order();
-		$order->price = $exchange->buy;
+		$order->id = $btce['return']['order_id'];
+		$order->price = $exchange->$type;
 		$order->count = $cnt;
 		$order->fee = Bot2::fee;
-		$order->summ = $cnt*$exchange->buy;
+		$order->summ = $cnt*$exchange->$type;
 		$order->type = $type;
 		$order->create_dtm = $exchange->dt;
+		
 		if ($btc_id) $order->btc_id = $btc_id;
 		
-		return $order->save();		
+		// Если сразу купили
+		if($btce['return']['received'])
+			$order->close($exchange->dt);
+		
+		if (!$order->save()) return false;	
+		
+		$result['order']=$order;
+		$result['balance_btc']=$btce['return']['funds']['btc'];
+		$result['balance']=$btce['return']['funds']['rur'];
+		return $result;		
+	}
+	
+	public function Close($dtm)
+	{
+		$this->close_dtm = $dtm;
+		$this->status='close';
 	}
 	
 	

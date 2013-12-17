@@ -110,10 +110,7 @@ class SiteController extends Controller
 	public function actionCron()
 	{
 		
-		$BTCeAPI = new BTCeAPI(
-				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
-				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
-		);
+		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
 		
@@ -133,10 +130,7 @@ class SiteController extends Controller
 	public function actionRun()
 	{
 	
-		$BTCeAPI = new BTCeAPI(
-				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
-				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
-		);
+		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
 	/*	
@@ -199,27 +193,17 @@ class SiteController extends Controller
 	
 	public function actionBuy()
 	{
-	die();
-	
-		$BTCeAPI = new BTCeAPI(
-				/*API KEY: */ 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H',
-				/*API SECRET: */ 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66'
-		);
+		$BTCeAPI = new BTCeAPI();
+		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $ticker['ticker'];
 		
-		// Making an order
-		try {
-			/*
-			 * CAUTION: THIS IS COMMENTED OUT SO YOU CAN READ HOW TO DO IT!
-			*/
-			// $BTCeAPI->makeOrder(---AMOUNT---, ---PAIR---, BTCeAPI::DIRECTION_BUY/BTCeAPI::DIRECTION_SELL, ---PRICE---);
-			// Example: to buy a bitcoin for $100
-			 $BTCeAPI->makeOrder(0.01, 'btc_rur', BTCeAPI::DIRECTION_BUY, 22000);
-			 
-		} catch(BTCeAPIInvalidParameterException $e) {
-			echo $e->getMessage();
-		} catch(BTCeAPIException $e) {
-			echo $e->getMessage();
-		}
+		$exchange = new Exchange();
+		$exchange->buy = $ticker['buy'];
+		$exchange->sell = $ticker['sell'];
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		
+		$bot = new Bot2($exchange);
+		$bot->buy();
 	}
 	
 	public function actionChart()
