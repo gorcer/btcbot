@@ -122,11 +122,12 @@ class SiteController extends Controller
 		$exchange->sell = $ticker['sell'];
 		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		
-		$exchange->save();
-/*
-		$bot = new Bot();
-		$bot->runTest();
-		*/
+		if ($exchange->save())
+		{
+			$bot = new Bot2($exchange);
+			$bot->run();
+		}
+		
 	}
 	
 	public function actionRun()
@@ -149,6 +150,17 @@ class SiteController extends Controller
 		$bot->NeedBuy($ticker['updated']);
 		$this->render('index');
 		*/
+	}
+	
+	public function actionClear() {
+		
+		Yii::app()->cache->flush();
+		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
+		Status::setParam('balance', 5000);
+		Status::setParam('balance_btc', 0);
+		
 	}
 	
 	public function actionTest()
@@ -201,7 +213,7 @@ class SiteController extends Controller
 			*/
 			// $BTCeAPI->makeOrder(---AMOUNT---, ---PAIR---, BTCeAPI::DIRECTION_BUY/BTCeAPI::DIRECTION_SELL, ---PRICE---);
 			// Example: to buy a bitcoin for $100
-			 $BTCeAPI->makeOrder(0.01, 'btc_rur', BTCeAPI::DIRECTION_BUY, 29298.99);
+			 $BTCeAPI->makeOrder(0.01, 'btc_rur', BTCeAPI::DIRECTION_BUY, 22000);
 			 
 		} catch(BTCeAPIInvalidParameterException $e) {
 			echo $e->getMessage();

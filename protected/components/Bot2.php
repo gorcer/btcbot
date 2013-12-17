@@ -322,8 +322,7 @@ class Bot2 {
 		{
 			Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
 			return false;
-		}
-		
+		}		
 		
 		//Перебираем периоды 9, 15, 30 минут, 1 час
 		$periods = array(9*60, 15*60, 30*60, 60*60);
