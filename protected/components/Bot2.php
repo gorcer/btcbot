@@ -9,8 +9,8 @@
  */
 class Bot2 {
 	
-	private $current_exchange;
-	private $curtime;
+	public $current_exchange;
+	public $curtime;
 	private $balance;
 	private $balance_btc;
 	private $order_cnt;
@@ -18,6 +18,7 @@ class Bot2 {
 	private $imp_dif; // Видимость различий, при превышении порога фиксируются изменения
 	private $avg_buy; // Средняя цена покупки
 	private $avg_sell;// Средняя цена продажи
+	private static $self=false;
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	const min_buy = 0.01; // Мин. сумма покупки
@@ -26,10 +27,13 @@ class Bot2 {
 	const min_buy_interval = 3600; // Мин. интервал совершения покупок = 60 мин.
 	const min_income = 5; // Мин. доход в рублях
 	const long_time =  1800; // Понятие долгосрочный период - больше 30 минут
+	const order_ttl = 0; // 180
 	
-	
-	public function __construct($exchange)
+	public function __construct($exchange=false)
 	{
+		if (!$exchange)
+			$exchange = Exchange::getLast();			
+			
 		$this->current_exchange = $exchange;
 		$this->curtime = strtotime($exchange->dt);
 		
@@ -42,8 +46,16 @@ class Bot2 {
 		
 		$from = date('Y-m-d H:i:s', time()-60*60*24*7);
 		$this->avg_buy = Exchange::getAvg('buy', $from,  date('Y-m-d H:i:s', $this->curtime));
-		$this->avg_sell = Exchange::getAvg('sell', $from,  date('Y-m-d H:i:s', $this->curtime));
+		$this->avg_sell = Exchange::getAvg('sell', $from,  date('Y-m-d H:i:s', $this->curtime));		
 		
+		self::$self = $this;
+	}
+	
+	public static function get_Instance()
+	{
+		if (!self::$self)
+			self::$self = new Bot2();
+		return self::$self;
 	}
 	
 	/**
@@ -190,52 +202,80 @@ class Bot2 {
 		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
 	}
 	
-	public function Buy()
+	/**
+	 * Подготовка к покупке (создание ордера, записей в бд)
+	 * @return boolean
+	 */
+	public function startBuy()
 	{
-		$result = Order::makeOrder($this->current_exchange, self::buy_value, 'buy');
+		// Создаем ордер
+		$order = Order::makeOrder($this->current_exchange, self::buy_value, 'buy');
 		
-		if ($result)
-		{	 
-		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
-		$this->balance=$result['balance'];
-		$this->balance_btc=$result['balance_btc'];
-		
-		if ($result['order']->status == 'open')
-		{
-			Log::Add($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
-		}
-		else {
-			Btc::buy($result['order']);
-			Log::Add($this->curtime, '<b>Совершена покупка '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
-		}
-		
+		// Если создался
+		if ($order)
+		{	
+			// Если создан ордер
+			if ($order->status == 'open')
+			{
+				$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
+				Log::Add($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+			}
+			// Если сразу куплено
+			else {
+				$this->completeBuy($order);
+			}			
 		return(true);
 		}
 		
 		return false;
 	}
 	
-	private function Sell($btc)
+	/**
+	 * Подготовка к продаже (создание ордера, записей в бд)
+	 * @return boolean
+	 */
+	public function startSell($btc)
 	{	
-		$result = Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id);
+		$order = Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id);		
 		
-		
-		if ($result)
+		if ($order)
 		{	
 			$price = $this->current_exchange->sell*$btc->count*(1-self::fee);	
 			
-			if ($result['order']->status == 'open')
+			if ($order->status == 'open')
 				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $btc->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>', 1);
 			else
 			{
-				Btc::sell($result['order']);
-				Log::Add($this->curtime, '<b>Совершена продажа (№'.$btc->id.')  '. $btc->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>', 1);
+				$this->completeSell($order);
+			
 			}
 			$this->total_income+=$price-$btc->summ;
 			return(true);
 		}
 	
 		return false;
+	}
+	
+	public function completeBuy($order)
+	{
+		$order->close($this->current_exchange->dt);
+		$order->save();
+		Btc::buy($order);
+		
+		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
+		Log::Add($this->curtime, '<b>Совершена покупка '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+		$this->order_cnt++;
+	}
+	
+	public function completeSell($order)
+	{
+		$order->close($this->current_exchange->dt);
+		$order->save();		
+		Btc::sell($order);		
+		
+		$price = $this->current_exchange->sell*$order->count*(1+self::fee);
+		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->btc_id.')  '. $order->count.' ед. (куплено за '.$order->summ.') за '.$price.', доход = '.($price-$order->summ).' руб.</b>', 1);
+		$this->order_cnt++;
 	}
 	
 	public function NeedBuyRandom()
@@ -313,7 +353,7 @@ class Bot2 {
 		if (sizeof($tracks)>0)
 		{
 			// Покупаем
-			if ($this->buy())			
+			if ($this->startBuy())			
 			// Резервируем время покупки
 				foreach($tracks as $track)	
 				{
@@ -383,7 +423,7 @@ class Bot2 {
 				continue;
 			}
 			
-			$this->sell($btc);
+			$this->startSell($btc);
 			//Dump::d($tracks);
 		}
 		
@@ -392,42 +432,42 @@ class Bot2 {
 	
 
 	public function checkOrders()
-	{
+	{	
+		// Получаем активные ордеры
+		$active_orders = Order::getActiveOrders();		
+		// Получаем все открытые ордеры по бд
 		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
-					
+		Dump::d($active_orders);
 		foreach($orders as $order)
-		{
-			$order_status = 'closed';
-			
-			if ($order->type == 'buy')
+		{		
+			Dump::d($order->id);
+			if (isset($active_orders[$order->id]))
 			{
-				// @todo - если не ОК - вернуть деньги, заказ закрыть
-				// @todo - получить из ЛК реальный баланс
-					
-				// проверяем состояние заказа через API
-				// допустим все ок			
-				$order->status='close';
-				$order->close_dtm=date("Y-m-d H:i:s", $this->curtime);
-				$order->update(array('status', 'close_dtm'));
 				
-				Btc::buy($order);			
+		
+				// Если ордер висит более 3 минут - удаляем
+				if ($active_orders[$order->id]['timestamp_created']<$this->curtime-self::order_ttl)
+				{
+					Log::AddText($this->curtime, 'Отменяем ордер №'.$order->id, 1);
+					//Отменить ордер
+					$order->cancel();
+					continue;
+				}
+			}			
+			
+			// Если заказ не найден, значит он успешно выполнен			
+			if ($order->type == 'buy')
+			{				
+				$this->completeBuy($order);
 				
+				/*
+				 * @todo баланс обновлять из ордера
 				$this->balance_btc+=$order->count; 
 				$this->order_cnt++;
+				*/
 			} elseif ($order->type == 'sell')
 			{
-				$order->status='close';
-				$order->close_dtm=date("Y-m-d H:i:s", $this->curtime);
-				$order->update(array('status', 'close_dtm'));
-				
-				if ($order->btc_id)
-				{					
-					Btc::sell($order);
-				}			
-				
-				$this->balance_btc-=$order->count;
-				$this->balance+=$order->summ;
-				$this->order_cnt++;
+				$this->completeSell($order);
 				
 			}
 		}
@@ -452,5 +492,14 @@ class Bot2 {
 		
 	}
 	
+	public function setBalance($summ)
+	{
+		$this->balance = $summ;
+	}
+
+	public function setBalanceBtc($summ)
+	{
+		$this->balance_btc = $summ;
+	}
 	
 }

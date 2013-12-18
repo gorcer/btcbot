@@ -167,10 +167,11 @@ class Order extends CActiveRecord
 		
 		
 		$BTCeAPI = new BTCeAPI();
-		try {		
+		try {
+				
+		$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);
 		
-		//$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', BTCeAPI::DIRECTION_BUY, $exchange->$type);
-		$btce = array
+		/*$btce = array
 				(
 				    'success' => 1,
 				    'return' => array
@@ -184,9 +185,9 @@ class Order extends CActiveRecord
 				            'rur' => 4101.10904536,				            
 				        )
 				    )
-				) ;
+				) ;*/
 			
-		Dump::d($btce);
+		
 		} catch(BTCeAPIInvalidParameterException $e) {			
 			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$e->getMessage());
 			return false;			
@@ -209,20 +210,25 @@ class Order extends CActiveRecord
 		$order->fee = Bot2::fee;
 		$order->summ = $cnt*$exchange->$type;
 		$order->type = $type;
+		$order->status = 'open';
 		$order->create_dtm = $exchange->dt;
+		
 		
 		if ($btc_id) $order->btc_id = $btc_id;
 		
 		// Если сразу купили
-		if($btce['return']['received'])
-			$order->close($exchange->dt);
+		//if($btce['return']['received'])
+		//	$order->close($exchange->dt);
 		
-		if (!$order->save()) return false;	
+		if (!$order->save()) return false;
 		
-		$result['order']=$order;
-		$result['balance_btc']=$btce['return']['funds']['btc'];
-		$result['balance']=$btce['return']['funds']['rur'];
-		return $result;		
+		
+		
+		$bot = Bot2::get_Instance();
+		$bot->setBalance($btce['return']['funds']['rur']);
+		$bot->setBalanceBtc($btce['return']['funds']['btc']);		
+		
+		return $order;		
 	}
 	
 	public function Close($dtm)
@@ -231,5 +237,65 @@ class Order extends CActiveRecord
 		$this->status='close';
 	}
 	
+	public static function getActiveOrders()
+	{
+		$BTCeAPI = new BTCeAPI();
+		
+		/*
+		 array
+				(
+				    'success' => 1
+				    'return' => array
+				    (
+				        88287800 => array
+				        (
+				            'pair' => 'btc_rur'
+				            'type' => 'buy'
+				            'amount' => 0.01
+				            'rate' => 19157.54
+				            'timestamp_created' => 1387344412
+				            'status' => 0
+				        )
+				    )
+				) 
+		 */
+		
+		
+		try {
+		$orders = $BTCeAPI->apiQuery('ActiveOrders', array('pair'=>'btc_rur'));
+		} catch(BTCeAPIException $e) {
+			Log::AddText(0, 'Не удалось получить список заказов '.$e->getMessage());
+			return false;
+		}
+		
+		
+		return($orders['return']);
+	}
+	
+
+	public function cancel()
+	{
+		$bot = Bot2::get_Instance();
+		
+		$BTCeAPI = new BTCeAPI();
+		try {
+		$res = $BTCeAPI->apiQuery('CancelOrder', array('order_id'=>$this->id));
+		} catch(BTCeAPIException $e) {
+			Log::AddText( $bot->curtime, 'Не удалось удалить ордер '.$e->getMessage());
+			return false;
+		}
+		Dump::d($res);
+		if ($res['success'] == 1)
+		{
+			
+			$bot->setBalance($res['return']['funds']['rur']);
+			$bot->setBalanceBtc($res['return']['funds']['btc']);
+			
+			$this->status = 'cancel';
+			$this->close_dtm = $bot->current_exchange->dt;
+			$this->save();
+			Dump::d($this->errors);
+		}
+	}
 	
 }

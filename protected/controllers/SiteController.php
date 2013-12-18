@@ -193,17 +193,50 @@ class SiteController extends Controller
 	
 	public function actionBuy()
 	{
+		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
 		
 		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy'];
+		$exchange->buy = $ticker['buy']-10000;
 		$exchange->sell = $ticker['sell'];
 		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		
 		$bot = new Bot2($exchange);
-		$bot->buy();
+		$bot->startBuy();
+	}
+	
+	public function actionSell()
+	{
+	
+		$BTCeAPI = new BTCeAPI();
+		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $ticker['ticker'];
+	
+		$exchange = new Exchange();
+		$exchange->buy = $ticker['buy'];
+		$exchange->sell = $ticker['sell']+10000;
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$btc = Btc::getLastBuy();
+		$bot = new Bot2($exchange);
+		$bot->startSell($btc);
+	}
+	
+	public function actionOrders()
+	{
+		$BTCeAPI = new BTCeAPI();
+		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $ticker['ticker'];
+	
+		$exchange = new Exchange();
+		$exchange->buy = $ticker['buy'];
+		$exchange->sell = $ticker['sell']+10000;
+		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$btc = Btc::getLastBuy();
+		$bot = new Bot2($exchange);
+		
+		$bot->checkOrders();
 	}
 	
 	public function actionChart()
