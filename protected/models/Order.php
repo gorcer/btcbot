@@ -111,7 +111,7 @@ class Order extends CActiveRecord
 	{
 		
 		// -
-		/*
+		/* @todo - сделать актуализацию баланса и расчет комиссии исходя из разницы балансов
 		 * array
 				(
 				    'success' => 1
@@ -169,9 +169,9 @@ class Order extends CActiveRecord
 		$BTCeAPI = new BTCeAPI();
 		try {
 				
-		$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);
+		//$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);
 		
-		/*$btce = array
+		$btce = array
 				(
 				    'success' => 1,
 				    'return' => array
@@ -185,7 +185,7 @@ class Order extends CActiveRecord
 				            'rur' => 4101.10904536,				            
 				        )
 				    )
-				) ;*/
+				) ;
 			
 		
 		} catch(BTCeAPIInvalidParameterException $e) {			
