@@ -164,28 +164,32 @@ class Order extends CActiveRecord
 				) 
 
 		 */
-		
+		$bot = Bot2::get_Instance();
 		
 		$BTCeAPI = new BTCeAPI();
 		try {
-				
-		//$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);
-		
-		$btce = array
+			
+			if (Bot2::real_trade)
+			  $btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);
+			else
+			{
+			$price = $cnt*$exchange->$type;
+			$btce = array
 				(
 				    'success' => 1,
 				    'return' => array
 				    (
-				        'received' => 0.01,
+				        'received' => $cnt,
 				        'remains' => 0,
 				        'order_id' => 0,
 				        'funds' => array
 				        (				            
-				            'btc' => 0.087824,
-				            'rur' => 4101.10904536,				            
+				            'btc' => $bot->balance_btc,
+				            'rur' => $bot->balance-$price,				            
 				        )
 				    )
 				) ;
+			}
 			
 		
 		} catch(BTCeAPIInvalidParameterException $e) {			
@@ -222,9 +226,6 @@ class Order extends CActiveRecord
 		
 		if (!$order->save()) return false;
 		
-		
-		
-		$bot = Bot2::get_Instance();
 		$bot->setBalance($btce['return']['funds']['rur']);
 		$bot->setBalanceBtc($btce['return']['funds']['btc']);		
 		

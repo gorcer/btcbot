@@ -11,8 +11,8 @@ class Bot2 {
 	
 	public $current_exchange;
 	public $curtime;
-	private $balance;
-	private $balance_btc;
+	public $balance;
+	public $balance_btc;
 	private $order_cnt;
 	private $total_income;
 	private $imp_dif; // Видимость различий, при превышении порога фиксируются изменения
@@ -23,11 +23,13 @@ class Bot2 {
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
-	const fee = 0; // Комиссия
+	const fee = 0.002; // Комиссия
 	const min_buy_interval = 3600; // Мин. интервал совершения покупок = 60 мин.
 	const min_income = 5; // Мин. доход в рублях
 	const long_time =  1800; // Понятие долгосрочный период - больше 30 минут
 	const order_ttl = 0; // 180
+	const real_trade = false;
+	
 	
 	public function __construct($exchange=false)
 	{
@@ -202,12 +204,20 @@ class Bot2 {
 		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
 	}
 	
+	private function virtualBuy()
+	{
+		
+	}
+	
 	/**
 	 * Подготовка к покупке (создание ордера, записей в бд)
 	 * @return boolean
 	 */
 	public function startBuy()
 	{
+		
+		
+		
 		// Создаем ордер
 		$order = Order::makeOrder($this->current_exchange, self::buy_value, 'buy');
 		
