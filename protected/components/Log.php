@@ -14,9 +14,9 @@ class Log {
 		if ($priority == 1)
 		file_put_contents($fn, $text, FILE_APPEND);
 				
-		file_put_contents($fn_all, $text, FILE_APPEND);
+		//file_put_contents($fn_all, $text, FILE_APPEND);
 		//if ($priority == 1)
-		//echo '<i>'.$dt.'</i> '.$data.'<br/>';
+		echo '<i>['.date('Y-m-d H:i:s', $dt).']</i> '.$data.'<br/>';
 	} 
 	
 	public static function AddText($tm, $data)

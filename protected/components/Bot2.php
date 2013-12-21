@@ -24,9 +24,9 @@ class Bot2 {
 	const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.01; // Сколько покупать
 	const fee = 0.002; // Комиссия
-	const min_buy_interval = 3600; // Мин. интервал совершения покупок = 60 мин.
-	const min_income = 5; // Мин. доход в рублях
-	const long_time =  1800; // Понятие долгосрочный период - больше 30 минут
+	const min_buy_interval = 86400; // Мин. интервал совершения покупок = 1 сутки
+	const min_income = 10; // Мин. доход в рублях
+	const long_time =  172800; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 0; // 180
 	const real_trade = false;
 	
@@ -42,7 +42,7 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 100;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
+		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
 		
 		$this->order_cnt=0;		
 		
@@ -204,9 +204,55 @@ class Bot2 {
 		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
 	}
 	
-	private function virtualBuy()
+
+	
+	public function virtualBuy($cnt)
 	{
+		$order = new Order();		
+		$order->price = $this->current_exchange->buy;
+		$order->count = $cnt;
+		$order->fee = self::fee;
+		$order->summ = $cnt*$this->current_exchange->buy;
+		$order->type = 'buy';
+		$order->status = 'close';
+		$order->create_dtm = $this->current_exchange->dt;		
+		$order->close_dtm = $this->current_exchange->dt;
 		
+		//Log::Add($this->curtime, '<b>Создана сделка на ПОКУПКУ '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$order->price.' руб.</b>', 1);
+		//if ($btc_id) $order->btc_id = $btc_id;
+		
+		$order->save();
+		$this->completeBuy($order);
+		$this->balance-=$cnt*$this->current_exchange->buy*(1+self::fee);
+		$this->balance_btc+=$cnt;
+
+		return true;
+	}
+	
+	public function virtualSell($btc)
+	{	
+		$order = new Order();
+		$order->price = $this->current_exchange->sell;
+		$order->count = $btc->count;
+		$order->fee = Bot2::fee;
+		$order->summ = $btc->count*$this->current_exchange->sell;
+		$order->type = 'sell';
+		$order->status = 'close';
+		$order->create_dtm = $this->current_exchange->dt;
+		$order->close_dtm = $this->current_exchange->dt;
+		
+		$price = $this->current_exchange->sell*$btc->count*(1-self::fee);
+		Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$btc->id.')  '. $btc->count.' ед. (куплено за '.$btc->summ.') за '.$price.', доход = '.($price-$btc->summ).' руб.</b>', 1);
+		
+		if ($btc->id) $order->btc_id = $btc->id;
+		
+		$order->save();
+		$this->completeSell($order);
+		
+		$this->balance+=$order->summ*(1-self::fee);
+		$this->balance_btc-=$btc->count;
+	
+		return true;
 	}
 	
 	/**
@@ -216,7 +262,8 @@ class Bot2 {
 	public function startBuy()
 	{
 		
-		
+		if (!self::real_trade) 
+			return $this->virtualBuy(self::buy_value);
 		
 		// Создаем ордер
 		$order = Order::makeOrder($this->current_exchange, self::buy_value, 'buy');
@@ -246,6 +293,10 @@ class Bot2 {
 	 */
 	public function startSell($btc)
 	{	
+		
+		if (!self::real_trade)
+			return $this->virtualSell($btc);
+		
 		$order = Order::makeOrder($this->current_exchange, $btc->count, 'sell', $btc->id);		
 		
 		if ($order)
@@ -319,7 +370,7 @@ class Bot2 {
 		$cache_key = 'last_buy';
 		$tm = Yii::app()->cache->get($cache_key);		
 		
-		if ($tm && $tm>$this->curtime && $lastBuy->price - $this->current_exchange->buy < $this->imp_dif) return false;
+		if ($tm && $tm>$this->curtime && $lastBuy && $lastBuy->price - $this->current_exchange->buy < $this->imp_dif) return false;
 		
 		
 		// Есть ли деньги
@@ -337,13 +388,16 @@ class Bot2 {
 		}
 		
 		//Перебираем в статистике периоды 15 мину, 30 мину, 1 час, 2 часов
-		$periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60);
+		//$periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60);
+		// На коротких сроках можно зарабатывать копейки - 5, 10 руб., а риски большие - можно вморозить 300 руб. на неопр. срок
+		
+		$periods = array(6*60*60, 12*60*60, 24*60*60, 36*60*60, );
 		$tracks=array();
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
-								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
-								// Dump::d($tracks);
+								 //Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								 //Dump::d($tracks);
 								
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
@@ -390,7 +444,7 @@ class Bot2 {
 		// Если текущая цена ниже средней не продаем
 		if ($this->avg_sell>$this->current_exchange->sell)
 		{
-			//Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
+			Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
 			return false;
 		}		
 		
@@ -409,7 +463,7 @@ class Bot2 {
 		
 		if (sizeof($tracks) == 0) return false;
 		
-		//Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
+		Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
 		
 		
 		//Смотрим что продать
@@ -429,7 +483,7 @@ class Bot2 {
 				if ($income>0)
 				Log::Add($this->curtime, 'Не продали (№'.$btc->id.'), доход слишком мал '.$income.' < '.self::min_income.' купил за '.$btc->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
 				
-				//Dump::d($btc->attributes);
+				
 				continue;
 			}
 			
@@ -443,6 +497,10 @@ class Bot2 {
 
 	public function checkOrders()
 	{	
+		
+		if (!self::real_trade) return;
+		
+		
 		// Получаем активные ордеры
 		$active_orders = Order::getActiveOrders();		
 		// Получаем все открытые ордеры по бд

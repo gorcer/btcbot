@@ -254,6 +254,7 @@ class SiteController extends Controller
 			$data_buy[]=array($tm, (float)$item['buy']);
 			$data_sell[]=array($tm, (float)$item['sell']);
 		}
+		
 				
 		// Покупки
 		$orders = Order::model()->findAll();
