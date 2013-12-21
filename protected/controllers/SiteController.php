@@ -241,7 +241,7 @@ class SiteController extends Controller
 	
 	public function actionChart()
 	{	
-		$exch = Exchange::model()->findAll();
+		$exch = Exchange::getAll();
 		
 		
 		$data_buy=array();
@@ -250,9 +250,9 @@ class SiteController extends Controller
 		
 		foreach($exch as $item)
 		{
-			$tm = strtotime($item->dt)*1000+4*60*60*1000;
-			$data_buy[]=array($tm, (float)$item->buy);
-			$data_sell[]=array($tm, (float)$item->sell);
+			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
+			$data_buy[]=array($tm, (float)$item['buy']);
+			$data_sell[]=array($tm, (float)$item['sell']);
 		}
 				
 		// Покупки
