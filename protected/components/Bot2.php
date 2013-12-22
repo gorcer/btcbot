@@ -25,9 +25,10 @@ class Bot2 {
 	const buy_value = 0.01; // —колько покупать
 	const fee = 0.002; //  омисси€
 	const min_buy_interval = 86400; // ћин. интервал совершени€ покупок = 1 сутки
+	const min_sell_interval = 86400; // ћин. интервал совершени€ продаж = 1 сутки
 	const min_income = 10; // ћин. доход в рубл€х
-	const long_time =  172800; // ѕон€тие долгосрочный период - больше 2 дней
-	const order_ttl = 0; // 180
+	const long_time =  86400; // ѕон€тие долгосрочный период - больше 2 дней
+	const order_ttl = 180; // 180
 	const real_trade = false;
 	
 	
@@ -42,7 +43,7 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 250;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // «десь по расчетам 1000 / 4, на столько должен изменитьс€ курс чтобы бот заметил отличи€
+		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // «десь по расчетам 1000 / 4, на столько должен изменитьс€ курс чтобы бот заметил отличи€
 		
 		$this->order_cnt=0;		
 		
@@ -242,12 +243,12 @@ class Bot2 {
 		$order->close_dtm = $this->current_exchange->dtm;
 		
 		$price = $this->current_exchange->sell*$buy->count*(1-self::fee);
-		Log::Add($this->curtime, '<b>—оздал сделку на продажу (є'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', доход = '.($price-$buy->summ).' руб.</b>', 1);
+		//Log::Add($this->curtime, '<b>—оздал сделку на продажу (є'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', доход = '.($price-$buy->summ).' руб.</b>', 1);
 		
 		if ($buy->id) $order->btc_id = $buy->id;
 		
 		$order->save();
-		$this->completeSell($order);
+		$this->comple	teSell($order);
 		
 		$this->balance+=$order->summ*(1-self::fee);
 		$this->balance_btc-=$buy->count;
@@ -392,7 +393,7 @@ class Bot2 {
 		//$periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60);
 		// Ќа коротких сроках можно зарабатывать копейки - 5, 10 руб., а риски большие - можно вморозить 300 руб. на неопр. срок
 		
-		$periods = array(6*60*60, 12*60*60, 24*60*60, 36*60*60, );
+		$periods = array(60*60, 6*60*60, 12*60*60, 24*60*60, 36*60*60, );
 		$tracks=array();
 		foreach($periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
@@ -450,15 +451,22 @@ class Bot2 {
 		}	
 		
 		// ѕровер€ем была ли уже продажа за последнее врем€, если была и цена была более выгодна€ чем текуща€ то не продаем
+		
 		$lastSell = Sell::getLast();
 		if ($lastSell)
 		{
-			$tm = strtotime($lastSell->dtm)+self::min_buy_interval;
-			if ($tm>$this->curtime && $this->current_exchange->sell - $lastSell->price > $this->imp_dif) return false;
+			$tm = strtotime($lastSell->dtm)+self::min_buy_interval;			
+			//Log::Add($curtime, 'ѕровер€ем была ли продажа, ждем с '.$lastSell->dtm.' до '.date('Y-m-d H:i:s', $tm).' текуща€ цена '.$this->current_exchange->sell.' меньше текущей');
+			if ($tm>$this->curtime && $this->current_exchange->sell - $lastSell->price < $this->imp_dif) 
+			{
+				//Log::Add($curtime, '”же была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текуща€ цена '.$this->current_exchange->sell.' меньше текущей');
+				return false;
+			}
 		}
 		
 		//ѕеребираем периоды 9, 15, 30 минут, 1 час
-		$periods = array(/*9*60, 15*60, 30*60, 60*60*/ 2*60*60, 4*60*60);
+		$periods = array(/*9*60, 15*60,*/ 30*60, 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
+		//$periods = array(60*60, 6*60*60, 12*60*60, 24*60*60, 36*60*60, );
 		$tracks=array();
 		foreach($periods as $period)
 		{
@@ -497,6 +505,7 @@ class Bot2 {
 			}
 			
 			$this->startSell($buy);
+			break;
 			//Dump::d($tracks);
 		}
 		

@@ -145,7 +145,7 @@ class Exchange extends CActiveRecord
 						dtm, buy, sell		
 					FROM `exchange`
 					where
-						dtm >= '2013-12-09 00:00:02'
+						dtm >= '2013-12-09 00:00:00'
 					order by dtm
 					limit 100000000 
 					";
