@@ -43,7 +43,7 @@ class Bot {
 		$this->balance_btc = Status::getParam('balance_btc');
 		
 		$this->order_cnt=0;		
-		$this->bought = Btc::model()->with('sell')->findAll();	
+		$this->bought = Buy::model()->with('sell')->findAll();	
 		$this->total_income=Sell::getTotalIncome();
 	}
 	
@@ -145,7 +145,7 @@ class Bot {
 		$exlen = sizeof($exdata);
 		$prev_stok_direction=0;// Предыдущее направление
 		$stok_direction=0; 	   // Текущее направление		
-		$lastbuy = Btc::getLastBuy(); // Получаем дату последней продажи
+		$lastbuy = Buy::getLast(); // Получаем дату последней продажи
 		$canbuy=false;
 		
 		for($i=0;$i<$exlen;$i++)
@@ -199,7 +199,7 @@ class Bot {
 				if ($this->balance-$price<0) break;
 	
 				// Покупаем
-				$btc = new Btc();
+				$btc = new Buy();
 				$btc->dtm = $exitem['dt'];
 				$btc->count = $this->buy_value;
 				$btc->price = $exitem['buy'];

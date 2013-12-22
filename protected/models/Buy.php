@@ -1,9 +1,9 @@
 <?php
 
 /**
- * This is the model class for table "btc".
+ * This is the model class for table "buy".
  *
- * The followings are the available columns in table 'btc':
+ * The followings are the available columns in table 'buy':
  * @property integer $id
  * @property string $count
  * @property string $price
@@ -11,12 +11,12 @@
  * @property string $dtm
  * @property integer $sold
  */
-class Btc extends CActiveRecord
+class Buy extends CActiveRecord
 {
 	/**
 	 * Returns the static model of the specified AR class.
 	 * @param string $className active record class name.
-	 * @return Btc the static model class
+	 * @return Buy the static model class
 	 */
 	public static function model($className=__CLASS__)
 	{
@@ -28,7 +28,7 @@ class Btc extends CActiveRecord
 	 */
 	public function tableName()
 	{
-		return 'btc';
+		return 'buy';
 	}
 
 	/**
@@ -98,9 +98,9 @@ class Btc extends CActiveRecord
 		));
 	}
 	
-	public static function getLastBuy()
+	public static function getLast()
 	{
-		$buy = Btc::model()->find(array(
+		$buy = Buy::model()->find(array(
 				'order' => 'dtm desc'			
 		));
 		return $buy;		
@@ -120,30 +120,17 @@ class Btc extends CActiveRecord
 		$this->update(array('sold'));
 	}
 	
-	public static function buy($order)
+	// Совершение покупки
+	public static function make($order)
 	{
 		// Покупаем
-		$btc = new Btc();
-		$btc->dtm = $order->close_dtm;
-		$btc->count = $order->count;
-		$btc->price =$order->price;
-		$btc->summ = $order->summ;
-		$btc->save();
+		$buy = new Buy();
+		$buy->dtm = $order->close_dtm;
+		$buy->count = $order->count;
+		$buy->price =$order->price;
+		$buy->summ = $order->summ;
+		$buy->save();
 	}
 	
-	public static function sell($order)
-	{
-		$btc = Btc::model()->findByPk($order->btc_id);
-		$btc->sold=1;
-		$btc->update(array('sold'));
-		
-		$sell = new Sell();
-		$sell->btc_id = $btc->id;
-		$sell->price = $order->price;
-		$sell->count = $order->count;
-		$sell->summ = $order->summ;
-		$sell->income = $order->summ-$btc->summ;
-		$sell->save();
-	
-	}
+
 }

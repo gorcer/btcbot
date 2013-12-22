@@ -109,5 +109,31 @@ class Sell extends CActiveRecord
 		return($command->queryScalar());
 	}
 	
+	public static function getLast()
+	{
+		$buy = Sell::model()->find(array(
+				'order' => 'dtm desc'
+		));
+		return $buy;
+	}
+	
+	// Совершение продажи
+	public static function make($order)
+	{
+		$buy = Buy::model()->findByPk($order->btc_id);
+		$buy->sold=1;
+		$buy->update(array('sold'));
+	
+		$sell = new Sell();
+		$sell->btc_id = $buy->id;
+		$sell->price = $order->price;
+		$sell->count = $order->count;
+		$sell->summ = $order->summ;
+		$sell->income = $order->summ-$buy->summ;
+		$sell->dtm = $order->close_dtm;
+		$sell->save();
+	
+	}
+	
 	
 }

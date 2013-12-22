@@ -4,7 +4,7 @@
  * This is the model class for table "exchange".
  *
  * The followings are the available columns in table 'exchange':
- * @property string $dt
+ * @property string $dtm
  * @property string $buy
  * @property string $sell
  */
@@ -40,7 +40,7 @@ class Exchange extends CActiveRecord
 			array('buy, sell', 'length', 'max'=>30),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('dt, buy, sell', 'safe', 'on'=>'search'),
+			array('dtm, buy, sell', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -61,7 +61,7 @@ class Exchange extends CActiveRecord
 	public function attributeLabels()
 	{
 		return array(
-			'dt' => 'Dt',
+			'dtm' => 'Dt',
 			'buy' => 'Buy',
 			'sell' => 'Sell',
 		);
@@ -78,7 +78,7 @@ class Exchange extends CActiveRecord
 
 		$criteria=new CDbCriteria;
 
-		$criteria->compare('dt',$this->dt,true);
+		$criteria->compare('dtm',$this->dtm,true);
 		$criteria->compare('buy',$this->buy,true);
 		$criteria->compare('sell',$this->sell,true);
 
@@ -91,11 +91,11 @@ class Exchange extends CActiveRecord
 	{
 		$connection = Yii::app()->db;
 		$sql = "
-				select dt, buy, sell
+				select dtm, buy, sell
 				from exchange
 				where
-				dt>'".$dt."'
-				order by dt 
+				dtm>'".$dt."'
+				order by dtm 
 				";
 		
 		$command = $connection->createCommand($sql);
@@ -105,7 +105,7 @@ class Exchange extends CActiveRecord
 	public static function getTestData()
 	{
 		
-		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Status::setParam('balance', 1000);
 		
@@ -132,7 +132,7 @@ class Exchange extends CActiveRecord
 	public static function getLast()
 	{
 		$buy = Exchange::model()->find(array(
-				'order' => 'dt desc'
+				'order' => 'dtm desc'
 		));
 		return $buy;
 	}
@@ -142,11 +142,11 @@ class Exchange extends CActiveRecord
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
-						dt, buy, sell		
+						dtm, buy, sell		
 					FROM `exchange`
 					where
-						dt >= '2013-12-09 00:00:02'
-					order by dt
+						dtm >= '2013-12-09 00:00:02'
+					order by dtm
 					limit 100000000 
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
@@ -171,12 +171,12 @@ class Exchange extends CActiveRecord
 		foreach($list as $item)
 		{
 			
-			if ($item['dt']>=$from && $item['dt']<=$to)
+			if ($item['dtm']>=$from && $item['dtm']<=$to)
 			{
 				$sum+=$item[$name];
 				$cnt++;
 			}
-			elseif ($item['dt'] > $to)
+			elseif ($item['dtm'] > $to)
 				break;
 		}
 		if ($cnt>0)
@@ -198,8 +198,8 @@ class Exchange extends CActiveRecord
 		
 					FROM `exchange`
 					where
-						dt >= '".$from."' and dt <= '".$to."'
-					order by dt
+						dtm >= '".$from."' and dtm <= '".$to."'
+					order by dtm
 					limit 1
 					";
 		//if ($curtime == '2013-12-11 16:42:00')

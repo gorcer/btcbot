@@ -117,7 +117,7 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		
 		if ($exchange->save())
 		{
@@ -149,7 +149,7 @@ class SiteController extends Controller
 	public function actionClear() {
 		
 		Yii::app()->cache->flush();
-		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Status::setParam('balance', 5000);
@@ -163,7 +163,7 @@ class SiteController extends Controller
 		$start = time();
 		
 		Yii::app()->cache->flush();
-		Yii::app()->db->createCommand()->truncateTable(Btc::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Status::setParam('balance', 5000);
@@ -175,7 +175,7 @@ class SiteController extends Controller
 		foreach($exs as $exchange)
 		{
 			$obj = new stdClass;
-			$obj->dt = $exchange['dt'];
+			$obj->dtm = $exchange['dtm'];
 			$obj->buy = $exchange['buy'];
 			$obj->sell = $exchange['sell'];
 			
@@ -201,7 +201,7 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy']-10000;
 		$exchange->sell = $ticker['sell'];
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		
 		$bot = new Bot2($exchange);
 		$bot->startBuy();
@@ -217,8 +217,8 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell']+10000;
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		$btc = Btc::getLastBuy();
+		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$btc = Buy::getLast();
 		$bot = new Bot2($exchange);
 		$bot->startSell($btc);
 	}
@@ -232,8 +232,8 @@ class SiteController extends Controller
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell']+10000;
-		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		$btc = Btc::getLastBuy();
+		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$btc = Buy::getLast();
 		$bot = new Bot2($exchange);
 		
 		$bot->checkOrders();
@@ -241,6 +241,7 @@ class SiteController extends Controller
 	
 	public function actionChart()
 	{	
+		$buy = new Buy();
 		$exch = Exchange::getAll();
 		
 		
@@ -250,7 +251,7 @@ class SiteController extends Controller
 		
 		foreach($exch as $item)
 		{
-			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
+			$tm = strtotime($item['dtm'])*1000+4*60*60*1000;
 			$data_buy[]=array($tm, (float)$item['buy']);
 			$data_sell[]=array($tm, (float)$item['sell']);
 		}

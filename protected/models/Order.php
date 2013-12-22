@@ -193,17 +193,17 @@ class Order extends CActiveRecord
 			
 		
 		} catch(BTCeAPIInvalidParameterException $e) {			
-			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$e->getMessage());
+			Log::AddText(strtotime($exchange->dtm), 'Не удалось создать ордер '.$e->getMessage());
 			return false;			
 		} catch(BTCeAPIException $e) {
-			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$e->getMessage());
+			Log::AddText(strtotime($exchange->dtm), 'Не удалось создать ордер '.$e->getMessage());
 			return false;
 		}
 		
 		// Ошибка создания ордера
 		if($btce['success'] == 0)
 		{
-			Log::AddText(strtotime($exchange->dt), 'Не удалось создать ордер '.$btce['error']);
+			Log::AddText(strtotime($exchange->dtm), 'Не удалось создать ордер '.$btce['error']);
 			return false;
 		}
 		
@@ -215,14 +215,14 @@ class Order extends CActiveRecord
 		$order->summ = $cnt*$exchange->$type;
 		$order->type = $type;
 		$order->status = 'open';
-		$order->create_dtm = $exchange->dt;
+		$order->create_dtm = $exchange->dtm;
 		
 		
 		if ($btc_id) $order->btc_id = $btc_id;
 		
 		// Если сразу купили
 		//if($btce['return']['received'])
-		//	$order->close($exchange->dt);
+		//	$order->close($exchange->dtm);
 		
 		if (!$order->save()) return false;
 		
@@ -293,7 +293,7 @@ class Order extends CActiveRecord
 			$bot->setBalanceBtc($res['return']['funds']['btc']);
 			
 			$this->status = 'cancel';
-			$this->close_dtm = $bot->current_exchange->dt;
+			$this->close_dtm = $bot->current_exchange->dtm;
 			$this->save();
 			Dump::d($this->errors);
 		}
