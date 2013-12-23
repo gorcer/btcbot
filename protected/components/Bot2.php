@@ -248,7 +248,7 @@ class Bot2 {
 		if ($buy->id) $order->btc_id = $buy->id;
 		
 		$order->save();
-		$this->comple	teSell($order);
+		$this->completeSell($order);
 		
 		$this->balance+=$order->summ*(1-self::fee);
 		$this->balance_btc-=$buy->count;
