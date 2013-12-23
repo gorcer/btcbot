@@ -21,12 +21,12 @@ class Bot2 {
 	private static $self=false;
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
-	const min_buy = 0.01; // Мин. сумма покупки
-	const buy_value = 0.01; // Сколько покупать
+	//const min_buy = 0.01; // Мин. сумма покупки
+	const buy_value = 0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400; // Мин. интервал совершения продаж = 1 сутки
-	const min_income = 10; // Мин. доход в рублях
+	const min_income = 0.05; // Мин. доход - 5%
 	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 180; // 180
 	const real_trade = false;
@@ -43,7 +43,7 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
+		$this->imp_dif = 250;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
 		
 		$this->order_cnt=0;		
 		
@@ -242,7 +242,7 @@ class Bot2 {
 		$order->create_dtm = $this->current_exchange->dtm;
 		$order->close_dtm = $this->current_exchange->dtm;
 		
-		$price = $this->current_exchange->sell*$buy->count*(1-self::fee);
+		//$price = $this->current_exchange->sell*$buy->count*(1-self::fee);
 		//Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', доход = '.($price-$buy->summ).' руб.</b>', 1);
 		
 		if ($buy->id) $order->btc_id = $buy->id;
@@ -427,10 +427,6 @@ class Bot2 {
 					//Dump::d($track);
 					$this->ReservePeriod($track['period']);					
 				}	
-					//Log::AddText($this->curtime, 'Резерв времени до: '. date('Y-m-d H:i:s',$this->curtime+self::min_buy_interval));
-				//Yii::app()->cache->set($cache_key, $this->curtime+self::min_buy_interval, self::min_buy_interval);
-
-				
 		}				
 		else
 		Log::AddText($this->curtime, 'Нет интересных покупок');		
@@ -446,12 +442,11 @@ class Bot2 {
 		// Если текущая цена ниже средней не продаем
 		if ($this->avg_sell>$this->current_exchange->sell)
 		{
-			Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
+			//Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
 			return false;
 		}	
 		
-		// Проверяем была ли уже продажа за последнее время, если была и цена была более выгодная чем текущая то не продаем
-		
+		// Проверяем была ли уже продажа за последнее время, если была и цена была более выгодная чем текущая то не продаем		
 		$lastSell = Sell::getLast();
 		if ($lastSell)
 		{
@@ -480,7 +475,7 @@ class Bot2 {
 		
 		if (sizeof($tracks) == 0) return false;
 		
-		Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
+		//Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
 		
 		
 		//Смотрим что продать
@@ -492,13 +487,13 @@ class Bot2 {
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
 						
 			// Сколько заработаем при продаже
-			$income = $curcost - $buy->summ;
+			$income = $curcost - $buy->summ*(1+self::fee);
 						
 			// Достаточно ли заработаем
-			if ($income < self::min_income)
+			if ($income/$curcost < self::min_income)
 			{
 				if ($income>0)
-				Log::Add($this->curtime, 'Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.self::min_income.' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
+				Log::Add($this->curtime, 'Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
 				
 				
 				continue;
