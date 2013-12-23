@@ -26,7 +26,7 @@ class Bot2 {
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400; // Мин. интервал совершения продаж = 1 сутки
-	const min_income = 0.05; // Мин. доход - 5%
+	const min_income = 0.04; // Мин. доход - 5%
 	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 180; // 180
 	const real_trade = false;
@@ -43,7 +43,7 @@ class Bot2 {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 250;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
+		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
 		
 		$this->order_cnt=0;		
 		
@@ -159,7 +159,7 @@ class Bot2 {
 				case '+--':								// /\\
 				case '0--':								// /\\
 							if ($track['period']>self::long_time) {
-								Log::Add($this->curtime, 'Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
+								//Log::Add($this->curtime, 'Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
 								return false;								
 							}
 							break;				
@@ -209,11 +209,13 @@ class Bot2 {
 	
 	public function virtualBuy($cnt)
 	{
+		$summ = $cnt*$this->current_exchange->buy;
+		
 		$order = new Order();		
 		$order->price = $this->current_exchange->buy;
 		$order->count = $cnt;
-		$order->fee = self::fee;
-		$order->summ = $cnt*$this->current_exchange->buy;
+		$order->fee = $summ * self::fee;
+		$order->summ = $summ;
 		$order->type = 'buy';
 		$order->status = 'close';
 		$order->create_dtm = $this->current_exchange->dtm;		
@@ -224,7 +226,7 @@ class Bot2 {
 		
 		$order->save();
 		$this->completeBuy($order);
-		$this->balance-=$cnt*$this->current_exchange->buy*(1+self::fee);
+		$this->balance-=$summ-$order->fee;
 		$this->balance_btc+=$cnt;
 
 		return true;
@@ -232,11 +234,14 @@ class Bot2 {
 	
 	public function virtualSell($buy)
 	{	
+		
+		$summ = $buy->count*$this->current_exchange->sell;
+		
 		$order = new Order();
 		$order->price = $this->current_exchange->sell;
 		$order->count = $buy->count;
-		$order->fee = Bot2::fee;
-		$order->summ = $buy->count*$this->current_exchange->sell;
+		$order->fee = $summ * self::fee;
+		$order->summ = $summ;
 		$order->type = 'sell';
 		$order->status = 'close';
 		$order->create_dtm = $this->current_exchange->dtm;
@@ -250,7 +255,7 @@ class Bot2 {
 		$order->save();
 		$this->completeSell($order);
 		
-		$this->balance+=$order->summ*(1-self::fee);
+		$this->balance+=$order->summ-$order->fee;
 		$this->balance_btc-=$buy->count;
 	
 		return true;
@@ -275,8 +280,8 @@ class Bot2 {
 			// Если создан ордер
 			if ($order->status == 'open')
 			{
-				$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
-				Log::Add($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+				$price = $this->current_exchange->buy*self::buy_value;
+				Log::Add($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.($price*self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
 			}
 			// Если сразу куплено
 			else {
@@ -302,10 +307,15 @@ class Bot2 {
 		
 		if ($order)
 		{	
-			$price = $this->current_exchange->sell*$buy->count*(1-self::fee);	
+			
+				
 			
 			if ($order->status == 'open')
-				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', доход = '.($price-$buy->summ).' руб.</b>', 1);
+			{
+				$price = $this->current_exchange->sell*$buy->count;
+				$fee = $price*self::fee;
+				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', комиссия='.$fee.', доход = '.($price-$buy->summ).' руб.</b>', 1);
+			}
 			else
 			{
 				$this->completeSell($order);
@@ -325,7 +335,7 @@ class Bot2 {
 		Buy::make($order);
 		
 		$price = $this->current_exchange->buy*self::buy_value*(1+self::fee);
-		Log::Add($this->curtime, '<b>Совершена покупка '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
+		Log::Add($this->curtime, '<b>Совершена покупка '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$order->fee.' комиссия) на сумму '.$price.' руб.</b>', 1);
 		$this->order_cnt++;
 	}
 	
@@ -333,10 +343,11 @@ class Bot2 {
 	{
 		$order->close($this->current_exchange->dtm);
 		$order->save();		
-		Sell::make($order);		
+		$sell=Sell::make($order);
+		$buy = Buy::model()->findByPk($order->btc_id);
 		
-		$price = $this->current_exchange->sell*$order->count*(1+self::fee);
-		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->btc_id.')  '. $order->count.' ед. (куплено за '.$order->summ.') за '.$price.', доход = '.($price-$order->summ).' руб.</b>', 1);
+		$price = $this->current_exchange->sell*$order->count;
+		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->btc_id.')  '. $order->count.' ед. (купленых за '.$buy->summ.') за '.$price.', комиссия='.$order->fee.', доход = '.($sell->income).' руб.</b>', 1);
 		$this->order_cnt++;
 	}
 	
@@ -377,7 +388,7 @@ class Bot2 {
 		// Если текущая цена выше средней не покупаем		
 		if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
 		{
-			Log::Add($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
+			//Log::Add($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
 			return false;
 		}
 		
@@ -490,12 +501,10 @@ class Bot2 {
 			$income = $curcost - $buy->summ*(1+self::fee);
 						
 			// Достаточно ли заработаем
-			if ($income/$curcost < self::min_income)
+			if ($income/$buy->summ < self::min_income)
 			{
 				if ($income>0)
-				Log::Add($this->curtime, 'Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
-				
-				
+				Log::Add($this->curtime, 'Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);							
 				continue;
 			}
 			

@@ -129,10 +129,11 @@ class Sell extends CActiveRecord
 		$sell->price = $order->price;
 		$sell->count = $order->count;
 		$sell->summ = $order->summ;
-		$sell->income = $order->summ-$buy->summ;
+		$sell->income = ($order->summ-$buy->summ)-$order->fee - $buy->summ*Bot2::fee;
 		$sell->dtm = $order->close_dtm;
 		$sell->save();
 	
+		return $sell;
 	}
 	
 	
