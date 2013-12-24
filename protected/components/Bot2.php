@@ -19,6 +19,7 @@ class Bot2 {
 	private $avg_buy; // Средняя цена покупки
 	private $avg_sell;// Средняя цена продажи
 	private static $self=false;
+	private $real_trade = false;
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	//const min_buy = 0.01; // Мин. сумма покупки
@@ -29,7 +30,7 @@ class Bot2 {
 	const min_income = 0.04; // Мин. доход - 4%
 	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 180; // 180
-	const real_trade = false;
+	
 	
 	const freeze_warning_income = 0.01; // доход при котором есть шанс вморозить деньги, считается при падении
 	
@@ -273,7 +274,7 @@ class Bot2 {
 	public function startBuy()
 	{
 		
-		if (!self::real_trade) 
+		if (!$this->real_trade) 
 			return $this->virtualBuy(self::buy_value);
 		
 		// Создаем ордер
@@ -305,7 +306,7 @@ class Bot2 {
 	public function startSell($buy)
 	{	
 		
-		if (!self::real_trade)
+		if (!$this->real_trade)
 			return $this->virtualSell($buy);
 		
 		$order = Order::makeOrder($this->current_exchange, $buy->count, 'sell', $buy->id);		
@@ -545,21 +546,19 @@ class Bot2 {
 	public function checkOrders()
 	{	
 		
-		if (!self::real_trade) return;
+		if (!$this->real_trade) return;
 		
 		
 		// Получаем активные ордеры
 		$active_orders = Order::getActiveOrders();		
 		// Получаем все открытые ордеры по бд
 		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
-		Dump::d($active_orders);
+		//Dump::d($active_orders);
 		foreach($orders as $order)
 		{		
-			Dump::d($order->id);
+			//Dump::d($order->id);
 			if (isset($active_orders[$order->id]))
-			{
-				
-		
+			{		
 				// Если ордер висит более 3 минут - удаляем
 				if ($active_orders[$order->id]['timestamp_created']<$this->curtime-self::order_ttl)
 				{
@@ -570,16 +569,11 @@ class Bot2 {
 				}
 			}			
 			
-			// Если заказ не найден, значит он успешно выполнен			
+			// Если заказ не найден, значит он успешно выполнен (нужно это будет проверить)			
 			if ($order->type == 'buy')
 			{				
 				$this->completeBuy($order);
 				
-				/*
-				 * @todo баланс обновлять из ордера
-				$this->balance_btc+=$order->count; 
-				$this->order_cnt++;
-				*/
 			} elseif ($order->type == 'sell')
 			{
 				$this->completeSell($order);

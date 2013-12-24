@@ -111,7 +111,7 @@ class Order extends CActiveRecord
 	{
 		
 		// -
-		/* @todo - сделать актуализацию баланса и расчет комиссии исход€ из разницы балансов
+		/*
 		 * array
 				(
 				    'success' => 1
@@ -169,28 +169,7 @@ class Order extends CActiveRecord
 		$BTCeAPI = new BTCeAPI();
 		try {
 			
-			if (Bot2::real_trade)
-			  $btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);
-			else
-			{
-			$price = $cnt*$exchange->$type;
-			$btce = array
-				(
-				    'success' => 1,
-				    'return' => array
-				    (
-				        'received' => $cnt,
-				        'remains' => 0,
-				        'order_id' => 0,
-				        'funds' => array
-				        (				            
-				            'btc' => $bot->balance_btc,
-				            'rur' => $bot->balance-$price,				            
-				        )
-				    )
-				) ;
-			}
-			
+		$btce = $BTCeAPI->makeOrder($cnt, 'btc_rur', $type, $exchange->$type);			
 		
 		} catch(BTCeAPIInvalidParameterException $e) {			
 			Log::AddText(strtotime($exchange->dtm), 'Ќе удалось создать ордер '.$e->getMessage());
@@ -210,9 +189,9 @@ class Order extends CActiveRecord
 		$order = new Order();
 		$order->id = $btce['return']['order_id'];
 		$order->price = $exchange->$type;
-		$order->count = $cnt;
-		$order->fee = Bot2::fee;
+		$order->count = $cnt;		
 		$order->summ = $cnt*$exchange->$type;
+		$order->fee = $order->summ*Bot2::fee;
 		$order->type = $type;
 		$order->status = 'open';
 		$order->create_dtm = $exchange->dtm;
@@ -221,8 +200,8 @@ class Order extends CActiveRecord
 		if ($btc_id) $order->btc_id = $btc_id;
 		
 		// ≈сли сразу купили
-		//if($btce['return']['received'])
-		//	$order->close($exchange->dtm);
+		if($btce['return']['received'])
+			$order->close($exchange->dtm);
 		
 		if (!$order->save()) return false;
 		
@@ -267,8 +246,7 @@ class Order extends CActiveRecord
 		} catch(BTCeAPIException $e) {
 			Log::AddText(0, 'Ќе удалось получить список заказов '.$e->getMessage());
 			return false;
-		}
-		
+		}		
 		
 		return($orders['return']);
 	}

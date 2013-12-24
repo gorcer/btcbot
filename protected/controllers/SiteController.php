@@ -111,6 +111,14 @@ class SiteController extends Controller
 	{
 		
 		$BTCeAPI = new BTCeAPI();
+		
+		$info = $BTCeAPI->apiQuery('getInfo');
+		if ($info['success'] == 1)
+		{
+			Status::setParam('balance', $info['return']['funds']['rur']);
+			Status::setParam('balance_btc', $info['return']['funds']['btc']);
+		}
+		
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
 		

@@ -145,9 +145,9 @@ class Exchange extends CActiveRecord
 						dtm, buy, sell		
 					FROM `exchange`
 					where
-						dtm >= '2013-12-09 00:00:00'
+						dtm >= '2013-12-09 09:00:00'
 					order by dtm
-					limit 1000000
+					limit 10000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		//Dump::d($sql);
