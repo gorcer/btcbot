@@ -130,6 +130,7 @@ class Buy extends CActiveRecord
 		$buy->price =$order->price;
 		$buy->summ = $order->summ;
 		$buy->save();
+		return $buy;
 	}
 	
 

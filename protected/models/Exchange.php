@@ -147,7 +147,7 @@ class Exchange extends CActiveRecord
 					where
 						dtm >= '2013-12-09 00:00:00'
 					order by dtm
-					limit 100000000 
+					limit 1000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		//Dump::d($sql);
@@ -206,6 +206,9 @@ class Exchange extends CActiveRecord
 		//Dump::d($sql);
 		$command = $connection->createCommand($sql);
 		$val=$command->queryScalar();
+		
+		//if (!$val) echo 'Запрос который ничего не вернул - '.$sql;
+		
 		return($val);
 	}
 	
