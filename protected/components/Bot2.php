@@ -26,7 +26,7 @@ class Bot2 {
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400; // Мин. интервал совершения продаж = 1 сутки
-	const min_income = 0.05; // Мин. доход - 5%
+	const min_income = 0.04; // Мин. доход - 5%
 	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 180; // 180
 	const real_trade = false;
@@ -47,7 +47,7 @@ class Bot2 {
 		
 		$this->order_cnt=0;		
 		
-		$from = date('Y-m-d H:i:s', time()-60*60*24*7);
+		$from = date('Y-m-d H:i:s', time()-60*60*24*3);
 		$this->avg_buy = Exchange::getAvg('buy', $from,  date('Y-m-d H:i:s', $this->curtime));
 		$this->avg_sell = Exchange::getAvg('sell', $from,  date('Y-m-d H:i:s', $this->curtime));		
 		
@@ -377,7 +377,7 @@ class Bot2 {
 		// Если текущая цена выше средней не покупаем		
 		if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
 		{
-			Log::Add($this->curtime, 'Цена выше средней за 7 дней ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
+			Log::Add($this->curtime, 'Цена выше средней за 3 дня ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
 			return false;
 		}
 		
@@ -442,7 +442,7 @@ class Bot2 {
 		// Если текущая цена ниже средней не продаем
 		if ($this->avg_sell>$this->current_exchange->sell)
 		{
-			//Log::AddText($this->curtime, 'Цена ниже средней за 7 дней ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
+			//Log::AddText($this->curtime, 'Цена ниже средней за 3 дня ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
 			return false;
 		}	
 		
@@ -489,15 +489,14 @@ class Bot2 {
 			// Сколько заработаем при продаже
 			$income = $curcost - $buy->summ*(1+self::fee);
 						
-			// Достаточно ли заработаем
+			// Достаточно ли заработаем 
 			if ($income/$curcost < self::min_income)
 			{
 				if ($income>0)
 				Log::Add($this->curtime, 'Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);
-				
-				
 				continue;
 			}
+			else Log::Add($this->curtime, '$income='.$income.' $curcost='.$curcost.' self::min_income='.self::min_income);
 			
 			$this->startSell($buy);
 			break;
