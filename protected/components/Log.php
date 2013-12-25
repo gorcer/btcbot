@@ -22,7 +22,7 @@ class Log {
 	public static function AddText($tm, $data)
 	{
 		$cdt = date('Y-m-d H:i:s', $tm);		
-		$text=  '<i>'.$cdt.'</i> :'.$data.'<br/>';
+		$text=  '<i>'.$cdt.'</i> :'.$data;
 		echo $text.'<br/>';
 	}
 	

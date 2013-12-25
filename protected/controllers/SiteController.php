@@ -109,15 +109,8 @@ class SiteController extends Controller
 	
 	public function actionCron()
 	{
-		return;
-		$BTCeAPI = new BTCeAPI();
 		
-		$info = $BTCeAPI->apiQuery('getInfo');
-		if ($info['success'] == 1)
-		{
-			Status::setParam('balance', $info['return']['funds']['rur']);
-			Status::setParam('balance_btc', $info['return']['funds']['btc']);
-		}
+		$BTCeAPI = new BTCeAPI();		
 		
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
@@ -129,6 +122,7 @@ class SiteController extends Controller
 		
 		if ($exchange->save())
 		{
+			return;
 			$bot = new Bot2($exchange);
 			$bot->run();
 		}
