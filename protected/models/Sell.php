@@ -5,7 +5,7 @@
  *
  * The followings are the available columns in table 'sell':
  * @property integer $id
- * @property integer $btc_id
+ * @property integer $buy_id
  * @property string $price
  * @property string $count
  * @property string $summ
@@ -39,12 +39,12 @@ class Sell extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('btc_id, price, count, summ, income', 'required'),
-			array('btc_id', 'numerical', 'integerOnly'=>true),
+			array('buy_id, price, count, summ, income', 'required'),
+			array('buy_id', 'numerical', 'integerOnly'=>true),
 			array('price, count, summ, income', 'length', 'max'=>30),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('id, btc_id, price, count, summ, income', 'safe', 'on'=>'search'),
+			array('id, buy_id, price, count, summ, income', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -66,7 +66,7 @@ class Sell extends CActiveRecord
 	{
 		return array(
 			'id' => 'ID',
-			'btc_id' => 'Btc',
+			'buy_id' => 'Buy',
 			'price' => 'Price',
 			'count' => 'Count',
 			'summ' => 'Summ',
@@ -86,7 +86,7 @@ class Sell extends CActiveRecord
 		$criteria=new CDbCriteria;
 
 		$criteria->compare('id',$this->id);
-		$criteria->compare('btc_id',$this->btc_id);
+		$criteria->compare('buy_id',$this->buy_id);
 		$criteria->compare('price',$this->price,true);
 		$criteria->compare('count',$this->count,true);
 		$criteria->compare('summ',$this->summ,true);
@@ -120,17 +120,19 @@ class Sell extends CActiveRecord
 	// Совершение продажи
 	public static function make($order)
 	{
-		$buy = Buy::model()->findByPk($order->btc_id);
+		// Сохраняем информацию о том что покупка закрыта
+		$buy = $order->buy;		
 		$buy->sold=1;
 		$buy->update(array('sold'));
 	
 		$sell = new Sell();
-		$sell->btc_id = $buy->id;
+		$sell->buy_id = $buy->id;
 		$sell->price = $order->price;
 		$sell->count = $order->count;
 		$sell->summ = $order->summ;
-		$sell->income = ($order->summ-$buy->summ)-$order->fee - $buy->summ*Bot2::fee;
-		$sell->dtm = $order->close_dtm;
+		$sell->fee = $order->fee;
+		$sell->income = ($order->summ-$buy->summ)-$sell->fee - $buy->fee;
+		$sell->dtm = $order->close_dtm;		
 		$sell->save();
 	
 		return $sell;

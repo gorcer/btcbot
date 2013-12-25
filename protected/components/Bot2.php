@@ -23,7 +23,7 @@ class Bot2 {
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	//const min_buy = 0.01; // Мин. сумма покупки
-	const buy_value = 0.02; // Сколько покупать
+	const buy_value = 0.015; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
@@ -256,15 +256,56 @@ class Bot2 {
 		//$price = $this->current_exchange->sell*$buy->count*(1-self::fee);
 		//Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', доход = '.($price-$buy->summ).' руб.</b>', 1);
 		
-		if ($buy->id) $order->btc_id = $buy->id;
+		//if ($buy->id) $order->btc_id = $buy->id;
 		
 		$order->save();
+		
+		$buy->order_id = $order->id;
+		$buy->update('order_id');
+			
+		
 		$this->completeSell($order);
 		
 		$this->balance+=$order->summ-$order->fee;
 		$this->balance_btc-=$buy->count;
 	
 		return true;
+	}
+	
+	
+	private function makeOrder($cnt, $type)
+	{		
+		// Цена покупки / продажи
+		$price = $this->current_exchange->$type;
+		
+		
+		$api = APIProvider::get_Instance();
+		// Пытаемся создать заказ на бирже
+		$result = $api->makeOrder($cnt, 'btc_rur', $type, $price);
+
+		// Если все ок, добавляем в базу созданный заказ
+		$order = new Order();
+		$order->id = $result['order_id'];
+		$order->price = $price;
+		$order->count = $cnt;
+		$order->summ = $cnt*$price;
+		$order->fee = $order->summ*self::fee;
+		$order->type = $type;
+		$order->status = 'open';
+		$order->create_dtm = $this->current_exchange->dtm;
+		//if ($buy_id) $order->buy_id = $buy_id;
+		
+		// Заказ может быть сразу выполнене, в этом случае закрываем его в базе
+		if($result['received'])
+			$order->close($exchange->dtm);	
+		
+		$order->save();
+		
+		// Актуализируем баланс
+		$this->setBalance($result['funds']['rur']);
+		$this->setBalanceBtc($result['funds']['btc']);
+		
+		return($order);
 	}
 	
 	/**
@@ -274,25 +315,23 @@ class Bot2 {
 	public function startBuy()
 	{
 		
-		if (!$this->real_trade) 
-			return $this->virtualBuy(self::buy_value);
+	//	if (!$this->real_trade) 
+		//	return $this->virtualBuy(self::buy_value);
 		
 		// Создаем ордер
-		$order = Order::makeOrder($this->current_exchange, self::buy_value, 'buy');
+		$order = $this->makeOrder(self::buy_value, 'buy');
+		
 		
 		// Если создался
 		if ($order)
 		{	
 			// Если создан ордер
-			if ($order->status == 'open')
-			{
-				$price = $this->current_exchange->buy*self::buy_value;
-				Log::Add($this->curtime, '<b>Создана сделка на покупку '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.($price*self::fee).' комиссия) на сумму '.$price.' руб.</b>', 1);
-			}
-			// Если сразу куплено
-			else {
+			if ($order->status == 'open')				
+				Log::Add($this->curtime, '<b>Создана сделка на покупку '.$order->count.' ед. за '.$order->price.' ('.($order->summ*self::fee).' комиссия) на сумму '.$order->summ.' руб.</b>', 1);			
+			// Если сразу куплено то закрыть ордер
+			else 
 				$this->completeBuy($order);
-			}			
+					
 		return(true);
 		}
 		
@@ -306,28 +345,29 @@ class Bot2 {
 	public function startSell($buy)
 	{	
 		
-		if (!$this->real_trade)
+/*		if (!$this->real_trade)
 			return $this->virtualSell($buy);
-		
-		$order = Order::makeOrder($this->current_exchange, $buy->count, 'sell', $buy->id);		
+*/
+		// Создаем ордер
+		$order = $this->makeOrder($buy->count, 'sell');
 		
 		if ($order)
 		{	
+			// Присваиваем BUY
+			$buy->order_id = $order->id;
+			$buy->update('order_id');		
 			
-				
-			
-			if ($order->status == 'open')
-			{
-				$price = $this->current_exchange->sell*$buy->count;
-				$fee = $price*self::fee;
-				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', комиссия='.$fee.', доход = '.($price-$buy->summ).' руб.</b>', 1);
-			}
+			// Если не удалось сразу продать то заявка ждет 3 минуты своего покупателя
+			if ($order->status == 'open')			
+				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $order->count.' ед. (куплено за '.$buy->summ.') за '.$order->price.', комиссия='.$order->fee.', доход = '.($order->summ-$buy->summ-$buy->fee-$order->fee).' руб.</b>', 1);			
+			// Если сразу продали то закрываем позицию в бд
 			else
-			{
-				$this->completeSell($order);
+			{			
+				$sell = $this->completeSell($order);
+				
+			}			
 			
-			}
-			$this->total_income+=$price-$buy->summ;
+			
 			return(true);
 		}
 	
@@ -336,10 +376,12 @@ class Bot2 {
 	
 	public function completeBuy($order)
 	{
+		// Закрываем ордер
 		$order->close($this->current_exchange->dtm);
 		$order->save();
-		$buy = Buy::make($order);
 		
+		// Фиксируем в базе покупку
+		$buy = Buy::make($order);		
 		
 		Log::Add($this->curtime, '<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$this->current_exchange->buy.' ('.$order->fee.' комиссия) на сумму '.$order->summ.' руб.</b>', 1);
 		$this->order_cnt++;
@@ -347,14 +389,16 @@ class Bot2 {
 	
 	public function completeSell($order)
 	{
+		// Закрываем ордер
 		$order->close($this->current_exchange->dtm);
 		$order->save();		
-		$sell=Sell::make($order);
-		$buy = Buy::model()->findByPk($order->btc_id);
 		
-		$price = $this->current_exchange->sell*$order->count;
-		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->btc_id.')  '. $order->count.' ед. (купленых за '.$buy->summ.') за '.$price.', комиссия='.$order->fee.', доход = '.($sell->income).' руб.</b>', 1);
+		$sell=Sell::make($order);	
+		
+		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$order->buy->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
+		
 		$this->order_cnt++;
+		$this->total_income+=$sell->income;
 	}
 	
 	public function NeedBuyRandom()
@@ -478,7 +522,7 @@ class Bot2 {
 		}
 		
 		//Перебираем периоды 9, 15, 30 минут, 1 час
-		$periods = array(9*60, 15*60, 30*60, 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
+		$periods = array(/*9*60, 15*60, 30*60,*/ 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
 		//$periods = array(60*60, 6*60*60, 12*60*60, 24*60*60, 36*60*60, );
 		$tracks=array();
 		foreach($periods as $period)
@@ -497,7 +541,7 @@ class Bot2 {
 		
 		
 		//Смотрим что продать
-		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0'));
+		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
 
 		// Ищем выгодные продажи
 		foreach($bought as $buy)
@@ -546,17 +590,17 @@ class Bot2 {
 	public function checkOrders()
 	{	
 		
-		if (!$this->real_trade) return;
-		
-		
 		// Получаем активные ордеры
-		$active_orders = Order::getActiveOrders();		
+		$api = APIProvider::get_Instance();
+		$active_orders = $api->getActiveOrders();		
+		
+		
 		// Получаем все открытые ордеры по бд
 		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
-		//Dump::d($active_orders);
+
 		foreach($orders as $order)
-		{		
-			//Dump::d($order->id);
+		{			
+			// Если ордер из базы найден среди активных
 			if (isset($active_orders[$order->id]))
 			{		
 				// Если ордер висит более 3 минут - удаляем

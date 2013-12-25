@@ -56,7 +56,7 @@ class Buy extends CActiveRecord
 		// NOTE: you may need to adjust the relation name and the related
 		// class name for the relations automatically generated below.
 		return array(
-			'sell'=>array(self::HAS_MANY, 'Sell', 'btc_id'),
+			'sell'=>array(self::HAS_MANY, 'Sell', 'buy_id'),
 		);
 	}
 
@@ -105,21 +105,7 @@ class Buy extends CActiveRecord
 		));
 		return $buy;		
 	}
-	
-	public function SellIt($price, $cnt, $income)
-	{
-		$sell = new Sell();
-		$sell->btc_id = $this->id;
-		$sell->price=$price;
-		$sell->count = $cnt;
-		$sell->summ = $price*$cnt;
-		$sell->income = $income;
-		$sell->save();			
 		
-		$this->sold = 1;
-		$this->update(array('sold'));
-	}
-	
 	// Совершение покупки
 	public static function make($order)
 	{
@@ -129,6 +115,7 @@ class Buy extends CActiveRecord
 		$buy->count = $order->count;
 		$buy->price =$order->price;
 		$buy->summ = $order->summ;
+		$buy->fee = $order->fee;		
 		$buy->save();
 		return $buy;
 	}

@@ -109,7 +109,7 @@ class SiteController extends Controller
 	
 	public function actionCron()
 	{
-		
+		return;
 		$BTCeAPI = new BTCeAPI();
 		
 		$info = $BTCeAPI->apiQuery('getInfo');

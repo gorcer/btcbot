@@ -9,6 +9,8 @@ class BTCeAPI {
     
     const DIRECTION_BUY = 'buy';
     const DIRECTION_SELL = 'sell';
+    private static $self=false;
+    
     protected $public_api = 'https://btc-e.com/api/2/';
     
     protected $api_key;
@@ -25,8 +27,17 @@ class BTCeAPI {
         } else {
             $this->noonce = $base_noonce;
         }
+        
+        self::$self = $this;
     }
-    
+        
+    public static function get_Instance()
+    {
+    	if (!self::$self)
+    		self::$self = new BTCeAPI();
+    	return self::$self;
+    }
+        
     /**
      * Get the noonce
      * @global type $sql_conx

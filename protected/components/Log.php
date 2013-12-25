@@ -25,4 +25,14 @@ class Log {
 		$text=  '<i>'.$cdt.'</i> :'.$data.'<br/>';
 		echo $text.'<br/>';
 	}
+	
+	public static function Error($data)
+	{
+		$cdt = date('Y-m-d H:i:s');	
+		$fn = 'error_log.html';		
+	
+		$text=  '<i>'.$cdt.'</i> '.$data.'<br/>';	
+		
+		file_put_contents($fn, $text, FILE_APPEND);	
+	}
 }

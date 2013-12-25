@@ -13,7 +13,7 @@
  * @property string $status
  * @property string $close_dtm
  * @property string $type
- * @property string $btc_id 
+ * @property string $buy_id 
  */
 class Order extends CActiveRecord
 {
@@ -49,7 +49,7 @@ class Order extends CActiveRecord
 			array('close_dtm', 'safe'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('btc_id, type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
+			array('buy_id, type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -61,6 +61,7 @@ class Order extends CActiveRecord
 		// NOTE: you may need to adjust the relation name and the related
 		// class name for the relations automatically generated below.
 		return array(
+			'buy' => array(self::HAS_ONE, 'Buy', 'order_id'),			
 		);
 	}
 
