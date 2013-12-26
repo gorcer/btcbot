@@ -131,10 +131,10 @@ class APIProvider {
 	
 	private function makeOrderVirtual($cnt, $pair, $type, $price)
 	{
-		$bot = Bot2::get_Instance();
+		$bot = Bot::get_Instance();
 		
 		$summ = $cnt * $price;
-		$fee = $summ * (Bot2::fee);		
+		$fee = $summ * (Bot::fee);		
 		
 		// Создаем виртуальную заявку на покупку, будет исполнена при следующем запросе
 		// Расчитываем баланс
@@ -246,7 +246,7 @@ class APIProvider {
 		
 		if ($res['success'] == 1)
 		{
-			$bot = Bot2::get_Instance();
+			$bot = Bot::get_Instance();
 			$bot->setBalance($res['return']['funds']['rur']);
 			$bot->setBalanceBtc($res['return']['funds']['btc']);
 				

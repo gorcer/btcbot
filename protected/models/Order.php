@@ -118,7 +118,7 @@ class Order extends CActiveRecord
 	
 	public function cancel()
 	{
-		$bot = Bot2::get_Instance();
+		$bot = Bot::get_Instance();
 		
 		$BTCeAPI = new BTCeAPI();
 		try {

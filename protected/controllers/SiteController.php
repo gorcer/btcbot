@@ -123,7 +123,7 @@ class SiteController extends Controller
 		if ($exchange->save())
 		{
 			return;
-			$bot = new Bot2($exchange);
+			$bot = new Bot($exchange);
 			$bot->run();
 		}
 		
@@ -142,7 +142,7 @@ class SiteController extends Controller
 		$exchange->dt = date('Y-m-d H:i:s', $ticker['updated']);		
 		$exchange->save();
 		
-		$bot = new Bot2($exchange);
+		$bot = new Bot($exchange);
 		$bot->NeedBuy($ticker['updated']);
 		$this->render('index');
 		*/
@@ -182,7 +182,7 @@ class SiteController extends Controller
 			$obj->sell = $exchange['sell'];
 			
 			$cnt++;
-			$bot = new Bot2($obj);
+			$bot = new Bot($obj);
 			$bot->run();			
 		}
 		
@@ -205,7 +205,7 @@ class SiteController extends Controller
 		$exchange->sell = $ticker['sell'];
 		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		
-		$bot = new Bot2($exchange);
+		$bot = new Bot($exchange);
 		$bot->startBuy();
 	}
 	
@@ -221,7 +221,7 @@ class SiteController extends Controller
 		$exchange->sell = $ticker['sell']+10000;
 		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		$btc = Buy::getLast();
-		$bot = new Bot2($exchange);
+		$bot = new Bot($exchange);
 		$bot->startSell($btc);
 	}
 	
@@ -236,7 +236,7 @@ class SiteController extends Controller
 		$exchange->sell = $ticker['sell']+10000;
 		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		$btc = Buy::getLast();
-		$bot = new Bot2($exchange);
+		$bot = new Bot($exchange);
 		
 		$bot->checkOrders();
 	}
