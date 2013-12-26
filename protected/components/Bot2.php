@@ -16,10 +16,18 @@ class Bot2 {
 	private $order_cnt;
 	private $total_income;
 	private $imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	
 	private $avg_buy; // Средняя цена покупки
 	private $avg_sell;// Средняя цена продажи
-	private static $self=false;
+	
+	private $sell_periods; // Определение периодов покупки
+	private $buy_periods; // Определение периодов продажи
+	
 	private $real_trade = false;
+	
+	private static $self=false;
+	
+	
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	//const min_buy = 0.01; // Мин. сумма покупки
@@ -52,6 +60,11 @@ class Bot2 {
 		$from = date('Y-m-d H:i:s', time()-60*60*24*7);
 		$this->avg_buy = Exchange::getAvg('buy', $from,  date('Y-m-d H:i:s', $this->curtime));
 		$this->avg_sell = Exchange::getAvg('sell', $from,  date('Y-m-d H:i:s', $this->curtime));		
+		
+		
+		// Периоды анализа графика для покупки и продажи (в сек.)
+		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
+		$this->sell_periods = array(/*9*60, 15*60, 30*60, 60*60, 2*60*60,*/ 4*60*60, 24*60*60, 36*60*60);
 		
 		self::$self = $this;
 	}
@@ -440,9 +453,9 @@ class Bot2 {
 		}		
 		
 		//Перебираем в статистике периоды 15 мину, 30 мину, 1 час, 2 часов ...
-		$periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
+				
 		$tracks=array();
-		foreach($periods as $period)		
+		foreach($this->buy_periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
 								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
@@ -507,7 +520,7 @@ class Bot2 {
 		}
 		
 		//Перебираем периоды 9, 15, 30 минут, 1 час
-		$periods = array(/*9*60, 15*60, 30*60,*/ 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
+		$periods = array(/*9*60, 15*60, 30*60, 60*60, 2*60*60,*/ 4*60*60, 24*60*60, 36*60*60);
 		//$periods = array(60*60, 6*60*60, 12*60*60, 24*60*60, 36*60*60, );
 		$tracks=array();
 		foreach($periods as $period)
