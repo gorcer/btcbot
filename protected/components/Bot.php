@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Аналитика на MySQL
+ * РђРЅР°Р»РёС‚РёРєР° РЅР° MySQL
  * @author Zaretskiy.E
  *
- * @todo Определение кол.ва закупа - когда курс падает от среднего за двое суток на 20%, пускай бот покупает 5 минимумов
+ * @todo РћРїСЂРµРґРµР»РµРЅРёРµ РєРѕР».РІР° Р·Р°РєСѓРїР° - РєРѕРіРґР° РєСѓСЂСЃ РїР°РґР°РµС‚ РѕС‚ СЃСЂРµРґРЅРµРіРѕ Р·Р° РґРІРѕРµ СЃСѓС‚РѕРє РЅР° 20%, РїСѓСЃРєР°Р№ Р±РѕС‚ РїРѕРєСѓРїР°РµС‚ 5 РјРёРЅРёРјСѓРјРѕРІ
  * 
  */
 class Bot {
@@ -15,13 +15,13 @@ class Bot {
 	public $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	private $imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	private $imp_dif; // Р’РёРґРёРјРѕСЃС‚СЊ СЂР°Р·Р»РёС‡РёР№, РїСЂРё РїСЂРµРІС‹С€РµРЅРёРё РїРѕСЂРѕРіР° С„РёРєСЃРёСЂСѓСЋС‚СЃСЏ РёР·РјРµРЅРµРЅРёСЏ
 	
-	private $avg_buy; // Средняя цена покупки
-	private $avg_sell;// Средняя цена продажи
+	private $avg_buy; // РЎСЂРµРґРЅСЏСЏ С†РµРЅР° РїРѕРєСѓРїРєРё
+	private $avg_sell;// РЎСЂРµРґРЅСЏСЏ С†РµРЅР° РїСЂРѕРґР°Р¶Рё
 	
-	private $sell_periods; // Определение периодов покупки
-	private $buy_periods; // Определение периодов продажи
+	private $sell_periods; // РћРїСЂРµРґРµР»РµРЅРёРµ РїРµСЂРёРѕРґРѕРІ РїРѕРєСѓРїРєРё
+	private $buy_periods; // РћРїСЂРµРґРµР»РµРЅРёРµ РїРµСЂРёРѕРґРѕРІ РїСЂРѕРґР°Р¶Рё
 	
 	private $real_trade = false;
 	
@@ -29,18 +29,18 @@ class Bot {
 	
 	
 	
-	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
-	//const min_buy = 0.01; // Мин. сумма покупки
-	const buy_value = 0.02; // Сколько покупать
-	const fee = 0.002; // Комиссия
-	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
-	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
-	const min_income = 0.04; // Мин. доход - 4%
-	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
+	//const imp_dif = 0.015; // Р’РёРґРёРјС‹Рµ РёР·РјРµРЅРµРЅРёСЏ @todo СЃРґРµР»Р°С‚СЊ СЂР°СЃС‡РµС‚РЅС‹Рј РёСЃС…РѕРґСЏ РёР· Р¶РµР»Р°РµРјРѕРіРѕ Р·Р°СЂР°Р±РѕС‚РєР° Рё С‚РµРє. РєСѓСЂСЃР°
+	//const min_buy = 0.01; // РњРёРЅ. СЃСѓРјРјР° РїРѕРєСѓРїРєРё
+	const buy_value = 0.02; // РЎРєРѕР»СЊРєРѕ РїРѕРєСѓРїР°С‚СЊ
+	const fee = 0.002; // РљРѕРјРёСЃСЃРёСЏ
+	const min_buy_interval = 86400; // 86400; // РњРёРЅ. РёРЅС‚РµСЂРІР°Р» СЃРѕРІРµСЂС€РµРЅРёСЏ РїРѕРєСѓРїРѕРє = 1 СЃСѓС‚РєРё
+	const min_sell_interval = 86400;// 12 С‡Р°СЃРѕРІ // РњРёРЅ. РёРЅС‚РµСЂРІР°Р» СЃРѕРІРµСЂС€РµРЅРёСЏ РїСЂРѕРґР°Р¶ = 1 СЃСѓС‚РєРё
+	const min_income = 0.04; // РњРёРЅ. РґРѕС…РѕРґ - 4%
+	const long_time =  86400; // РџРѕРЅСЏС‚РёРµ РґРѕР»РіРѕСЃСЂРѕС‡РЅС‹Р№ РїРµСЂРёРѕРґ - Р±РѕР»СЊС€Рµ 2 РґРЅРµР№
 	const order_ttl = 180; // 180
 	
 	
-	const freeze_warning_income = 0.01; // доход при котором есть шанс вморозить деньги, считается при падении
+	const freeze_warning_income = 0.01; // РґРѕС…РѕРґ РїСЂРё РєРѕС‚РѕСЂРѕРј РµСЃС‚СЊ С€Р°РЅСЃ РІРјРѕСЂРѕР·РёС‚СЊ РґРµРЅСЊРіРё, СЃС‡РёС‚Р°РµС‚СЃСЏ РїСЂРё РїР°РґРµРЅРёРё
 	
 	public function __construct($exchange=false)
 	{
@@ -53,7 +53,7 @@ class Bot {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
+		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Р—РґРµСЃСЊ РїРѕ СЂР°СЃС‡РµС‚Р°Рј 1000 / 4, РЅР° СЃС‚РѕР»СЊРєРѕ РґРѕР»Р¶РµРЅ РёР·РјРµРЅРёС‚СЊСЃСЏ РєСѓСЂСЃ С‡С‚РѕР±С‹ Р±РѕС‚ Р·Р°РјРµС‚РёР» РѕС‚Р»РёС‡РёСЏ
 		
 		$this->order_cnt=0;		
 		
@@ -62,7 +62,7 @@ class Bot {
 		$this->avg_sell = Exchange::getAvg('sell', $from,  date('Y-m-d H:i:s', $this->curtime));		
 		
 		
-		// Периоды анализа графика для покупки и продажи (в сек.)
+		// РџРµСЂРёРѕРґС‹ Р°РЅР°Р»РёР·Р° РіСЂР°С„РёРєР° РґР»СЏ РїРѕРєСѓРїРєРё Рё РїСЂРѕРґР°Р¶Рё (РІ СЃРµРє.)
 		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
 		$this->sell_periods = array(/*9*60, 15*60, 30*60,*/ 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
 		
@@ -77,13 +77,13 @@ class Bot {
 	}
 	
 	/**
-	 * Получает изображение графика за период - -0+
-	 * @param  $period - период расчета в сек.
+	 * РџРѕР»СѓС‡Р°РµС‚ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РіСЂР°С„РёРєР° Р·Р° РїРµСЂРёРѕРґ - -0+
+	 * @param  $period - РїРµСЂРёРѕРґ СЂР°СЃС‡РµС‚Р° РІ СЃРµРє.
 	 * @param $name - buy, sell
 	 */
 	public function getGraphImage($curtime, $period, $name)
 	{		
-		// @todo переделать - диапазоны расчитывать более точно
+		// @todo РїРµСЂРµРґРµР»Р°С‚СЊ - РґРёР°РїР°Р·РѕРЅС‹ СЂР°СЃС‡РёС‚С‹РІР°С‚СЊ Р±РѕР»РµРµ С‚РѕС‡РЅРѕ
 		
 		$step = round($period/3);
 		$from_tm = $curtime-$period;
@@ -96,8 +96,8 @@ class Bot {
 		for($i=0;$i<=3;$i++)
 		{			 			
 			$step_ut = $from_tm+$step*$i;
-			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
-			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
+			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Р”РµР»РёРј РїРµСЂРёРѕРґ РЅР° 4 С‚РѕС‡РєРё
+			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Р’РѕРєСЂСѓРі РєР°Р¶РґРѕР№ С‚РѕС‡РєРё РѕС‚РјРµСЂСЏРµРј РЅР°Р·Р°Рґ Рё РІРїРµСЂРµРґ РїРѕР»РѕРІРёРЅСѓ С€Р°РіР°
 			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);
 			
 			//$val=Exchange::NOSQL_getAvg($name, $step_ut_f, $step_ut_t);
@@ -105,7 +105,7 @@ class Bot {
 			
 			if (!$val) 
 			{
-				//Log::AddText($this->curtime, 'Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t);
+				//Log::AddText($this->curtime, 'РќРµ РЅР°С€РµР» РґР°РЅРЅС‹С… Р·Р° РїРµСЂРёРѕРґ СЃ'.$step_ut_f.' РїРѕ '.$step_ut_t);
 				return false;
 			}
 				
@@ -120,7 +120,7 @@ class Bot {
 				continue;
 			}		
 			
-			// Определяем направление
+			// РћРїСЂРµРґРµР»СЏРµРј РЅР°РїСЂР°РІР»РµРЅРёРµ
 			$dif = ($val-$prev);			
 			if ($dif<(-1*$this->imp_dif)) $track.="-";
 			elseif ($dif>$this->imp_dif) $track.="+";
@@ -128,12 +128,12 @@ class Bot {
 			
 
 			//if ($from == '2013-12-11 16:15:01')			
-			//Log::AddText($this->curtime, 'тек='.$val.' пред='.$prev.' разн='.$dif.' => '.$track);
+			//Log::AddText($this->curtime, 'С‚РµРє='.$val.' РїСЂРµРґ='.$prev.' СЂР°Р·РЅ='.$dif.' => '.$track);
 			
 			$prev = $val;
 		}
 		
-		// Восстанавливаем нумерацию ключей
+		// Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅСѓРјРµСЂР°С†РёСЋ РєР»СЋС‡РµР№
 		//$list = array_values($list);
 		
 		$result = array(
@@ -148,7 +148,7 @@ class Bot {
 	} 
 	
 	/**
-	 * Формирует список треков на которых выгодно покупать
+	 * Р¤РѕСЂРјРёСЂСѓРµС‚ СЃРїРёСЃРѕРє С‚СЂРµРєРѕРІ РЅР° РєРѕС‚РѕСЂС‹С… РІС‹РіРѕРґРЅРѕ РїРѕРєСѓРїР°С‚СЊ
 	 * @param unknown_type $tracks
 	 * @return multitype:unknown
 	 */
@@ -161,23 +161,23 @@ class Bot {
 			switch($track['track']){
 				case '-0+':								 // \_/
 				case '--+':								 // \\/
-							// Если трек при падении не вернулся в исходную точку
+							// Р•СЃР»Рё С‚СЂРµРє РїСЂРё РїР°РґРµРЅРёРё РЅРµ РІРµСЂРЅСѓР»СЃСЏ РІ РёСЃС…РѕРґРЅСѓСЋ С‚РѕС‡РєСѓ
 							if($track['items'][0]['val'] - $track['items'][3]['val']>$this->imp_dif)							
 								$result[] = $track; 
 							break; 
 			//	case '00+':	$result[] = $track; break; // __/
 				case '0-+':							   // _\/
-							// Если трек при падении не вернулся в исходную точку
+							// Р•СЃР»Рё С‚СЂРµРє РїСЂРё РїР°РґРµРЅРёРё РЅРµ РІРµСЂРЅСѓР»СЃСЏ РІ РёСЃС…РѕРґРЅСѓСЋ С‚РѕС‡РєСѓ
 							if($track['items'][1]['val'] - $track['items'][3]['val']>$this->imp_dif)
 								$result[] = $track; 
 							//Log::AddText(0, $track['items'][1]['val'] - $track['items'][3]['val'].' > '.$this->imp_dif);
 							break; 
-			// Если есть долгосрочное падение, не покупать 
+			// Р•СЃР»Рё РµСЃС‚СЊ РґРѕР»РіРѕСЃСЂРѕС‡РЅРѕРµ РїР°РґРµРЅРёРµ, РЅРµ РїРѕРєСѓРїР°С‚СЊ 
 				case '---':								// \\\
 				case '+--':								// /\\
 				case '0--':								// /\\
 							if ($track['period']>self::long_time) {
-								//Log::Add($this->curtime, 'Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
+								//Log::Add($this->curtime, 'Р—Р°РјРµС‡РµРЅРѕ РґРѕР»РіРѕСЃСЂРѕС‡РЅРѕРµ РїР°РґРµРЅРёРµ '.$track['track'].' РІ С‚РµС‡РµРЅРёРё '.($track['period']/60).' РјРёРЅ., РЅРµ РїРѕРєСѓРїР°РµРј');
 								return false;								
 							}
 							break;				
@@ -187,7 +187,7 @@ class Bot {
 	}
 	
 	/**
-	 * Формирует список треков на которых выгодно продавать
+	 * Р¤РѕСЂРјРёСЂСѓРµС‚ СЃРїРёСЃРѕРє С‚СЂРµРєРѕРІ РЅР° РєРѕС‚РѕСЂС‹С… РІС‹РіРѕРґРЅРѕ РїСЂРѕРґР°РІР°С‚СЊ
 	 * @param unknown_type $tracks
 	 * @return multitype:unknown
 	 */
@@ -223,80 +223,19 @@ class Bot {
 		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
 	}
 	
-
-	
-	public function virtualBuy($cnt)
-	{
-		$summ = $cnt*$this->current_exchange->buy;
-		
-		$order = new Order();		
-		$order->price = $this->current_exchange->buy;
-		$order->count = $cnt;
-		$order->fee = $summ * self::fee;
-		$order->summ = $summ;
-		$order->type = 'buy';
-		$order->status = 'close';
-		$order->create_dtm = $this->current_exchange->dtm;		
-		$order->close_dtm = $this->current_exchange->dtm;
-		
-		//Log::Add($this->curtime, '<b>Создана сделка на ПОКУПКУ '.self::buy_value.' ед. за '.$this->current_exchange->buy.' ('.$this->current_exchange->buy*(self::fee).' комиссия) на сумму '.$order->price.' руб.</b>', 1);
-		//if ($btc_id) $order->btc_id = $btc_id;
-		
-		$order->save();
-		$this->completeBuy($order);		
-		$this->balance-=$summ+$order->fee;
-		//echo 'Меняем баланс '.$this->balance.'-='.$summ.'-'.$order->fee.' ()<br/>';
-		$this->balance_btc+=$cnt;
-
-		return true;
-	}
-	
-	public function virtualSell($buy)
-	{	
-		
-		$summ = $buy->count*$this->current_exchange->sell;
-		
-		$order = new Order();
-		$order->price = $this->current_exchange->sell;
-		$order->count = $buy->count;
-		$order->fee = $summ * self::fee;
-		$order->summ = $summ;
-		$order->type = 'sell';
-		$order->status = 'close';
-		$order->create_dtm = $this->current_exchange->dtm;
-		$order->close_dtm = $this->current_exchange->dtm;
-		
-		//$price = $this->current_exchange->sell*$buy->count*(1-self::fee);
-		//Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $buy->count.' ед. (куплено за '.$buy->summ.') за '.$price.', доход = '.($price-$buy->summ).' руб.</b>', 1);
-		
-		//if ($buy->id) $order->btc_id = $buy->id;
-		
-		$order->save();
-		
-		$buy->order_id = $order->id;
-		$buy->update('order_id');
-			
-		
-		$this->completeSell($order);
-		
-		$this->balance+=$order->summ-$order->fee;
-		$this->balance_btc-=$buy->count;
-	
-		return true;
-	}
 	
 	
 	private function makeOrder($cnt, $type)
 	{		
-		// Цена покупки / продажи
+		// Р¦РµРЅР° РїРѕРєСѓРїРєРё / РїСЂРѕРґР°Р¶Рё
 		$price = $this->current_exchange->$type;
 		
 		
 		$api = APIProvider::get_Instance();
-		// Пытаемся создать заказ на бирже
+		// РџС‹С‚Р°РµРјСЃСЏ СЃРѕР·РґР°С‚СЊ Р·Р°РєР°Р· РЅР° Р±РёСЂР¶Рµ
 		$result = $api->makeOrder($cnt, 'btc_rur', $type, $price);
 
-		// Если все ок, добавляем в базу созданный заказ
+		// Р•СЃР»Рё РІСЃРµ РѕРє, РґРѕР±Р°РІР»СЏРµРј РІ Р±Р°Р·Сѓ СЃРѕР·РґР°РЅРЅС‹Р№ Р·Р°РєР°Р·
 		$order = new Order();
 		$order->id = $result['order_id'];
 		$order->price = $price;
@@ -308,13 +247,13 @@ class Bot {
 		$order->create_dtm = $this->current_exchange->dtm;
 		//if ($buy_id) $order->buy_id = $buy_id;
 		
-		// Заказ может быть сразу выполнене, в этом случае закрываем его в базе
+		// Р—Р°РєР°Р· РјРѕР¶РµС‚ Р±С‹С‚СЊ СЃСЂР°Р·Сѓ РІС‹РїРѕР»РЅРµРЅРµ, РІ СЌС‚РѕРј СЃР»СѓС‡Р°Рµ Р·Р°РєСЂС‹РІР°РµРј РµРіРѕ РІ Р±Р°Р·Рµ
 		if($result['received'])
 			$order->close($exchange->dtm);	
 		
 		$order->save();
 		
-		// Актуализируем баланс
+		// РђРєС‚СѓР°Р»РёР·РёСЂСѓРµРј Р±Р°Р»Р°РЅСЃ
 		$this->setBalance($result['funds']['rur']);
 		$this->setBalanceBtc($result['funds']['btc']);
 		
@@ -322,7 +261,7 @@ class Bot {
 	}
 	
 	/**
-	 * Подготовка к покупке (создание ордера, записей в бд)
+	 * РџРѕРґРіРѕС‚РѕРІРєР° Рє РїРѕРєСѓРїРєРµ (СЃРѕР·РґР°РЅРёРµ РѕСЂРґРµСЂР°, Р·Р°РїРёСЃРµР№ РІ Р±Рґ)
 	 * @return boolean
 	 */
 	public function startBuy()
@@ -331,16 +270,20 @@ class Bot {
 	//	if (!$this->real_trade) 
 		//	return $this->virtualBuy(self::buy_value);
 		
-		// Создаем ордер
+		// РЎРѕР·РґР°РµРј РѕСЂРґРµСЂ
 		$order = $this->makeOrder(self::buy_value, 'buy');		
 		
-		// Если создался
+		// Р•СЃР»Рё СЃРѕР·РґР°Р»СЃСЏ
 		if ($order)
 		{	
-			// Если создан ордер
+			
+			// РџРёС€РµРј РІ СЃРІРѕРґРєСѓ
+			Balance::add('rur', 'РЎРѕР·РґР°РЅ РѕСЂРґРµСЂ РЅР° РїРѕРєСѓРїРєСѓ '.$order->count.' btc', -1*$order->summ);			
+			
+			// Р•СЃР»Рё СЃРѕР·РґР°РЅ РѕСЂРґРµСЂ
 			if ($order->status == 'open')				
-				Log::Add($this->curtime, '<b>Создана сделка на покупку '.$order->count.' ед. за '.$order->price.' ('.($order->summ*self::fee).' комиссия) на сумму '.$order->summ.' руб.</b>', 1);			
-			// Если сразу куплено то закрыть ордер
+				Log::Add($this->curtime, '<b>РЎРѕР·РґР°РЅР° СЃРґРµР»РєР° РЅР° РїРѕРєСѓРїРєСѓ '.$order->count.' РµРґ. Р·Р° '.$order->price.' ('.($order->fee).' РєРѕРјРёСЃСЃРёСЏ) РЅР° СЃСѓРјРјСѓ '.$order->summ.' СЂСѓР±.</b>', 1);			
+			// Р•СЃР»Рё СЃСЂР°Р·Сѓ РєСѓРїР»РµРЅРѕ С‚Рѕ Р·Р°РєСЂС‹С‚СЊ РѕСЂРґРµСЂ
 			else 
 				$this->completeBuy($order);
 					
@@ -351,32 +294,32 @@ class Bot {
 	}
 	
 	/**
-	 * Подготовка к продаже (создание ордера, записей в бд)
+	 * РџРѕРґРіРѕС‚РѕРІРєР° Рє РїСЂРѕРґР°Р¶Рµ (СЃРѕР·РґР°РЅРёРµ РѕСЂРґРµСЂР°, Р·Р°РїРёСЃРµР№ РІ Р±Рґ)
 	 * @return boolean
 	 */
 	public function startSell($buy)
 	{	
-		
-/*		if (!$this->real_trade)
-			return $this->virtualSell($buy);
-*/
-		// Создаем ордер
+
+		// РЎРѕР·РґР°РµРј РѕСЂРґРµСЂ
 		$order = $this->makeOrder($buy->count, 'sell');
 		
 		if ($order)
 		{	
-			// Присваиваем BUY
+			// РџСЂРёСЃРІР°РёРІР°РµРј BUY
 			$buy->order_id = $order->id;
 			$buy->update('order_id');		
 			
-			// Если не удалось сразу продать то заявка ждет 3 минуты своего покупателя
+			
+			// РџРёС€РµРј РІ СЃРІРѕРґРєСѓ
+			Balance::add('btc', 'РЎРѕР·РґР°РЅ РѕСЂРґРµСЂ РЅР° РїСЂРѕРґР°Р¶Сѓ '.$order->count.' btc', -1*$order->count);
+			
+			// Р•СЃР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ СЃСЂР°Р·Сѓ РїСЂРѕРґР°С‚СЊ С‚Рѕ Р·Р°СЏРІРєР° Р¶РґРµС‚ 3 РјРёРЅСѓС‚С‹ СЃРІРѕРµРіРѕ РїРѕРєСѓРїР°С‚РµР»СЏ
 			if ($order->status == 'open')			
-				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $order->count.' ед. (куплено за '.$buy->summ.') за '.$order->price.', комиссия='.$order->fee.', доход = '.($order->summ-$buy->summ-$buy->fee-$order->fee).' руб.</b>', 1);			
-			// Если сразу продали то закрываем позицию в бд
+				Log::Add($this->curtime, '<b>РЎРѕР·РґР°Р» СЃРґРµР»РєСѓ РЅР° РїСЂРѕРґР°Р¶Сѓ (в„–'.$buy->id.')  '. $order->count.' РµРґ. (РєСѓРїР»РµРЅРѕ Р·Р° '.$buy->summ.') Р·Р° '.$order->price.', РєРѕРјРёСЃСЃРёСЏ='.$order->fee.', РґРѕС…РѕРґ = '.($order->summ-$buy->summ-$buy->fee-$order->fee).' СЂСѓР±.</b>', 1);			
+			// Р•СЃР»Рё СЃСЂР°Р·Сѓ РїСЂРѕРґР°Р»Рё С‚Рѕ Р·Р°РєСЂС‹РІР°РµРј РїРѕР·РёС†РёСЋ РІ Р±Рґ
 			else
 			{			
-				$sell = $this->completeSell($order);
-				
+				$sell = $this->completeSell($order);				
 			}			
 			
 			
@@ -388,63 +331,70 @@ class Bot {
 	
 	public function completeBuy($order)
 	{
-		// Закрываем ордер
+		// Р—Р°РєСЂС‹РІР°РµРј РѕСЂРґРµСЂ
 		$order->close($this->current_exchange->dtm);
 		$order->save();
 		
-		// Фиксируем в базе покупку
+		// Р¤РёРєСЃРёСЂСѓРµРј РІ Р±Р°Р·Рµ РїРѕРєСѓРїРєСѓ
 		$buy = Buy::make($order);		
 		
-		Log::Add($this->curtime, '<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$this->current_exchange->buy.' ('.$order->fee.' комиссия) на сумму '.$order->summ.' руб.</b>', 1);
+		Log::Add($this->curtime, '<b>РЎРѕРІРµСЂС€РµРЅР° РїРѕРєСѓРїРєР° в„–'.$buy->id.' '.$order->count.' РµРґ. Р·Р° '.$this->current_exchange->buy.' ('.$order->fee.' РєРѕРјРёСЃСЃРёСЏ) РЅР° СЃСѓРјРјСѓ '.$order->summ.' СЂСѓР±.</b>', 1);
 		$this->order_cnt++;
 		
-		// Для актуализации баланса при тесте
+		// Р”Р»СЏ Р°РєС‚СѓР°Р»РёР·Р°С†РёРё Р±Р°Р»Р°РЅСЃР° РїСЂРё С‚РµСЃС‚Рµ
 		$api = APIProvider::get_Instance();
 		$this->balance_btc = $api->CompleteVirtualBuy($order);
+		
+		// РџРёС€РµРј РІ СЃРІРѕРґРєСѓ
+		Balance::add('btc', 'Р—Р°РєСЂС‹С‚ РѕСЂРґРµСЂ РЅР° РїРѕРєСѓРїРєСѓ '.$order->count.' btc', $order->count);
+		Balance::add('rur', 'РќР°С‡РёСЃР»РµРЅР° РєРѕРјРёСЃСЃРёСЏ '.$order->fee.' rur', -1*$order->fee);
 		
 	}
 	
 	public function completeSell($order)
 	{
-		// Закрываем ордер
+		// Р—Р°РєСЂС‹РІР°РµРј РѕСЂРґРµСЂ
 		$order->close($this->current_exchange->dtm);
 		$order->save();		
 		
 		$sell=Sell::make($order);	
 		
-		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
+		Log::Add($this->curtime, '<b>РЎРѕРІРµСЂС€РµРЅР° РїСЂРѕРґР°Р¶Р° (в„–'.$order->buy->id.')  '. $order->count.' РµРґ. (РєСѓРїР»РµРЅС‹С… Р·Р° '.$order->buy->summ.') Р·Р° '.$sell->summ.', РєРѕРјРёСЃСЃРёСЏ='.$sell->fee.', РґРѕС…РѕРґ = '.($sell->income).' СЂСѓР±.</b>', 1);
 		
 		$this->order_cnt++;
 		$this->total_income+=$sell->income;
 		
-		// Для актуализации баланса при тесте
+		// Р”Р»СЏ Р°РєС‚СѓР°Р»РёР·Р°С†РёРё Р±Р°Р»Р°РЅСЃР° РїСЂРё С‚РµСЃС‚Рµ
 		$api = APIProvider::get_Instance();
 		$this->balance = $api->CompleteVirtualSell($order);
+		
+		// РџРёС€РµРј РІ СЃРІРѕРґРєСѓ
+		Balance::add('rur', 'Р—Р°РєСЂС‹С‚ РѕСЂРґРµСЂ РЅР° РїСЂРѕРґР°Р¶Сѓ '.$order->count.' btc', $order->summ);
 	}
 	
 	
 	public function NeedBuy()
 	{		
-		$curtime = $this->curtime; //Дата операции
+		$curtime = $this->curtime; //Р”Р°С‚Р° РѕРїРµСЂР°С†РёРё
 		$dt = date('Y-m-d H:i:s', $curtime);
 		
 		
-		// Есть ли деньги
+		// Р•СЃС‚СЊ Р»Рё РґРµРЅСЊРіРё
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
 		{
-			Log::Add($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
+			Log::Add($this->curtime, 'РќРµ С…РІР°С‚Р°РµС‚ РґРµРЅРµРі, РѕСЃС‚Р°Р»РѕСЃСЊ '.$this->balance.', РЅСѓР¶РЅРѕ '.($this->current_exchange->buy*self::buy_value));
 			return false;
 		}
 		
-		// Если текущая цена выше средней не покупаем		
+		// Р•СЃР»Рё С‚РµРєСѓС‰Р°СЏ С†РµРЅР° РІС‹С€Рµ СЃСЂРµРґРЅРµР№ РЅРµ РїРѕРєСѓРїР°РµРј		
 		if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
 		{
 
-			Log::Add($this->curtime, 'Цена выше средней за 7 дн. ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
+			Log::Add($this->curtime, 'Р¦РµРЅР° РІС‹С€Рµ СЃСЂРµРґРЅРµР№ Р·Р° 7 РґРЅ. ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), РЅРµ РїРѕРєСѓРїР°РµРј.');
 			return false;
 		}
 		
-		// Проверяем была ли уже покупка за последнее время, если была и цена была более выгодная чем текущая то не покупаем
+		// РџСЂРѕРІРµСЂСЏРµРј Р±С‹Р»Р° Р»Рё СѓР¶Рµ РїРѕРєСѓРїРєР° Р·Р° РїРѕСЃР»РµРґРЅРµРµ РІСЂРµРјСЏ, РµСЃР»Рё Р±С‹Р»Р° Рё С†РµРЅР° Р±С‹Р»Р° Р±РѕР»РµРµ РІС‹РіРѕРґРЅР°СЏ С‡РµРј С‚РµРєСѓС‰Р°СЏ С‚Рѕ РЅРµ РїРѕРєСѓРїР°РµРј
 		$lastBuy = Buy::getLast();		
 		if ($lastBuy)
 		{
@@ -456,98 +406,98 @@ class Bot {
 		foreach($this->buy_periods as $period)		
 			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
 		
-								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
+								// Log::AddText($this->curtime, 'РўСЂРµРєРё '.print_r($tracks, true));
 								// Dump::d($tracks);
 								
-		//Анализируем треки
+		//РђРЅР°Р»РёР·РёСЂСѓРµРј С‚СЂРµРєРё
 		$tracks = $this->getBuyTracks($tracks);
 		if (!$tracks || sizeof($tracks) == 0) return false;		
-							//	Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
+							//	Log::AddText($this->curtime, "Р’С‹РіРѕРґРЅС‹Рµ С‚СЂРµРєРё ".print_r($tracks, true));
 		
-		//Удаляем треки по которым уже были покупки
+		//РЈРґР°Р»СЏРµРј С‚СЂРµРєРё РїРѕ РєРѕС‚РѕСЂС‹Рј СѓР¶Рµ Р±С‹Р»Рё РїРѕРєСѓРїРєРё
 		foreach($tracks as $key=>$track)		
 			if ($this->AlreadyBought($track['period']))		
 			{
-								//	Log::AddText($this->curtime, 'Уже была покупка по треку '.print_r($track, true));
+								//	Log::AddText($this->curtime, 'РЈР¶Рµ Р±С‹Р»Р° РїРѕРєСѓРїРєР° РїРѕ С‚СЂРµРєСѓ '.print_r($track, true));
 				unset($tracks[$key]);
 			}
-								//	Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
+								//	Log::AddText($this->curtime, 'РћСЃС‚Р°РІС€РёРµСЃСЏ РїРѕСЃР»Рµ РѕС‚СЃРµРёРІР°РЅРёСЏ С‚СЂРµРєРё '.print_r($tracks, true));
 			
-		// Если остались треки
+		// Р•СЃР»Рё РѕСЃС‚Р°Р»РёСЃСЊ С‚СЂРµРєРё
 		if (sizeof($tracks)>0)
 		{
-			// Покупаем
+			// РџРѕРєСѓРїР°РµРј
 			if ($this->startBuy())			
-			// Резервируем время покупки
+			// Р РµР·РµСЂРІРёСЂСѓРµРј РІСЂРµРјСЏ РїРѕРєСѓРїРєРё
 				foreach($tracks as $track)	
 				{
-					//Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
+					//Log::AddText($this->curtime, 'РўСЂРµРє <b>'.$track['track'].'</b> Р·Р° '.($track['period']/60).' РјРёРЅ.');
 					//Dump::d($track);
 					$this->ReservePeriod($track['period']);					
 				}	
 		}				
 		else
-		Log::AddText($this->curtime, 'Нет интересных покупок');		
+		Log::AddText($this->curtime, 'РќРµС‚ РёРЅС‚РµСЂРµСЃРЅС‹С… РїРѕРєСѓРїРѕРє');		
 	}
 	
 	public function NeedSell()
 	{
-		//Log::AddText($this->curtime, 'ПРОДАЖИ');
-		$curtime = $this->curtime; //Дата операции
+		//Log::AddText($this->curtime, 'РџР РћР”РђР–Р');
+		$curtime = $this->curtime; //Р”Р°С‚Р° РѕРїРµСЂР°С†РёРё
 		$dt = date('Y-m-d H:i:s', $curtime);		
 		
 		
-		// Если текущая цена ниже средней не продаем
+		// Р•СЃР»Рё С‚РµРєСѓС‰Р°СЏ С†РµРЅР° РЅРёР¶Рµ СЃСЂРµРґРЅРµР№ РЅРµ РїСЂРѕРґР°РµРј
 		if ($this->avg_sell>$this->current_exchange->sell)
 		{
-			//Log::AddText($this->curtime, 'Цена ниже средней за 7 дн. ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
+			//Log::AddText($this->curtime, 'Р¦РµРЅР° РЅРёР¶Рµ СЃСЂРµРґРЅРµР№ Р·Р° 7 РґРЅ. ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), РЅРµ РїСЂРѕРґР°РµРј.');
 			return false;
 		}	
 		
-		// Проверяем была ли уже продажа за последнее время, если была и цена была более выгодная чем текущая то не продаем		
+		// РџСЂРѕРІРµСЂСЏРµРј Р±С‹Р»Р° Р»Рё СѓР¶Рµ РїСЂРѕРґР°Р¶Р° Р·Р° РїРѕСЃР»РµРґРЅРµРµ РІСЂРµРјСЏ, РµСЃР»Рё Р±С‹Р»Р° Рё С†РµРЅР° Р±С‹Р»Р° Р±РѕР»РµРµ РІС‹РіРѕРґРЅР°СЏ С‡РµРј С‚РµРєСѓС‰Р°СЏ С‚Рѕ РЅРµ РїСЂРѕРґР°РµРј		
 		$lastSell = Sell::getLast();
 		if ($lastSell)
 		{
 			$tm = strtotime($lastSell->dtm)+self::min_buy_interval;			
-			//Log::Add($curtime, 'Проверяем была ли продажа, ждем с '.$lastSell->dtm.' до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше текущей');
+			//Log::Add($curtime, 'РџСЂРѕРІРµСЂСЏРµРј Р±С‹Р»Р° Р»Рё РїСЂРѕРґР°Р¶Р°, Р¶РґРµРј СЃ '.$lastSell->dtm.' РґРѕ '.date('Y-m-d H:i:s', $tm).' С‚РµРєСѓС‰Р°СЏ С†РµРЅР° '.$this->current_exchange->sell.' РјРµРЅСЊС€Рµ С‚РµРєСѓС‰РµР№');
 			if ($tm>$this->curtime && $this->current_exchange->sell - $lastSell->price < $this->imp_dif) 
 			{
-				//Log::Add($curtime, 'Уже была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше прошлой '.$lastSell->price);
+				//Log::Add($curtime, 'РЈР¶Рµ Р±С‹Р»Р° РїСЂРѕРґР°Р¶Р°, Р¶РґРµРј РґРѕ '.date('Y-m-d H:i:s', $tm).' С‚РµРєСѓС‰Р°СЏ С†РµРЅР° '.$this->current_exchange->sell.' РјРµРЅСЊС€Рµ РїСЂРѕС€Р»РѕР№ '.$lastSell->price);
 				return false;
 			}
 		}
 		
-		//Перебираем периоды		
+		//РџРµСЂРµР±РёСЂР°РµРј РїРµСЂРёРѕРґС‹		
 		$tracks=array();
 		foreach($this->sell_periods as $period)
 		{
 			$tracks[] = $this->getGraphImage($curtime, $period, 'sell');
 		}	
-		//Log::AddText($this->curtime, 'Треки продажи'.print_r($tracks, true));
+		//Log::AddText($this->curtime, 'РўСЂРµРєРё РїСЂРѕРґР°Р¶Рё'.print_r($tracks, true));
 		//Dump::d($tracks);
 		
-		//Анализируем треки
+		//РђРЅР°Р»РёР·РёСЂСѓРµРј С‚СЂРµРєРё
 		$tracks = $this->getSellTracks($tracks);
 		
 		if (sizeof($tracks) == 0) return false;
 		
-		//Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
+		//Log::AddText($this->curtime, 'Р•СЃС‚СЊ РёРЅС‚РµСЂРµСЃРЅС‹Рµ С‚СЂРµРєРё РґР»СЏ РїСЂРѕРґР°Р¶Рё'.print_r($tracks, true));
 		
 		
-		//Смотрим что продать
+		//РЎРјРѕС‚СЂРёРј С‡С‚Рѕ РїСЂРѕРґР°С‚СЊ
 		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
 
-		// Ищем выгодные продажи
+		// РС‰РµРј РІС‹РіРѕРґРЅС‹Рµ РїСЂРѕРґР°Р¶Рё
 		foreach($bought as $buy)
 		{
-			// Цена продажи
+			// Р¦РµРЅР° РїСЂРѕРґР°Р¶Рё
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);						
-			// Сколько заработаем при продаже
+			// РЎРєРѕР»СЊРєРѕ Р·Р°СЂР°Р±РѕС‚Р°РµРј РїСЂРё РїСЂРѕРґР°Р¶Рµ
 			$income = $curcost - $buy->summ*(1+self::fee);						
-			// Достаточно ли заработаем
+			// Р”РѕСЃС‚Р°С‚РѕС‡РЅРѕ Р»Рё Р·Р°СЂР°Р±РѕС‚Р°РµРј
 			if ($income/$buy->summ < self::min_income)
 			{
-				//if ($income>0) Log::Add($this->curtime, 'Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);							
+				//if ($income>0) Log::Add($this->curtime, 'РќРµ РїСЂРѕРґР°Р»Рё (в„–'.$buy->id.'), РґРѕС…РѕРґ СЃР»РёС€РєРѕРј РјР°Р» '.$income.' < '.(self::min_income*$curcost).' РєСѓРїРёР» Р·Р° '.$buy->summ.' РјРѕР¶РЅРѕ РїСЂРѕРґР°С‚СЊ Р·Р° '.$curcost.' sell='.$this->current_exchange->sell);							
 				continue;
 			}
 			//else Log::Add($this->curtime, '$income='.$income.' $curcost='.$curcost.' self::min_income='.self::min_income);
@@ -558,21 +508,21 @@ class Bot {
 		}
 		
 
-		// Продаем то что может залежаться
+		// РџСЂРѕРґР°РµРј С‚Рѕ С‡С‚Рѕ РјРѕР¶РµС‚ Р·Р°Р»РµР¶Р°С‚СЊСЃСЏ
 		foreach($bought as $buy)
 		{
-			// Цена продажи
+			// Р¦РµРЅР° РїСЂРѕРґР°Р¶Рё
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
-			// Сколько заработаем при продаже
+			// РЎРєРѕР»СЊРєРѕ Р·Р°СЂР°Р±РѕС‚Р°РµРј РїСЂРё РїСЂРѕРґР°Р¶Рµ
 			$income = $curcost - $buy->summ*(1+self::fee);
-			// Достаточно ли заработаем
+			// Р”РѕСЃС‚Р°С‚РѕС‡РЅРѕ Р»Рё Р·Р°СЂР°Р±РѕС‚Р°РµРј
 			if ($income>0 && $income/$buy->summ < self::freeze_warning_income)
 			{
-				Log::Add($this->curtime, 'Вынужденная продажа, купили за '.$buy->summ.', текущая цена '.$curcost.', профит '.$income);
+				Log::Add($this->curtime, 'Р’С‹РЅСѓР¶РґРµРЅРЅР°СЏ РїСЂРѕРґР°Р¶Р°, РєСѓРїРёР»Рё Р·Р° '.$buy->summ.', С‚РµРєСѓС‰Р°СЏ С†РµРЅР° '.$curcost.', РїСЂРѕС„РёС‚ '.$income);
 				$this->startSell($buy);
 				continue;
 			}
-			//else Log::Add($this->curtime, 'Вынужденная продажа №'.$buy->id.' не состоялась $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);
+			//else Log::Add($this->curtime, 'Р’С‹РЅСѓР¶РґРµРЅРЅР°СЏ РїСЂРѕРґР°Р¶Р° в„–'.$buy->id.' РЅРµ СЃРѕСЃС‚РѕСЏР»Р°СЃСЊ $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);
 				
 			
 		}
@@ -584,30 +534,30 @@ class Bot {
 	public function checkOrders()
 	{	
 		
-		// Получаем активные ордеры
+		// РџРѕР»СѓС‡Р°РµРј Р°РєС‚РёРІРЅС‹Рµ РѕСЂРґРµСЂС‹ @todo - РЅРµСЂР°Р±РѕС‚Р°РµС‚, РѕСЂРґРµСЂС‹ РµСЃС‚СЊ РЅРѕ РѕРЅРё Р·Р°РєСЂС‹РІР°СЋС‚СЃСЏ
 		$api = APIProvider::get_Instance();
 		$active_orders = $api->getActiveOrders();		
 		
 		
-		// Получаем все открытые ордеры по бд
+		// РџРѕР»СѓС‡Р°РµРј РІСЃРµ РѕС‚РєСЂС‹С‚С‹Рµ РѕСЂРґРµСЂС‹ РїРѕ Р±Рґ 
 		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
 
 		foreach($orders as $order)
 		{			
-			// Если ордер из базы найден среди активных
+			// Р•СЃР»Рё РѕСЂРґРµСЂ РёР· Р±Р°Р·С‹ РЅР°Р№РґРµРЅ СЃСЂРµРґРё Р°РєС‚РёРІРЅС‹С…
 			if (isset($active_orders[$order->id]))
 			{		
-				// Если ордер висит более 3 минут - удаляем
+				// Р•СЃР»Рё РѕСЂРґРµСЂ РІРёСЃРёС‚ Р±РѕР»РµРµ 3 РјРёРЅСѓС‚ - СѓРґР°Р»СЏРµРј
 				if ($active_orders[$order->id]['timestamp_created']<$this->curtime-self::order_ttl)
 				{
-					Log::AddText($this->curtime, 'Отменяем ордер №'.$order->id, 1);
-					//Отменить ордер
+					Log::AddText($this->curtime, 'РћС‚РјРµРЅСЏРµРј РѕСЂРґРµСЂ в„–'.$order->id, 1);
+					//РћС‚РјРµРЅРёС‚СЊ РѕСЂРґРµСЂ
 					$order->cancel();
 					continue;
 				}
 			}			
 			
-			// Если заказ не найден, значит он успешно выполнен (нужно это будет проверить)			
+			// Р•СЃР»Рё Р·Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ, Р·РЅР°С‡РёС‚ РѕРЅ СѓСЃРїРµС€РЅРѕ РІС‹РїРѕР»РЅРµРЅ (РЅСѓР¶РЅРѕ СЌС‚Рѕ Р±СѓРґРµС‚ РїСЂРѕРІРµСЂРёС‚СЊ)			
 			if ($order->type == 'buy')
 			{				
 				$this->completeBuy($order);
@@ -637,6 +587,9 @@ class Bot {
 
 			$start_balance = $this->balance;
 			$start_balance_btc = $this->balance_btc;
+			
+			Balance::actualize('rur', $this->balance);
+			Balance::actualize('btc', $this->balance_btc);
 		}	
 		
 		$this->NeedBuy();
@@ -648,15 +601,15 @@ class Bot {
 		
 		if ($this->order_cnt>0)
 		{				
-			Log::AddText($this->curtime, 'Баланс на начало');
-			Log::AddText($this->curtime, 'Руб: '.$start_balance, 1);			
+			Log::AddText($this->curtime, 'Р‘Р°Р»Р°РЅСЃ РЅР° РЅР°С‡Р°Р»Рѕ');
+			Log::AddText($this->curtime, 'Р СѓР±: '.$start_balance, 1);			
 			Log::AddText($this->curtime, 'Btc: '.round($start_balance_btc, 5), 1);
 			
-			Log::AddText($this->curtime, 'Баланс на конец');
-			Log::AddText($this->curtime, 'Руб: '.$this->balance, 1);
+			Log::AddText($this->curtime, 'Р‘Р°Р»Р°РЅСЃ РЅР° РєРѕРЅРµС†');
+			Log::AddText($this->curtime, 'Р СѓР±: '.$this->balance, 1);
 			Log::AddText($this->curtime, 'Btc: '.round($this->balance_btc, 5), 1);		
 				
-			Log::Add($this->curtime, 'Всего заработано: '.$this->total_income, 1);
+			Log::Add($this->curtime, 'Р’СЃРµРіРѕ Р·Р°СЂР°Р±РѕС‚Р°РЅРѕ: '.$this->total_income, 1);
 		}
 		
 	}
