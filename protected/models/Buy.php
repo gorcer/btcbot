@@ -112,7 +112,7 @@ class Buy extends CActiveRecord
 		// Покупаем
 		$buy = new Buy();
 		$buy->dtm = $order->close_dtm;
-		$buy->count = $order->count;
+		$buy->count = $order->count-$order->fee;
 		$buy->price =$order->price;
 		$buy->summ = $order->summ;
 		$buy->fee = $order->fee;		

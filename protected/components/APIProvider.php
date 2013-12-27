@@ -134,7 +134,6 @@ class APIProvider {
 		$bot = Bot::get_Instance();
 		
 		$summ = $cnt * $price;
-		$fee = $summ * (Bot::fee);		
 		
 		// Создаем виртуальную заявку на покупку, будет исполнена при следующем запросе
 		// Расчитываем баланс
@@ -231,11 +230,47 @@ class APIProvider {
 							'return' => $this->activeOrders,
 					);
 		
-		return $result;
+		return $result['return'];
 	}
 	
-	public static function CancelOrder($order)
+	private function CancelOrderVirtual($order)
 	{
+		unset($this->activeOrders[$order->id]);
+		
+		if ($order->type == 'buy')
+		{
+			$balance_btc = $this->balance_btc;
+			$balance = $this->balance + $order->summ;
+				
+		} else {
+				
+			$balance_btc = $this->balance_btc + $order->count;
+			$balance = $this->balance;
+		}
+		
+		$result = array(
+						"success" => 1,
+						"return" => array (
+							"order_id"=>$order->id,
+							"funds" => array (
+								"rur"=>$balance,
+								"btc"=>$balance_btc,																
+							)
+						)
+					);
+		
+		$this->balance = $balance;
+		$this->balance_btc = $balance_btc;
+		
+		return($result);
+	}
+	
+	public function CancelOrder($order)
+	{
+		// Если отменяем виртуально
+		if (self::isVirtual)
+			return $this->CancelOrderVirtual($order);
+		
 		$BTCeAPI = BTCeAPI::get_Instance();
 		try {
 			$res = $BTCeAPI->apiQuery('CancelOrder', array('order_id'=>$order->id));
@@ -244,23 +279,14 @@ class APIProvider {
 			return false;
 		}
 		
-		if ($res['success'] == 1)
-		{
-			$bot = Bot::get_Instance();
-			$bot->setBalance($res['return']['funds']['rur']);
-			$bot->setBalanceBtc($res['return']['funds']['btc']);
-				
-			$order->status = 'cancel';
-			$order->close_dtm = $bot->current_exchange->dtm;
-			$order->save();			
-		}
+		return $res;
 	}
 	
 	
 	// Применение виртуальной покупки
 	public function CompleteVirtualBuy($order)
 	{		
-		$this->balance_btc+=$order->count;
+		$this->balance_btc+=$order->count-$order->fee;
 		return $this->balance_btc;
 	}
 

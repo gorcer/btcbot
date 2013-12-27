@@ -27,7 +27,7 @@ class Bot {
 	
 	private static $self=false;
 	
-	
+	private $api; 
 	
 	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
 	//const min_buy = 0.01; // Мин. сумма покупки
@@ -65,6 +65,9 @@ class Bot {
 		// Периоды анализа графика для покупки и продажи (в сек.)
 		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
 		$this->sell_periods = array(/*9*60, 15*60, 30*60,*/ 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
+		
+		$this->api = APIProvider::get_Instance();
+		
 		
 		self::$self = $this;
 	}
@@ -231,17 +234,29 @@ class Bot {
 		$price = $this->current_exchange->$type;
 		
 		
-		$api = APIProvider::get_Instance();
+	
 		// Пытаемся создать заказ на бирже
-		$result = $api->makeOrder($cnt, 'btc_rur', $type, $price);
+		$result = $this->api->makeOrder($cnt, 'btc_rur', $type, $price);
 
 		// Если все ок, добавляем в базу созданный заказ
 		$order = new Order();
 		$order->id = $result['order_id'];
-		$order->price = $price;
-		$order->count = $cnt;
+		$order->price = $price;		
 		$order->summ = $cnt*$price;
-		$order->fee = $order->summ*self::fee;
+		$order->count = $cnt;
+		
+		// Комиссия может быть в btc а может быть в rur
+		if ($type == 'buy')
+		{
+			$order->fee = $cnt*self::fee;
+			//$order->count = $cnt-$order->fee;	
+		}
+		else
+		{
+			$order->fee = $order->summ*self::fee;
+			//$order->summ-=$order->fee;			
+		}		
+		
 		$order->type = $type;
 		$order->status = 'open';
 		$order->create_dtm = $this->current_exchange->dtm;
@@ -275,10 +290,9 @@ class Bot {
 		
 		// Если создался
 		if ($order)
-		{	
-			
+		{				
 			// Пишем в сводку
-			Balance::add('rur', 'Создан ордер на покупку '.$order->count.' btc', -1*$order->summ);			
+			Balance::add('rur', 'Создан ордер №'.$order->id.' на покупку '.$order->count.' btc', -1*$order->summ);			
 			
 			// Если создан ордер
 			if ($order->status == 'open')				
@@ -307,11 +321,10 @@ class Bot {
 		{	
 			// Присваиваем BUY
 			$buy->order_id = $order->id;
-			$buy->update('order_id');		
-			
+			$buy->update('order_id');					
 			
 			// Пишем в сводку
-			Balance::add('btc', 'Создан ордер на продажу '.$order->count.' btc', -1*$order->count);
+			Balance::add('btc', 'Создан ордер №'.$order->id.' на продажу '.$order->count.' btc', -1*$order->count);
 			
 			// Если не удалось сразу продать то заявка ждет 3 минуты своего покупателя
 			if ($order->status == 'open')			
@@ -338,16 +351,16 @@ class Bot {
 		// Фиксируем в базе покупку
 		$buy = Buy::make($order);		
 		
-		Log::Add($this->curtime, '<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$this->current_exchange->buy.' ('.$order->fee.' комиссия) на сумму '.$order->summ.' руб.</b>', 1);
+		Log::Add($this->curtime, '<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
 		$this->order_cnt++;
 		
 		// Для актуализации баланса при тесте
-		$api = APIProvider::get_Instance();
-		$this->balance_btc = $api->CompleteVirtualBuy($order);
+		$this->api = APIProvider::get_Instance();
+		$this->balance_btc = $this->api->CompleteVirtualBuy($order);
 		
 		// Пишем в сводку
-		Balance::add('btc', 'Закрыт ордер на покупку '.$order->count.' btc', $order->count);
-		Balance::add('rur', 'Начислена комиссия '.$order->fee.' rur', -1*$order->fee);
+		Balance::add('btc', 'Закрыт ордер №'.$order->id.' на покупку '.$order->count.' btc', $order->count);
+		Balance::add('btc', 'Начислена комиссия '.$order->fee.' btc', -1 * $order->fee);
 		
 	}
 	
@@ -365,11 +378,12 @@ class Bot {
 		$this->total_income+=$sell->income;
 		
 		// Для актуализации баланса при тесте
-		$api = APIProvider::get_Instance();
-		$this->balance = $api->CompleteVirtualSell($order);
+		
+		$this->balance = $this->api->CompleteVirtualSell($order);
 		
 		// Пишем в сводку
-		Balance::add('rur', 'Закрыт ордер на продажу '.$order->count.' btc', $order->summ);
+		Balance::add('rur', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
+		Balance::add('rur', 'Начислена комиссия '.$order->fee.' rur', -1*$order->fee);
 	}
 	
 	
@@ -491,9 +505,11 @@ class Bot {
 		foreach($bought as $buy)
 		{
 			// Цена продажи
-			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);						
-			// Сколько заработаем при продаже
-			$income = $curcost - $buy->summ*(1+self::fee);						
+			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
+									
+			// Сколько заработаем при продаже (комиссия была уже вычтена в btc при покупке)
+			$income = $curcost - $buy->summ;						
+			
 			// Достаточно ли заработаем
 			if ($income/$buy->summ < self::min_income)
 			{
@@ -530,15 +546,37 @@ class Bot {
 		
 	}
 	
+	public function cancelOrder($order)
+	{
+	
+		
+		$res = $this->api->CancelOrder($order); 
+		
+		if ($res['success'] == 1)
+		{
+			
+			$this->setBalance($res['return']['funds']['rur']);
+			$this->setBalanceBtc($res['return']['funds']['btc']);
+			
+			$order->status = 'cancel';
+			$order->close_dtm = $this->current_exchange->dtm;
+			$order->save();
+			
+			// Пишем баланс
+			if ($order->type == 'buy')			
+				Balance::add('rur', 'Отмена ордера №'.$order->id.' на покупку', $order->summ);			
+			else
+				Balance::add('btc', 'Отмена ордера №'.$order->id.' на продажу', $order->count);
+		}
+	}
 
 	public function checkOrders()
 	{	
 		
-		// Получаем активные ордеры @todo - неработает, ордеры есть но они закрываются
-		$api = APIProvider::get_Instance();
-		$active_orders = $api->getActiveOrders();		
+		// Получаем активные ордеры		
+		$active_orders = $this->api->getActiveOrders();		
 		
-		
+		Dump::d($active_orders);
 		// Получаем все открытые ордеры по бд 
 		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
 
@@ -552,7 +590,7 @@ class Bot {
 				{
 					Log::AddText($this->curtime, 'Отменяем ордер №'.$order->id, 1);
 					//Отменить ордер
-					$order->cancel();
+					$this->cancelOrder($order);				
 					continue;
 				}
 			}			
@@ -571,8 +609,8 @@ class Bot {
 	
 	public function run()
 	{
-		$api = APIProvider::get_Instance();
-		$info = $api->getInfo();
+		
+		$info = $this->api->getInfo();
 		
 		$start_balance = 0;
 		$start_balance_btc = 0;

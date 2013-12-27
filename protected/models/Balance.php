@@ -105,8 +105,11 @@ class Balance extends CActiveRecord
 		
 		if (!$last)
 			self::add($currency, 'Инициализация баланса', $summ);
-		elseif ($last['balance'] != $summ)
+		elseif ($last['balance'] - $summ === 0)
+		{
+			echo '=корректировка '.$summ.', '.$last['balance'].'=';
 			self::add($currency, 'Корректировка баланса', ($summ - $last['balance']));
+		}
 		
 	}
 	

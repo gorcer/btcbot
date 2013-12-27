@@ -190,8 +190,8 @@ class SiteController extends Controller
 		
 		$end = time();
 		
-		echo '<b>Время выполнения: '.(($end-$start)/60).' мин.<br/>';
-		echo '<b>Сделано шагов: '.($cnt).'<br/>';
+		echo '<b>Р’СЂРµРјСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ: '.(($end-$start)/60).' РјРёРЅ.<br/>';
+		echo '<b>РЎРґРµР»Р°РЅРѕ С€Р°РіРѕРІ: '.($cnt).'<br/>';
 		//$this->render('index');
 	}
 	
@@ -261,7 +261,7 @@ class SiteController extends Controller
 		}
 		
 				
-		// Покупки
+		// РџРѕРєСѓРїРєРё
 		$orders = Order::model()->findAll();
 		
 		$lastEx = Exchange::getLast();

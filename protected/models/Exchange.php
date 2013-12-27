@@ -147,7 +147,7 @@ class Exchange extends CActiveRecord
 					where
 						dtm >= '2013-12-09 09:00:00'
 					order by dtm
-					limit 1000000000
+					limit 1000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		//Dump::d($sql);

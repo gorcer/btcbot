@@ -120,14 +120,8 @@ class Order extends CActiveRecord
 	{
 		$bot = Bot::get_Instance();
 		
-		$BTCeAPI = new BTCeAPI();
-		try {
-		$res = $BTCeAPI->apiQuery('CancelOrder', array('order_id'=>$this->id));
-		} catch(BTCeAPIException $e) {
-			Log::AddText( $bot->curtime, 'Не удалось удалить ордер '.$e->getMessage());
-			return false;
-		}
-		Dump::d($res);
+		$res = $bot->api->CancelOrder($this); 
+		
 		if ($res['success'] == 1)
 		{
 			
