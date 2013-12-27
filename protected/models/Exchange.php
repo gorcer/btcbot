@@ -7,6 +7,7 @@
  * @property string $dtm
  * @property string $buy
  * @property string $sell
+ * @property string $pair
  */
 class Exchange extends CActiveRecord
 {
@@ -36,11 +37,11 @@ class Exchange extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('buy, sell', 'required'),
+			array('pair, buy, sell', 'required'),
 			array('buy, sell', 'length', 'max'=>30),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('dtm, buy, sell', 'safe', 'on'=>'search'),
+			array('pair, dtm, buy, sell', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -64,6 +65,7 @@ class Exchange extends CActiveRecord
 			'dtm' => 'Dt',
 			'buy' => 'Buy',
 			'sell' => 'Sell',
+			'pair' => 'Pair',
 		);
 	}
 
@@ -81,6 +83,7 @@ class Exchange extends CActiveRecord
 		$criteria->compare('dtm',$this->dtm,true);
 		$criteria->compare('buy',$this->buy,true);
 		$criteria->compare('sell',$this->sell,true);
+		$criteria->compare('pair',$this->pair,true);
 
 		return new CActiveDataProvider($this, array(
 			'criteria'=>$criteria,
@@ -129,15 +132,16 @@ class Exchange extends CActiveRecord
 		return($result);
 	}
 	
-	public static function getLast()
+	public static function getLast($pair='btc_rur')
 	{
 		$buy = Exchange::model()->find(array(
+				'condition' => 'pair="'.$pair.'"',				
 				'order' => 'dtm desc'
 		));
 		return $buy;
 	}
 	
-	public static function getAll()
+	public static function getAll($pair='btc_rur')
 	{
 		$connection = Yii::app()->db;
 		$sql = "
@@ -146,8 +150,10 @@ class Exchange extends CActiveRecord
 					FROM `exchange`
 					where
 						dtm >= '2013-12-09 09:00:00'
+						and
+						pair = '".$pair."'
 					order by dtm
-					limit 1000
+					limit 3000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		//Dump::d($sql);
@@ -189,7 +195,7 @@ class Exchange extends CActiveRecord
 		return ($val);
 	}
 	
-	public static function getAvg($name, $from, $to)
+	public static function getAvg($name, $from, $to, $pair='btc_rur')
 	{
 		$connection = Yii::app()->db;
 		$sql = "
@@ -199,6 +205,8 @@ class Exchange extends CActiveRecord
 					FROM `exchange`
 					where
 						dtm >= '".$from."' and dtm <= '".$to."'
+						and
+								pair = '".$pair."'
 					order by dtm
 					limit 1
 					";
@@ -210,6 +218,22 @@ class Exchange extends CActiveRecord
 		//if (!$val) echo 'Запрос который ничего не вернул - '.$sql;
 		
 		return($val);
+	}
+	
+	public static function updatePrices($pair)
+	{
+		$BTCeAPI = BTCeAPI::get_Instance();
+		
+		$ticker = $BTCeAPI->getPairTicker($pair);
+		$ticker = $ticker['ticker'];
+		$exchange = new Exchange();
+		$exchange->buy = $ticker['buy'];
+		$exchange->sell = $ticker['sell'];
+		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		$exchange->pair = $pair;
+		$exchange->save();
+		
+		return ($exchange);
 	}
 	
 }

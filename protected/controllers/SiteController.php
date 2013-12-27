@@ -110,23 +110,8 @@ class SiteController extends Controller
 	public function actionCron()
 	{
 		
-		$BTCeAPI = new BTCeAPI();		
-		
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
-		
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy'];
-		$exchange->sell = $ticker['sell'];
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		
-		if ($exchange->save())
-		{
-			return;
-			$bot = new Bot($exchange);
-			$bot->run();
-		}
-		
+		Exchange::updatePrices('btc_rur');
+		Exchange::updatePrices('ltc_rur');	
 	}
 	
 	public function actionRun()

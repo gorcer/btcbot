@@ -268,9 +268,12 @@ class Bot {
 		
 		$order->save();
 		
+		
 		// Актуализируем баланс
 		$this->setBalance($result['funds']['rur']);
-		$this->setBalanceBtc($result['funds']['btc']);
+		$this->setBalanceBtc($result['funds']['btc']);		
+		
+		$this->order_cnt++;
 		
 		return($order);
 	}
@@ -294,13 +297,17 @@ class Bot {
 			// Пишем в сводку
 			Balance::add('rur', 'Создан ордер №'.$order->id.' на покупку '.$order->count.' btc', -1*$order->summ);			
 			
+			
+			
+			
 			// Если создан ордер
 			if ($order->status == 'open')				
 				Log::Add($this->curtime, '<b>Создана сделка на покупку '.$order->count.' ед. за '.$order->price.' ('.($order->fee).' комиссия) на сумму '.$order->summ.' руб.</b>', 1);			
 			// Если сразу куплено то закрыть ордер
 			else 
-				$this->completeBuy($order);
-					
+				$this->completeBuy($order);			
+			
+			
 		return(true);
 		}
 		
@@ -362,6 +369,7 @@ class Bot {
 		Balance::add('btc', 'Закрыт ордер №'.$order->id.' на покупку '.$order->count.' btc', $order->count);
 		Balance::add('btc', 'Начислена комиссия '.$order->fee.' btc', -1 * $order->fee);
 		
+		$this->order_cnt++;
 	}
 	
 	public function completeSell($order)
@@ -384,6 +392,8 @@ class Bot {
 		// Пишем в сводку
 		Balance::add('rur', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
 		Balance::add('rur', 'Начислена комиссия '.$order->fee.' rur', -1*$order->fee);
+		
+		$this->order_cnt++;
 	}
 	
 	
@@ -575,8 +585,7 @@ class Bot {
 		
 		// Получаем активные ордеры		
 		$active_orders = $this->api->getActiveOrders();		
-		
-		Dump::d($active_orders);
+				
 		// Получаем все открытые ордеры по бд 
 		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
 
@@ -654,12 +663,12 @@ class Bot {
 	
 	public function setBalance($summ)
 	{
-		$this->balance = $summ;
+		$this->balance = round($summ, 5);
 	}
 
 	public function setBalanceBtc($summ)
 	{
-		$this->balance_btc = $summ;
+		$this->balance_btc = round($summ, 5);
 	}
 	
 }

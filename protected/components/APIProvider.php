@@ -156,7 +156,7 @@ class APIProvider {
 						(
 								'received' => 0,
 								'remains' => $cnt,
-								'order_id' => 87715140+rand(0,100)*10000+date('m')*1000+date('h')*100+date('m')*10+date('s'),
+								'order_id' => 87715140+rand(0,999)*10000+date('m')*1000+date('h')*100+date('m')*10+date('s'),
 								'funds' => array
 								(										
 										'btc' => (float)$balance_btc,										
@@ -224,6 +224,14 @@ class APIProvider {
 	
 	private function getActiveOrdersVirtual($pair)
 	{
+		// Закрываем произвольные ордеры
+		if ($this->activeOrders)
+		foreach ($this->activeOrders as $key=>$order)
+		{
+		//	if (rand(1,6) == 1)
+			//	unset($this->activeOrders[$key]);
+		}
+		
 		$result = array
 					(
 							'success' => 1,

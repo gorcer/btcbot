@@ -117,7 +117,7 @@ class Balance extends CActiveRecord
 	{
 		$last = Balance::model()->find(array(
 				'condition'=>'currency = "'.$currency.'"',
-				'order' => 'dtm desc'
+				'order' => 'id desc'
 		));
 		
 		$last_balance=0;
