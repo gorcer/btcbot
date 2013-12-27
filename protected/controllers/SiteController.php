@@ -109,9 +109,9 @@ class SiteController extends Controller
 	
 	public function actionCron()
 	{
+		foreach (APIProvider::$pairs as $pair)
+			Exchange::updatePrices($pair);
 		
-		Exchange::updatePrices('btc_rur');
-		Exchange::updatePrices('ltc_rur');	
 	}
 	
 	public function actionRun()
@@ -240,7 +240,7 @@ class SiteController extends Controller
 		
 		foreach($exch as $item)
 		{
-			$tm = strtotime($item['dtm'])*1000+4*60*60*1000;
+			$tm = strtotime($item['dtm'])*1000/*+4*60*60*1000*/;
 			$data_buy[]=array($tm, (float)$item['buy']);
 			$data_sell[]=array($tm, (float)$item['sell']);
 		}
@@ -262,5 +262,41 @@ class SiteController extends Controller
 						'orders'	=>	$orders,
 						'status'	=>	$status,
 						));
+	}
+	
+	public function actionPotencial()
+	{
+		
+		$res = array();		
+		
+		foreach (APIProvider::$pairs as $pair)
+		{
+			$i=15*60;
+			while ($i<60*60*24*7)
+			{	
+				if ($i<60*60)		
+				$period = ($i/60).' мин.';
+				else 
+				$period = ($i/60/60).' ч.';
+				
+				$margin = (Bot::getAvgMargin($i, $pair)*100);
+				$p = $margin/$i*60*24*360;
+				//echo 'Потенциал периода '.$period.' = '.$p.'% в год <br/>';			
+				
+				
+				
+				$res[$pair][] = array($period, $p);
+				
+				$i=$i*2;
+	
+			}
+		}
+		
+		
+		$this->render('potencial',
+				array(
+						'data'	=> 	$res,						
+				));
+		
 	}
 }

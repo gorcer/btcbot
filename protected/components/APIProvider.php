@@ -10,6 +10,8 @@ class APIProvider {
 	private $balance=5000;
 	private $balance_btc=0;
 	
+	public static $pairs = array('btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd');
+	
 	public static function get_Instance()
 	{
 		if (!self::$self)

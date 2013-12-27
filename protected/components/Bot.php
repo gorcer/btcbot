@@ -671,4 +671,26 @@ class Bot {
 		$this->balance_btc = round($summ, 5);
 	}
 	
+	
+	public static function getAvgMargin($period, $pair='btc_rur')
+	{
+		$connection = Yii::app()->db;
+		$sql = "
+				SELECT AVG( t.val ) 
+				FROM (				
+					SELECT ABS( MIN( buy ) - MAX( sell ) )/MIN( buy ) AS val,
+					from_unixtime(round(UNIX_TIMESTAMP(dtm)/(".$period."))*".$period.", '%Y.%m.%d %H:%i:%s')as dt
+					FROM `exchange`
+					where
+					pair = '".$pair."'
+					group by dt
+				) as t
+				";
+		
+				$command = $connection->createCommand($sql);
+				$val=$command->queryScalar();
+		
+		return round($val,2);
+	}
+	
 }
