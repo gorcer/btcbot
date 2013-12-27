@@ -228,8 +228,8 @@ class APIProvider {
 		if ($this->activeOrders)
 		foreach ($this->activeOrders as $key=>$order)
 		{
-		//	if (rand(1,6) == 1)
-			//	unset($this->activeOrders[$key]);
+			if (rand(1,6) !== 1)
+				unset($this->activeOrders[$key]);
 		}
 		
 		$result = array

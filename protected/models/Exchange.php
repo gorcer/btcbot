@@ -153,7 +153,7 @@ class Exchange extends CActiveRecord
 						and
 						pair = '".$pair."'
 					order by dtm
-					limit 3000
+					limit 300000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		//Dump::d($sql);
