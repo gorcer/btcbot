@@ -275,7 +275,7 @@ class SiteController extends Controller
 		
 		foreach (APIProvider::$pairs as $pair)
 		{
-			$i=15*60;
+			$i=60*60;
 			while ($i<60*60*24*7)
 			{	
 				if ($i<60*60)		
