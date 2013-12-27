@@ -15,7 +15,8 @@ class Bot {
 	public $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	private $imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	private $buy_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	private $sell_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
 	
 	private $avg_buy; // Средняя цена покупки
 	private $avg_sell;// Средняя цена продажи
@@ -29,7 +30,7 @@ class Bot {
 	
 	private $api; 
 	
-	//const imp_dif = 0.015; // Видимые изменения @todo сделать расчетным исходя из желаемого заработка и тек. курса
+
 	//const min_buy = 0.01; // Мин. сумма покупки
 	const buy_value = 0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
@@ -53,7 +54,8 @@ class Bot {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->imp_dif = 200;//self::min_income*(1+2*self::fee)*1/self::buy_value/4; // Здесь по расчетам 1000 / 4, на столько должен измениться курс чтобы бот заметил отличия
+		$this->buy_imp_dif = 150;
+		$this->sell_imp_dif = 200;
 		
 		$this->order_cnt=0;		
 		
@@ -64,7 +66,7 @@ class Bot {
 		
 		// Периоды анализа графика для покупки и продажи (в сек.)
 		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
-		$this->sell_periods = array(/*9*60, 15*60, 30*60,*/ 60*60, 2*60*60, 4*60*60, 24*60*60, 36*60*60);
+		$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);
 		
 		$this->api = APIProvider::get_Instance();
 		
@@ -84,7 +86,7 @@ class Bot {
 	 * @param  $period - период расчета в сек.
 	 * @param $name - buy, sell
 	 */
-	public function getGraphImage($curtime, $period, $name)
+	public function getGraphImage($curtime, $period, $name, $imp_dif)
 	{		
 		// @todo переделать - диапазоны расчитывать более точно
 		
@@ -125,8 +127,8 @@ class Bot {
 			
 			// Определяем направление
 			$dif = ($val-$prev);			
-			if ($dif<(-1*$this->imp_dif)) $track.="-";
-			elseif ($dif>$this->imp_dif) $track.="+";
+			if ($dif<(-1*$imp_dif)) $track.="-";
+			elseif ($dif>$imp_dif) $track.="+";
 			else $track.="0";
 			
 
@@ -165,13 +167,13 @@ class Bot {
 				case '-0+':								 // \_/
 				case '--+':								 // \\/
 							// Если трек при падении не вернулся в исходную точку
-							if($track['items'][0]['val'] - $track['items'][3]['val']>$this->imp_dif)							
+							if($track['items'][0]['val'] - $track['items'][3]['val']>$this->buy_imp_dif)							
 								$result[] = $track; 
 							break; 
 			//	case '00+':	$result[] = $track; break; // __/
 				case '0-+':							   // _\/
 							// Если трек при падении не вернулся в исходную точку
-							if($track['items'][1]['val'] - $track['items'][3]['val']>$this->imp_dif)
+							if($track['items'][1]['val'] - $track['items'][3]['val']>$this->buy_imp_dif)
 								$result[] = $track; 
 							//Log::AddText(0, $track['items'][1]['val'] - $track['items'][3]['val'].' > '.$this->imp_dif);
 							break; 
@@ -423,12 +425,12 @@ class Bot {
 		if ($lastBuy)
 		{
 		$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;		
-		if ($tm>$this->curtime && $lastBuy->price - $this->current_exchange->buy < $this->imp_dif) return false;
+		if ($tm>$this->curtime && $lastBuy->price - $this->current_exchange->buy < $this->buy_imp_dif) return false;
 		}		
 		
 		$tracks=array();
 		foreach($this->buy_periods as $period)		
-			$tracks[] = $this->getGraphImage($curtime, $period, 'buy');			
+			$tracks[] = $this->getGraphImage($curtime, $period, 'buy', $this->buy_imp_dif);			
 		
 								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
 								// Dump::d($tracks);
@@ -484,7 +486,7 @@ class Bot {
 		{
 			$tm = strtotime($lastSell->dtm)+self::min_buy_interval;			
 			//Log::Add($curtime, 'Проверяем была ли продажа, ждем с '.$lastSell->dtm.' до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше текущей');
-			if ($tm>$this->curtime && $this->current_exchange->sell - $lastSell->price < $this->imp_dif) 
+			if ($tm>$this->curtime && $this->current_exchange->sell - $lastSell->price < $this->sell_imp_dif) 
 			{
 				//Log::Add($curtime, 'Уже была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше прошлой '.$lastSell->price);
 				return false;
@@ -495,7 +497,7 @@ class Bot {
 		$tracks=array();
 		foreach($this->sell_periods as $period)
 		{
-			$tracks[] = $this->getGraphImage($curtime, $period, 'sell');
+			$tracks[] = $this->getGraphImage($curtime, $period, 'sell', $this->sell_imp_dif);
 		}	
 		//Log::AddText($this->curtime, 'Треки продажи'.print_r($tracks, true));
 		//Dump::d($tracks);

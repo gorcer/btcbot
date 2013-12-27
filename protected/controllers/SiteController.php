@@ -264,6 +264,10 @@ class SiteController extends Controller
 						));
 	}
 	
+	
+	/**
+	 * Расчет годового дохода добытого на разных периодах
+	 */
 	public function actionPotencial()
 	{
 		
@@ -287,7 +291,10 @@ class SiteController extends Controller
 				
 				$res[$pair][] = array($period, $p);
 				
+				if ($i<24 * 60 *60)
 				$i=$i*2;
+				else
+					$i=$i+12*60*60;
 	
 			}
 		}
