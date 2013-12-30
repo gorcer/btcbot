@@ -12,7 +12,12 @@ foreach ($orders as $order)
 {
 	$flags.="{
 					x: ".(strtotime($order->close_dtm)*1000+4*60*60*1000).",
-					title: '".substr($order->type, 0, 1)."'
+					title: '".substr($order->type, 0, 1)."',
+					events: {
+							click: function () {
+								document.location.href = '".Yii::app()->createUrl('site/vieworder', array('id'=>$order->id))."'										
+								}
+							}
 				}, ";
 }
 $flags.="],

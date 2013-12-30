@@ -7,7 +7,7 @@ class APIProvider {
 	
 	private static $self=false;
 	private $activeOrders;
-	private $balance=5000;
+	public $balance=5000;
 	private $balance_btc=0;
 	
 	public static $pairs = array('btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd');
