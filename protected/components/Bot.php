@@ -32,7 +32,7 @@ class Bot {
 	
 
 	//const min_buy = 0.01; // Мин. сумма покупки
-	const buy_value = 0.02; // Сколько покупать
+	const buy_value = 0.02; //0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
@@ -54,8 +54,8 @@ class Bot {
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');
 		$this->total_income=0;
-		$this->buy_imp_dif = 150;
-		$this->sell_imp_dif = 200;
+		$this->buy_imp_dif = 0.005;// Шаг при анализе покупки 5% //150;
+		$this->sell_imp_dif = 0.007; // Шаг при анализе продажи 7%
 		
 		$this->order_cnt=0;		
 		
@@ -126,7 +126,7 @@ class Bot {
 			}		
 			
 			// Определяем направление
-			$dif = ($val-$prev);			
+			$dif = (1-$prev/$val);			
 			if ($dif<(-1*$imp_dif)) $track.="-";
 			elseif ($dif>$imp_dif) $track.="+";
 			else $track.="0";
@@ -167,13 +167,13 @@ class Bot {
 				case '-0+':								 // \_/
 				case '--+':								 // \\/
 							// Если трек при падении не вернулся в исходную точку
-							if($track['items'][0]['val'] - $track['items'][3]['val']>$this->buy_imp_dif)							
+							if (abs(1 - $track['items'][3]['val'] / $track['items'][0]['val']) > $this->buy_imp_dif)							
 								$result[] = $track; 
 							break; 
 			//	case '00+':	$result[] = $track; break; // __/
 				case '0-+':							   // _\/
 							// Если трек при падении не вернулся в исходную точку
-							if($track['items'][1]['val'] - $track['items'][3]['val']>$this->buy_imp_dif)
+							if(abs(1 - $track['items'][3]['val'] / $track['items'][1]['val']) > $this->buy_imp_dif)
 								$result[] = $track; 
 							//Log::AddText(0, $track['items'][1]['val'] - $track['items'][3]['val'].' > '.$this->imp_dif);
 							break; 
@@ -230,7 +230,7 @@ class Bot {
 	
 	
 	
-	private function makeOrder($cnt, $type)
+	private function makeOrder($cnt, $type, $reason='')
 	{		
 		// Цена покупки / продажи
 		$price = $this->current_exchange->$type;
@@ -246,6 +246,7 @@ class Bot {
 		$order->price = $price;		
 		$order->summ = $cnt*$price;
 		$order->count = $cnt;
+		$order->description = json_encode($reason);
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
@@ -284,14 +285,14 @@ class Bot {
 	 * Подготовка к покупке (создание ордера, записей в бд)
 	 * @return boolean
 	 */
-	public function startBuy()
+	public function startBuy($reason)
 	{
 		
 	//	if (!$this->real_trade) 
 		//	return $this->virtualBuy(self::buy_value);
 		
 		// Создаем ордер
-		$order = $this->makeOrder(self::buy_value, 'buy');		
+		$order = $this->makeOrder(self::buy_value, 'buy', $reason);		
 		
 		// Если создался
 		if ($order)
@@ -320,11 +321,11 @@ class Bot {
 	 * Подготовка к продаже (создание ордера, записей в бд)
 	 * @return boolean
 	 */
-	public function startSell($buy)
+	public function startSell($buy, $reason)
 	{	
 
 		// Создаем ордер
-		$order = $this->makeOrder($buy->count, 'sell');
+		$order = $this->makeOrder($buy->count, 'sell',$reason);
 		
 		if ($order)
 		{	
@@ -401,6 +402,9 @@ class Bot {
 	
 	public function NeedBuy()
 	{		
+		// Фиксируем причину покупки
+		$reason = array();
+		
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);
 		
@@ -411,21 +415,27 @@ class Bot {
 			Log::Add($this->curtime, 'Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
 			return false;
 		}
+		else
+			$reason['balance']='Хватает денег '.$this->balance.'>'.($this->current_exchange->buy*self::buy_value); 
 		
 		// Если текущая цена выше средней не покупаем		
-		if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
+		/*if ($this->avg_buy && $this->avg_buy<$this->current_exchange->buy)
 		{
 
 			Log::Add($this->curtime, 'Цена выше средней за 7 дн. ('.$this->avg_buy.'<'.$this->current_exchange->buy.'), не покупаем.');
 			return false;
-		}
+		}*/
 		
 		// Проверяем была ли уже покупка за последнее время, если была и цена была более выгодная чем текущая то не покупаем
 		$lastBuy = Buy::getLast();		
 		if ($lastBuy)
 		{
-		$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;		
-		if ($tm>$this->curtime && $lastBuy->price - $this->current_exchange->buy < $this->buy_imp_dif) return false;
+		$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;
+		$diff = (1 - $this->current_exchange->buy / $lastBuy->price);		
+		if ($tm>$this->curtime && $diff < $this->buy_imp_dif) 
+			return false;
+		else
+			$reason['avg_price'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ';
 		}		
 		
 		$tracks=array();
@@ -438,7 +448,7 @@ class Bot {
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
 		if (!$tracks || sizeof($tracks) == 0) return false;		
-							//	Log::AddText($this->curtime, "Выгодные треки ".print_r($tracks, true));
+		
 		
 		//Удаляем треки по которым уже были покупки
 		foreach($tracks as $key=>$track)		
@@ -452,8 +462,11 @@ class Bot {
 		// Если остались треки
 		if (sizeof($tracks)>0)
 		{
+			// Треки
+			$reason['tracks']=$tracks;
+			
 			// Покупаем
-			if ($this->startBuy())			
+			if ($this->startBuy($reason))			
 			// Резервируем время покупки
 				foreach($tracks as $track)	
 				{
@@ -468,29 +481,38 @@ class Bot {
 	
 	public function NeedSell()
 	{
+		// Составляем причину покупки
+		$reason=array();
+		
 		//Log::AddText($this->curtime, 'ПРОДАЖИ');
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);		
 		
-		
+		/*
 		// Если текущая цена ниже средней не продаем
 		if ($this->avg_sell>$this->current_exchange->sell)
 		{
 			//Log::AddText($this->curtime, 'Цена ниже средней за 7 дн. ('.$this->avg_sell.'>'.$this->current_exchange->buy.'), не продаем.');
 			return false;
-		}	
+		}
+		else
+		$reason['avg_price'] = 'Текущая цена выше средней за 7 дней'; 
+		*/	
 		
 		// Проверяем была ли уже продажа за последнее время, если была и цена была более выгодная чем текущая то не продаем		
 		$lastSell = Sell::getLast();
 		if ($lastSell)
 		{
-			$tm = strtotime($lastSell->dtm)+self::min_buy_interval;			
+			$tm = strtotime($lastSell->dtm)+self::min_sell_interval;		
+			$diff = (1-$lastSell->price / $this->current_exchange->sell);	
 			//Log::Add($curtime, 'Проверяем была ли продажа, ждем с '.$lastSell->dtm.' до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше текущей');
-			if ($tm>$this->curtime && $this->current_exchange->sell - $lastSell->price < $this->sell_imp_dif) 
+			if ($tm>$this->curtime && $diff < $this->sell_imp_dif) 
 			{
 				//Log::Add($curtime, 'Уже была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше прошлой '.$lastSell->price);
 				return false;
 			}
+			else
+			$reason['avg_price'] = 'Прошлая продажа была '.(($this->curtime-strtotime($lastSell->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_sell_interval/60).' мин. при отсутствии ощутимого роста цены), цена отличалась от текущей на '.($diff*100).'%, минимальное отличие должно быть '.($this->sell_imp_dif*100).'% ';
 		}
 		
 		//Перебираем периоды		
@@ -503,18 +525,16 @@ class Bot {
 		//Dump::d($tracks);
 		
 		//Анализируем треки
-		$tracks = $this->getSellTracks($tracks);
+		$tracks = $this->getSellTracks($tracks);		
+		if (sizeof($tracks) == 0) return false;	
 		
-		if (sizeof($tracks) == 0) return false;
-		
-		//Log::AddText($this->curtime, 'Есть интересные треки для продажи'.print_r($tracks, true));
-		
-		
+		$reason['tracks']=$tracks;
+				
 		//Смотрим что продать
 		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
 
 		// Ищем выгодные продажи
-		foreach($bought as $buy)
+		foreach($bought as $key=>$buy)
 		{
 			// Цена продажи
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
@@ -530,7 +550,11 @@ class Bot {
 			}
 			//else Log::Add($this->curtime, '$income='.$income.' $curcost='.$curcost.' self::min_income='.self::min_income);
 			
-			$this->startSell($buy);
+			// Записываем причину покупки
+			$reason['buy'] = 'Найдена подходящая продажа №'.$buy->id.' с доходом от сделки '.$income.' руб., что составляет '.($income/$buy->summ*100).'% от цены покупки'; 
+			
+			$this->startSell($buy, $reason);
+			unset($bought[$key]);
 			break;
 			//Dump::d($tracks);
 		}
@@ -546,8 +570,9 @@ class Bot {
 			// Достаточно ли заработаем
 			if ($income>0 && $income/$buy->summ < self::freeze_warning_income)
 			{
-				Log::Add($this->curtime, 'Вынужденная продажа, купили за '.$buy->summ.', текущая цена '.$curcost.', профит '.$income);
-				$this->startSell($buy);
+				unset($reason['buy']);
+				$reason['sale'] = 'Вынужденная продажа №'.$buy->id.', купили за '.$buy->summ.', текущая цена '.$curcost.', доход '.$income.' ('.($income/$buy->summ*100).'% < '.(self::freeze_warning_income*100).'%)';
+				$this->startSell($buy, $reason);
 				continue;
 			}
 			//else Log::Add($this->curtime, 'Вынужденная продажа №'.$buy->id.' не состоялась $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);

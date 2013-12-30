@@ -154,7 +154,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
-		
+					
 		Status::setParam('balance', 5000);
 		Status::setParam('balance_btc', 0);
 		
@@ -228,10 +228,10 @@ class SiteController extends Controller
 		$bot->checkOrders();
 	}
 	
-	public function actionChart()
+	public function actionChart($type='btc_rur')
 	{	
 		$buy = new Buy();
-		$exch = Exchange::getAll();
+		$exch = Exchange::getAll($type);
 		
 		
 		$data_buy=array();
@@ -240,7 +240,7 @@ class SiteController extends Controller
 		
 		foreach($exch as $item)
 		{
-			$tm = strtotime($item['dtm'])*1000/*+4*60*60*1000*/;
+			$tm = strtotime($item['dtm'])*1000+4*60*60*1000;
 			$data_buy[]=array($tm, (float)$item['buy']);
 			$data_sell[]=array($tm, (float)$item['sell']);
 		}
@@ -303,5 +303,17 @@ class SiteController extends Controller
 						'data'	=> 	$res,						
 				));
 		
+	}
+	
+	public function actionViewOrder($id)
+	{
+		$order = Order::model()->findByPk($id);
+		
+		$order->description = json_decode($order->description, false);
+		 
+		$this->render('order',
+				array(
+						'data'	=> 	$order,
+				));
 	}
 }
