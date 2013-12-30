@@ -284,10 +284,8 @@ class SiteController extends Controller
 				$period = ($i/60/60).' ч.';
 				
 				$margin = (Bot::getAvgMargin($i, $pair)*100);
-				$p = $margin/$i*60*24*360;
+				$p = $margin/*/$i*60*24*360*/;
 				//echo 'Потенциал периода '.$period.' = '.$p.'% в год <br/>';			
-				
-				
 				
 				$res[$pair][] = array($period, $p);
 				
