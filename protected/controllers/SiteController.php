@@ -231,7 +231,7 @@ class SiteController extends Controller
 	public function actionChart($type='btc_rur')
 	{	
 		$buy = new Buy();
-		$exch = Exchange::getAll($type);
+		$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
 		
 		
 		$data_buy=array();

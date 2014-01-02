@@ -141,17 +141,18 @@ class Exchange extends CActiveRecord
 		return $buy;
 	}
 	
-	public static function getAll($pair='btc_rur')
+	public static function getAll($pair='btc_rur', $period = '%Y-%m-%d %H:%i:%s')
 	{
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
-						dtm, buy, sell		
+						DATE_FORMAT(dtm, '".$period."') as dtm, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
 						dtm >= '2013-12-09 09:00:00'
 						and
 						pair = '".$pair."'
+					group by dtm
 					order by dtm
 					limit 300000000
 					";
@@ -215,7 +216,7 @@ class Exchange extends CActiveRecord
 		$command = $connection->createCommand($sql);
 		$val=$command->queryScalar();
 		
-		//if (!$val) echo 'Запрос который ничего не вернул - '.$sql;
+		//if (!$val) echo 'пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - '.$sql;
 		
 		return($val);
 	}
