@@ -35,4 +35,25 @@ class Log {
 		
 		file_put_contents($fn, $text, FILE_APPEND);	
 	}
+	
+	public static function notbuy($reason)
+	{
+		$bot = Bot::get_Instance();
+		$dtm = date('Y-m-d H:i:s', $bot->curtime);
+		
+		$fn = 'logs/not-buy-'.date('Y-m-d', $bot->curtime).'.html';
+		$text=  '<i>'.$dtm.'</i> '.$reason.'<br/>';
+		file_put_contents($fn, $text, FILE_APPEND);
+	}
+	
+
+	public static function notsell($reason)
+	{
+		$bot = Bot::get_Instance();
+		$dtm = date('Y-m-d H:i:s', $bot->curtime);
+	
+		$fn = 'logs/not-sell-'.date('Y-m-d', $bot->curtime).'.html';	
+		$text=  '<i>'.$dtm.'</i> '.$reason.'<br/>';
+		file_put_contents($fn, $text, FILE_APPEND);
+	}
 }

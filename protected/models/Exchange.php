@@ -146,18 +146,20 @@ class Exchange extends CActiveRecord
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
-						DATE_FORMAT(dtm, '".$period."') as dtm, avg(buy) as buy, avg(sell) as sell		
+						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
 						dtm >= '2013-12-09 09:00:00'
+						/*and dtm <= '2013-12-13'*/
+						/*dtm >= '2013-12-25 00:00:00'*/
 						and
 						pair = '".$pair."'
-					group by dtm
+					group by dt
 					order by dtm
-					limit 300000000
+					limit 200000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
-		//Dump::d($sql);
+		
 		$command = $connection->createCommand($sql);
 		$list=$command->queryAll();
 		return($list);
@@ -178,12 +180,12 @@ class Exchange extends CActiveRecord
 		foreach($list as $item)
 		{
 			
-			if ($item['dtm']>=$from && $item['dtm']<=$to)
+			if ($item['dt']>=$from && $item['dt']<=$to)
 			{
 				$sum+=$item[$name];
 				$cnt++;
 			}
-			elseif ($item['dtm'] > $to)
+			elseif ($item['dt'] > $to)
 				break;
 		}
 		if ($cnt>0)

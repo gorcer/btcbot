@@ -1,5 +1,6 @@
 <?php
 ini_set('max_execution_time', 4*60*60);
+ini_set('memory_limit','64M');
 error_reporting(E_ALL);
 // change the following paths if necessary
 
@@ -19,7 +20,8 @@ else
 {
 	$yii=dirname(__FILE__).'/../../yii/framework/yii.php';
 	$config=dirname(__FILE__).'/protected/config/main.php';
-	
+	defined('YII_DEBUG') or define('YII_DEBUG',true);
+	defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);	
 }
 
 // remove the following lines when in production mode

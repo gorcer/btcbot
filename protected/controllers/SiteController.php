@@ -164,7 +164,7 @@ class SiteController extends Controller
 		foreach($exs as $exchange)
 		{
 			$obj = new stdClass;
-			$obj->dtm = $exchange['dtm'];
+			$obj->dtm = $exchange['dt'];
 			$obj->buy = $exchange['buy'];
 			$obj->sell = $exchange['sell'];
 			
@@ -231,16 +231,16 @@ class SiteController extends Controller
 	public function actionChart($type='btc_rur')
 	{	
 		$buy = new Buy();
-		$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
-		
-		
+		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
+		$exch = Exchange::getAll($type);
+				
 		$data_buy=array();
 		$data_sell=array();
 		
 		
 		foreach($exch as $item)
 		{
-			$tm = strtotime($item['dtm'])*1000+4*60*60*1000;
+			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
 			$data_buy[]=array($tm, (float)$item['buy']);
 			$data_sell[]=array($tm, (float)$item['sell']);
 		}
