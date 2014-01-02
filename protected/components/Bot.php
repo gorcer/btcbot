@@ -444,7 +444,7 @@ class Bot {
 		
 								// Log::AddText($this->curtime, 'Треки '.print_r($tracks, true));
 								// Dump::d($tracks);
-								
+		$reason['all_tracks'] = $tracks;
 		//Анализируем треки
 		$tracks = $this->getBuyTracks($tracks);
 		if (!$tracks || sizeof($tracks) == 0) return false;		
