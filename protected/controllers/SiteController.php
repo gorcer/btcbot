@@ -109,14 +109,36 @@ class SiteController extends Controller
 	
 	public function actionCron()
 	{
+		
+		
+		// Пересчитываем рейтинги
+		$key = 'cron.bot.run.btc_rur';
+		if(Yii::app()->cache->get($key)===false)
+		{	
+			Yii::app()->cache->set($key, true, 60*3);
+						
+			// Запускаем бота для анализа и сделок
+			$btc_rur = Exchange::updatePrices('btc_rur');
+			$bot = new Bot($btc_rur);
+			$bot->run();
+		}
+		
+		
+		// Сохраняем информацию по всем ценам
+		/*
 		foreach (APIProvider::$pairs as $pair)
 			Exchange::updatePrices($pair);
+			*/
+		
+		
 		
 	}
 	
 	public function actionRun()
 	{
 	
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
@@ -135,10 +157,13 @@ class SiteController extends Controller
 	
 	public function actionClear() {
 		
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 		Status::setParam('balance', 5000);
 		Status::setParam('balance_btc', 0);
 		
@@ -146,6 +171,8 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{	
+		
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
 		$start = time();
 		
@@ -182,6 +209,7 @@ class SiteController extends Controller
 	
 	public function actionBuy()
 	{
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
@@ -198,6 +226,7 @@ class SiteController extends Controller
 	
 	public function actionSell()
 	{
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 	
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
@@ -214,6 +243,8 @@ class SiteController extends Controller
 	
 	public function actionOrders()
 	{
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
@@ -231,8 +262,8 @@ class SiteController extends Controller
 	public function actionChart($type='btc_rur')
 	{	
 		$buy = new Buy();
-		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
-		$exch = Exchange::getAll($type);
+		$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
+		//$exch = Exchange::getAll($type);
 				
 		$data_buy=array();
 		$data_sell=array();

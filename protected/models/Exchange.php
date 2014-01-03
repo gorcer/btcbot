@@ -156,7 +156,7 @@ class Exchange extends CActiveRecord
 						pair = '".$pair."'
 					group by dt
 					order by dtm
-					limit 200000000
+					limit 1000000000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		
@@ -218,12 +218,11 @@ class Exchange extends CActiveRecord
 		$command = $connection->createCommand($sql);
 		$val=$command->queryScalar();
 		
-		//if (!$val) echo '������ ������� ������ �� ������ - '.$sql;
 		
 		return($val);
 	}
 	
-	public static function updatePrices($pair)
+	public static function updatePrices($pair='btc_rur')
 	{
 		$BTCeAPI = BTCeAPI::get_Instance();
 		

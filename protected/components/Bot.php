@@ -332,7 +332,7 @@ class Bot {
 		
 		if ($order)
 		{	
-			// Присваиваем BUY
+			// Присваиваем BUY номер заказа по которому оно будет продано
 			$buy->order_id = $order->id;
 			$buy->update('order_id');					
 			
@@ -458,7 +458,8 @@ class Bot {
 		$tracks = $this->getBuyTracks($all_tracks);
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
-			Log::notbuy('Не найдено подходящих для продажи треков');
+			Log::notbuy('Не найдено подходящих для продажи треков'.Dump::d($all_tracks, true));
+			
 			return false;
 		}
 		
@@ -503,6 +504,12 @@ class Bot {
 		$reason=array();
 		$curtime = $this->curtime; //Дата операции
 		$dt = date('Y-m-d H:i:s', $curtime);		
+
+		//Смотрим, что продать
+		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
+		
+		// Если нечего продавать
+		if (sizeof($bought) == 0) return false;
 		
 		/*
 		// Если текущая цена ниже средней не продаем
@@ -553,9 +560,6 @@ class Bot {
 		
 		$reason['tracks']=$tracks;
 		$reason['all_tracks']=$all_tracks;
-				
-		//Смотрим, что продать
-		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
 
 		// Ищем выгодные продажи
 		foreach($bought as $key=>$buy)
@@ -656,11 +660,16 @@ class Bot {
 	public function checkOrders()
 	{	
 		
+		// Получаем все открытые ордеры по бд
+		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
+		
+		// Если нет заказов ничего не проверяем
+		if (sizeof($orders) == 0) return false;
+		
 		// Получаем активные ордеры		
 		$active_orders = $this->api->getActiveOrders();		
 				
-		// Получаем все открытые ордеры по бд 
-		$orders = Order::model()->findAll(array('condition'=>'status="open"'));
+		
 
 		foreach($orders as $order)
 		{			
@@ -670,7 +679,7 @@ class Bot {
 				// Если ордер висит более 3 минут - удаляем
 				if ($active_orders[$order->id]['timestamp_created']<$this->curtime-self::order_ttl)
 				{
-					Log::AddText($this->curtime, 'Отменяем ордер №'.$order->id, 1);
+					Log::Add($this->curtime, 'Отменяем ордер №'.$order->id, 1);
 					//Отменить ордер
 					$this->cancelOrder($order);				
 					continue;
@@ -721,13 +730,13 @@ class Bot {
 		
 		if ($this->order_cnt>0)
 		{				
-			Log::AddText($this->curtime, 'Баланс на начало');
-			Log::AddText($this->curtime, 'Руб: '.$start_balance, 1);			
-			Log::AddText($this->curtime, 'Btc: '.round($start_balance_btc, 5), 1);
+			Log::Add($this->curtime, 'Баланс на начало');
+			Log::Add($this->curtime, 'Руб: '.$start_balance, 1);			
+			Log::Add($this->curtime, 'Btc: '.round($start_balance_btc, 5), 1);
 			
-			Log::AddText($this->curtime, 'Баланс на конец');
-			Log::AddText($this->curtime, 'Руб: '.$this->balance, 1);
-			Log::AddText($this->curtime, 'Btc: '.round($this->balance_btc, 5), 1);		
+			Log::Add($this->curtime, 'Баланс на конец');
+			Log::Add($this->curtime, 'Руб: '.$this->balance, 1);
+			Log::Add($this->curtime, 'Btc: '.round($this->balance_btc, 5), 1);		
 				
 			Log::Add($this->curtime, 'Всего заработано: '.$this->total_income, 1);
 		}

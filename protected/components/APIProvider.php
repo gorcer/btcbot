@@ -3,7 +3,7 @@
 
 class APIProvider {
 	
-	const isVirtual=true;
+	const isVirtual=true; // Виртуальные покупки или реальные
 	
 	private static $self=false;
 	private $activeOrders;
@@ -216,8 +216,8 @@ class APIProvider {
 	
 		try {
 			$orders = $BTCeAPI->apiQuery('ActiveOrders', array('pair'=>$pair));
-		} catch(BTCeAPIException $e) {
-			Log::AddText(0, 'Не удалось получить список заказов '.$e->getMessage());
+		} catch(BTCeAPIException $e) {			
+			Log::Error(0, 'Не удалось получить список заказов '.$e->getMessage());
 			return false;
 		}
 	
