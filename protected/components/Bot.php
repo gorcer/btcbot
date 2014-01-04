@@ -25,11 +25,11 @@ class Bot {
 	
 	private static $self=false;
 	
-	private $api; 
+	public $api; 
 	
 
 	//const min_buy = 0.01; // Мин. сумма покупки
-	const buy_value = 0.02; //0.02; // Сколько покупать
+	const buy_value = 0.012; //0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
@@ -103,7 +103,7 @@ class Bot {
 			
 			if (!$val) 
 			{
-				Log::Add($this->curtime, 'Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t);
+				//Log::Add('Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t);
 				continue;
 			}
 				
@@ -240,10 +240,10 @@ class Bot {
 	}
 	
 	
-	private function makeOrder($cnt, $type, $reason='')
+	private function makeOrder($cnt, $price, $type, $reason='')
 	{		
 		// Цена покупки / продажи
-		$price = $this->current_exchange->$type;
+	//	$price = $this->current_exchange->$type;
 		
 		// Пытаемся создать заказ на бирже
 		$result = $this->api->makeOrder($cnt, 'btc_rur', $type, $price);
@@ -252,7 +252,12 @@ class Bot {
 		
 		// Если все ок, добавляем в базу созданный заказ
 		$order = new Order();
-		$order->id = $result['order_id'];
+		
+		if ($result['order_id'])
+			$order->id = $result['order_id'];
+		else 
+			$order->id == null;
+		
 		$order->price = $price;		
 		$order->summ = $cnt*$price;
 		$order->count = $cnt;
@@ -261,12 +266,12 @@ class Bot {
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
 		{
-			$order->fee = $cnt*self::fee;
+			$order->fee = round($cnt*self::fee, 5);
 			//$order->count = $cnt-$order->fee;	
 		}
 		else
 		{
-			$order->fee = $order->summ*self::fee;
+			$order->fee = round($order->summ*self::fee, 5);
 			//$order->summ-=$order->fee;			
 		}		
 		
@@ -276,8 +281,8 @@ class Bot {
 		//if ($buy_id) $order->buy_id = $buy_id;
 		
 		// Заказ может быть сразу выполнене, в этом случае закрываем его в базе
-		if($result['received'])
-			$order->close($exchange->dtm);	
+		if($result['received']>0)
+			$order->close($this->current_exchange->dtm);	
 		
 		$order->save();
 		
@@ -298,18 +303,21 @@ class Bot {
 	public function startBuy($reason)
 	{		
 		// Создаем ордер
-		$order = $this->makeOrder(self::buy_value, 'buy', $reason);		
+		$order = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason);		
 		
 		// Если создался
 		if ($order)
-		{				
+		{	
+						
 			// Пишем в сводку
-			Balance::add('rur', 'Создан ордер №'.$order->id.' на покупку '.$order->count.' btc', -1*$order->summ);			
+			Balance::add('rur', 'Создан ордер №'.$order->id.' на покупку '.$order->count.' btc', -1*$order->summ);
 			
 			// Если создан ордер
-			if ($order->status == 'open')				
-				Log::Add($this->curtime, '<b>Создана сделка на покупку '.$order->count.' ед. за '.$order->price.' ('.($order->fee).' комиссия) на сумму '.$order->summ.' руб.</b>', 1);			
-			// Если сразу куплено то закрыть ордер
+			if ($order->status == 'open')
+			{			
+				Log::Add('<b>Создана сделка на покупку '.$order->count.' ед. за '.$order->price.' ('.($order->fee).' комиссия) на сумму '.$order->summ.' руб.</b>', 1);			
+			}
+				// Если сразу куплено то закрыть ордер
 			else 
 				$this->completeBuy($order);			
 			
@@ -328,7 +336,7 @@ class Bot {
 	{	
 
 		// Создаем ордер
-		$order = $this->makeOrder($buy->count, 'sell',$reason);
+		$order = $this->makeOrder($buy->count, $this->current_exchange->sell, 'sell', $reason);
 		
 		if ($order)
 		{	
@@ -341,7 +349,7 @@ class Bot {
 			
 			// Если не удалось сразу продать то заявка ждет 3 минуты своего покупателя
 			if ($order->status == 'open')			
-				Log::Add($this->curtime, '<b>Создал сделку на продажу (№'.$buy->id.')  '. $order->count.' ед. (куплено за '.$buy->summ.') за '.$order->price.', комиссия='.$order->fee.', доход = '.($order->summ-$buy->summ-$buy->fee-$order->fee).' руб.</b>', 1);			
+				Log::Add('<b>Создал сделку на продажу (№'.$buy->id.')  '. $order->count.' ед. (куплено за '.$buy->summ.') за '.$order->price.', комиссия='.$order->fee.', доход = '.($order->summ-$buy->summ-$buy->fee-$order->fee).' руб.</b>', 1);			
 			// Если сразу продали то закрываем позицию в бд
 			else
 			{			
@@ -364,12 +372,12 @@ class Bot {
 		// Фиксируем в базе покупку
 		$buy = Buy::make($order);		
 		
-		Log::Add($this->curtime, '<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
+		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
 		$this->order_cnt++;
 		
-		// Для актуализации баланса при тесте
-		$this->api = APIProvider::get_Instance();
-		$this->balance_btc = $this->api->CompleteVirtualBuy($order);
+		// Для актуализации баланса при тесте с задержкой		
+		if (APIProvider::isVirtual)
+			$this->balance_btc = $this->api->CompleteVirtualBuy($order);
 		
 		// Пишем в сводку
 		Balance::add('btc', 'Закрыт ордер №'.$order->id.' на покупку '.$order->count.' btc', $order->count);
@@ -386,14 +394,14 @@ class Bot {
 		
 		$sell=Sell::make($order);	
 		
-		Log::Add($this->curtime, '<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
+		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
 		
 		$this->order_cnt++;
 		$this->total_income+=$sell->income;
 		
-		// Для актуализации баланса при тесте
-		
-		$this->balance = $this->api->CompleteVirtualSell($order);
+		// Для актуализации баланса при тесте покупок с задержкой		
+		if (APIProvider::isVirtual)
+			$this->balance = $this->api->CompleteVirtualSell($order);
 		
 		// Пишем в сводку
 		Balance::add('rur', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
@@ -458,7 +466,7 @@ class Bot {
 		$tracks = $this->getBuyTracks($all_tracks);
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
-			Log::notbuy('Не найдено подходящих для продажи треков'.Dump::d($all_tracks, true));
+			Log::notbuy('Не найдено подходящих для покупки треков'.Dump::d($all_tracks, true));
 			
 			return false;
 		}
@@ -579,7 +587,7 @@ class Bot {
 			
 			// Записываем причину покупки
 			$reason['buy'] = 'Найдена подходящая продажа №'.$buy->id.' с доходом от сделки '.$income.' руб., что составляет '.($income/$buy->summ*100).'% от цены покупки'; 
-			Log::Add($this->curtime, 'Начало продажи №'.$buy->id);
+			Log::Add('Начало продажи №'.$buy->id);
 			$this->startSell($buy, $reason);
 			//unset($bought[$key]);
 			break; // не более одной продажи по расчету за раз
@@ -669,7 +677,7 @@ class Bot {
 		// Получаем активные ордеры		
 		$active_orders = $this->api->getActiveOrders();		
 				
-		
+		Log::Add('Найдены активные ордеры '.Dump::d($active_orders, true));
 
 		foreach($orders as $order)
 		{			
@@ -679,12 +687,17 @@ class Bot {
 				// Если ордер висит более 3 минут - удаляем
 				if ($active_orders[$order->id]['timestamp_created']<$this->curtime-self::order_ttl)
 				{
-					Log::Add($this->curtime, 'Отменяем ордер №'.$order->id, 1);
+					Log::Add('Отменяем ордер №'.$order->id, 1);
 					//Отменить ордер
-					$this->cancelOrder($order);				
-					continue;
+					$this->cancelOrder($order);			
 				}
-			}			
+				else
+					Log::Add('Ордер висит менее 3 минут. '.date('Y-m-d H:i:s', $active_orders[$order->id]['timestamp_created']).'<'.date('Y-m-d H:i:s', $this->curtime-self::order_ttl));
+				
+				// Переходим к следующему ордеру
+				continue;
+			}
+		
 			
 			// Если заказ не найден, значит он успешно выполнен (нужно это будет проверить)			
 			if ($order->type == 'buy')
@@ -725,20 +738,21 @@ class Bot {
 		$this->NeedSell();		
 		$this->checkOrders();
 		
+		
 		Status::setParam('balance', $this->balance);
 		Status::setParam('balance_btc', $this->balance_btc);
 		
 		if ($this->order_cnt>0)
 		{				
-			Log::Add($this->curtime, 'Баланс на начало');
-			Log::Add($this->curtime, 'Руб: '.$start_balance, 1);			
-			Log::Add($this->curtime, 'Btc: '.round($start_balance_btc, 5), 1);
+			Log::Add('Баланс на начало');
+			Log::Add('Руб: '.$start_balance, 1);			
+			Log::Add('Btc: '.round($start_balance_btc, 5), 1);
 			
-			Log::Add($this->curtime, 'Баланс на конец');
-			Log::Add($this->curtime, 'Руб: '.$this->balance, 1);
-			Log::Add($this->curtime, 'Btc: '.round($this->balance_btc, 5), 1);		
+			Log::Add('Баланс на конец');
+			Log::Add('Руб: '.$this->balance, 1);
+			Log::Add('Btc: '.round($this->balance_btc, 5), 1);		
 				
-			Log::Add($this->curtime, 'Всего заработано: '.$this->total_income, 1);
+			Log::Add('Всего заработано: '.$this->total_income, 1);
 		}
 		
 	}

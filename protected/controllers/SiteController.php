@@ -211,34 +211,49 @@ class SiteController extends Controller
 	{
 		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
-		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
+		$btc_rur = Exchange::updatePrices('btc_rur');			
+				
+		$bot = new Bot($btc_rur);
+		$info = $bot->api->getInfo();
 		
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy']-10000;
-		$exchange->sell = $ticker['sell'];
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		if ($info)
+		{
+			$bot->setBalance($info['funds']['rur']);
+			$bot->setBalanceBtc($info['funds']['btc']);			
+				
+			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance_btc', $info['funds']['btc']);
 		
-		$bot = new Bot($exchange);
-		$bot->startBuy();
+			Balance::actualize('rur', $bot->balance);
+			Balance::actualize('btc', $bot->balance_btc);
+		}	
+			
+			$bot->startBuy(array('test'=>'test'));			
 	}
 	
 	public function actionSell()
 	{
 		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
-	
-		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
-	
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy'];
-		$exchange->sell = $ticker['sell']+10000;
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		$btc = Buy::getLast();
-		$bot = new Bot($exchange);
-		$bot->startSell($btc);
+		
+		$btc_rur = Exchange::updatePrices('btc_rur');			
+				
+		$bot = new Bot($btc_rur);
+		$info = $bot->api->getInfo();
+		
+		if ($info)
+		{
+			$bot->setBalance($info['funds']['rur']);
+			$bot->setBalanceBtc($info['funds']['btc']);			
+				
+			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance_btc', $info['funds']['btc']);
+		
+			Balance::actualize('rur', $bot->balance);
+			Balance::actualize('btc', $bot->balance_btc);
+		}	
+			$buy = Buy::model()->findByPk(1);	
+		
+			$bot->startSell($buy, array('test'=>'test'));
 	}
 	
 	public function actionOrders()

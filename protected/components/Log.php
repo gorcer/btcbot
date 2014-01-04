@@ -2,8 +2,11 @@
 
 class Log {
 	
-	public static function Add($dt, $data, $priority=0)
+	public static function Add($data, $priority=0)
 	{
+		$bot = Bot::get_Instance();
+		$dt = $bot->curtime;
+		
 		$cdt = date('Y-m-d H:i:s');
 		
 		$fn = 'log.html';
@@ -25,20 +28,25 @@ class Log {
 	
 	public static function Error($data)
 	{
-		$cdt = date('Y-m-d H:i:s');	
+		$bot = Bot::get_Instance();
+		$cdt = date('Y-m-d H:i:s', $bot->curtime);	
 		
 		$fn = 'logs/error-'.date('Y-m-d', $bot->curtime).'.html';
-		$text=  '<i>'.$cdt.'</i> '.$data.'<br/>';	
+		$text=  '<i>'.$cdt.'</i> '.$data.'<br/>';			
 		
 		if (!YII_DEBUG)
 			file_put_contents($fn, $text, FILE_APPEND);
-		else
+		else			
 			echo '<i>'.$cdt.'</i> : '.$text.' <br/>';
 	}
 	
 	public static function notbuy($reason)
 	{
 		$bot = Bot::get_Instance();
+		
+		// Не пишем файл при виртуальных тестах
+		if (APIProvider::isVirtual) return;
+		
 		$dtm = date('Y-m-d H:i:s', $bot->curtime);
 		
 		$fn = 'logs/not-buy-'.date('Y-m-d', $bot->curtime).'.html';
@@ -50,6 +58,10 @@ class Log {
 	public static function notsell($reason)
 	{
 		$bot = Bot::get_Instance();
+		
+		// Не пишем файл при виртуальных тестах
+		if (APIProvider::isVirtual) return;
+		
 		$dtm = date('Y-m-d H:i:s', $bot->curtime);
 	
 		$fn = 'logs/not-sell-'.date('Y-m-d', $bot->curtime).'.html';	

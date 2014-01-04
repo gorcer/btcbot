@@ -149,14 +149,14 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						dtm >= '2013-12-09 09:00:00'
-						/*and dtm <= '2013-12-13'*/
+						/*dtm >= '2013-12-09 09:00:00'*/
+						dtm >= '2014-01-03 09:00:00'
 						/*dtm >= '2013-12-25 00:00:00'*/
 						and
 						pair = '".$pair."'
 					group by dt
 					order by dtm
-					limit 1000000000000
+					limit 1000000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		

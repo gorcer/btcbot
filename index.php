@@ -19,7 +19,8 @@ if ($_SERVER['HTTP_HOST']=='btcbot.loc')
 else
 {
 	$yii=dirname(__FILE__).'/../../yii/framework/yii.php';
-	$config=dirname(__FILE__).'/protected/config/main.php';		
+	$config=dirname(__FILE__).'/protected/config/main.php';
+	defined('YII_DEBUG') or define('YII_DEBUG',false);
 }
 
 // remove the following lines when in production mode

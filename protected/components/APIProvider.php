@@ -3,7 +3,8 @@
 
 class APIProvider {
 	
-	const isVirtual=true; // Виртуальные покупки или реальные
+	const isVirtual=false; // Виртуальные покупки или реальные
+	const isVirtualForceOrder = true; // Покупать сразу без задержек в очереди
 	
 	private static $self=false;
 	private $activeOrders;
@@ -105,14 +106,19 @@ class APIProvider {
 	{
 		// Если покупаем виртуально
 		if (self::isVirtual)
-			return $this->makeOrderVirtual($cnt, $pair, $type, $price);
+		{
+			if (self::isVirtualForceOrder)
+				return $this->makeOrderVirtual_moment($cnt, $pair, $type, $price);
+			else
+				return $this->makeOrderVirtual($cnt, $pair, $type, $price);
+		}
 		
 		$BTCeAPI = BTCeAPI::get_Instance();
 		
-		try {
-				
+		try {				
+			
 			$btce = $BTCeAPI->makeOrder($cnt, $pair, $type, $price);
-		
+					
 		} catch(BTCeAPIInvalidParameterException $e) {
 			Log::Error('Не удалось создать ордер '.$e->getMessage());
 			return false;
@@ -129,6 +135,48 @@ class APIProvider {
 		}
 		
 		return $btce['return'];
+	}
+	
+	private function makeOrderVirtual_moment($cnt, $pair, $type, $price)
+	{
+		$bot = Bot::get_Instance();
+	
+		$summ = $cnt * $price;
+	
+		// Создаем виртуальную заявку на покупку
+		// Расчитываем баланс
+		if ($type == 'buy')
+		{
+			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee);
+			$balance = $this->balance - $summ;
+				
+		} else {
+				
+			$balance_btc = $this->balance_btc - $cnt;
+			$balance = $this->balance+$cnt*$price*(1-Bot::fee);
+		}
+	
+		// Имитация возвращаемых данных
+		$result = array
+		(
+				'success' => 1,
+				'return' => array
+				(
+						'received' => $cnt,
+						'remains' => 0,
+						'order_id' => 0,
+						'funds' => array
+						(
+								'btc' => (float)$balance_btc,
+								'rur' => (float)$balance,
+						)
+				)
+		);	
+		
+		$this->balance = $balance;
+		$this->balance_btc = $balance_btc;
+	
+		return $result['return'];
 	}
 	
 	private function makeOrderVirtual($cnt, $pair, $type, $price)
@@ -296,14 +344,17 @@ class APIProvider {
 	// Применение виртуальной покупки
 	public function CompleteVirtualBuy($order)
 	{		
-		$this->balance_btc+=$order->count-$order->fee;
+		if (!self::isVirtualForceOrder)
+			$this->balance_btc+=$order->count-$order->fee;
+		
 		return $this->balance_btc;
 	}
 
 	// Применение виртуальной продажи
 	public function CompleteVirtualSell($order)
 	{
-		$this->balance+=$order->summ-$order->fee;
+		if (!self::isVirtualForceOrder)
+			$this->balance+=$order->summ-$order->fee;
 		
 		return $this->balance; 
 	}
