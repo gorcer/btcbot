@@ -106,10 +106,9 @@ class Buy extends CActiveRecord
 		return $buy;		
 	}
 		
-	// Ñîâåðøåíèå ïîêóïêè
+	// Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð°
 	public static function make($order)
 	{
-		// Ïîêóïàåì
 		$buy = new Buy();
 		$buy->dtm = $order->close_dtm;
 		$buy->count = $order->count-$order->fee;
@@ -118,6 +117,26 @@ class Buy extends CActiveRecord
 		$buy->fee = $order->fee;		
 		$buy->save();
 		return $buy;
+	}
+	
+	public static function getNotSold()
+	{
+				
+		$sql = "
+					SELECT
+							b.*
+					FROM `buy` b
+					left join `order` o on o.buy_id = b.id
+					where
+						b.sold = 0
+						and
+						o.id is null
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		
+		
+		$list=Buy::model()->findAllBySql($sql);
+		return($list);
 	}
 	
 

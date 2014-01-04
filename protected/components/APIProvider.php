@@ -4,7 +4,18 @@
 class APIProvider {
 	
 	const isVirtual=true; // Виртуальные покупки или реальные
-	const isVirtualForceOrder = true; // Покупать сразу без задержек в очереди
+	
+	/**
+	 * Варианты виртуального режима работы с ордерами
+	 * remains - все ордера идут в очередь
+	 * receive - все ордера выполняются сразу
+	 * partial - 50 на 50
+	 * @var unknown_type
+	 */
+	const OrderPartialType = 'partial';
+	
+	// При частичной виртуальной покупке размер доли
+	const PART_SIZE = 0.5;
 	
 	private static $self=false;
 	private $activeOrders;
@@ -110,10 +121,12 @@ class APIProvider {
 		// Если покупаем виртуально
 		if (self::isVirtual)
 		{
-			if (self::isVirtualForceOrder)
+			if (self::OrderPartialType == 'receive')
 				return $this->makeOrderVirtual_moment($cnt, $pair, $type, $price);
-			else
+			elseif (self::OrderPartialType == 'remains')
 				return $this->makeOrderVirtual($cnt, $pair, $type, $price);
+			else
+				return $this->makeOrderVirtual_partial($cnt, $pair, $type, $price);
 		}
 		
 		$BTCeAPI = BTCeAPI::get_Instance();
@@ -176,6 +189,60 @@ class APIProvider {
 				)
 		);	
 		
+		$this->balance = $balance;
+		$this->balance_btc = $balance_btc;
+	
+		return $result['return'];
+	}
+	
+	private function makeOrderVirtual_partial($cnt, $pair, $type, $price)
+	{
+		$bot = Bot::get_Instance();
+	
+		$summ = $cnt * $price;
+		$remains = $cnt*(1-self::PART_SIZE);
+		// Создаем виртуальную заявку на покупку
+		// Расчитываем баланс
+		if ($type == 'buy')
+		{
+			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee)*self::PART_SIZE;
+			$balance = $this->balance - $summ;
+	
+		} else {
+	
+			$balance_btc = $this->balance_btc - $cnt;
+			$balance = $this->balance+$cnt*$price*(1-Bot::fee)*self::PART_SIZE;
+		}
+	
+		// Имитация возвращаемых данных
+		$result = array
+		(
+				'success' => 1,
+				'return' => array
+				(
+						'received' => $cnt*self::PART_SIZE,
+						'remains' => $remains,
+						'order_id' =>  87715140+rand(0,999)*10000+date('m')*1000+date('h')*100+date('m')*10+date('s'),
+						'funds' => array
+						(
+								'btc' => (float)$balance_btc,
+								'rur' => (float)$balance,
+						)
+				)
+		);
+		
+		// Добавляем заказ в список активных заказов
+		$lastEx = Exchange::getLast();
+		$this->activeOrders[$result['return']['order_id']]= array
+		(
+				'pair' => 'btc_rur',
+				'type' => $type,
+				'amount' => $remains,
+				'rate' => $price,
+				'timestamp_created' => $lastEx->dtm,
+				'status' => 0,
+		);
+	
 		$this->balance = $balance;
 		$this->balance_btc = $balance_btc;
 	
@@ -347,8 +414,10 @@ class APIProvider {
 	// Применение виртуальной покупки
 	public function CompleteVirtualBuy($order)
 	{		
-		if (!self::isVirtualForceOrder)
+		if (self::OrderPartialType == 'remains')
 			$this->balance_btc+=$order->count-$order->fee;
+		elseif (self::OrderPartialType == 'partial')
+			$this->balance_btc+=($order->count -$order->fee) * APIProvider::PART_SIZE;
 		
 		return $this->balance_btc;
 	}
@@ -356,8 +425,10 @@ class APIProvider {
 	// Применение виртуальной продажи
 	public function CompleteVirtualSell($order)
 	{
-		if (!self::isVirtualForceOrder)
+		if (self::OrderPartialType == 'remains')
 			$this->balance+=$order->summ-$order->fee;
+		elseif  (self::OrderPartialType == 'partial')
+			$this->balance+=($order->summ - $order->fee) * APIProvider::PART_SIZE;
 		
 		return $this->balance; 
 	}

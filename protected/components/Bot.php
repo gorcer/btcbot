@@ -239,8 +239,61 @@ class Bot {
 		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
 	}
 	
+	// Создание отложенного ордера (если сразу не купили)
+	private function createOrderRemains($result, $price, $type, $reason, $buy=false)
+	{
+		$order = new Order();
+		$order->price = $price;
+		$order->count = $result['remains'];
+		$order->summ = $order->count * $price;
+		
+		// Комиссия может быть в btc а может быть в rur
+		if ($type == 'buy')
+			$order->fee = round($order->count*self::fee, 5);
+		else
+			$order->fee = round($order->summ*self::fee, 5);
+		
+		if ($buy) $order->buy_id = $buy->id;
+		
+		$order->description = json_encode($reason);
+		$order->type = $type;
+		$order->status = 'open';
+		$order->create_dtm = $this->current_exchange->dtm;
+		
+		$order->id = $result['order_id'];
+		$order->save();
+		
+		return ($order);
+	}
 	
-	private function makeOrder($cnt, $price, $type, $reason='')
+	// Создание закрытого ордера на покупку(если сразу купили)
+	private function createOrderReceived($result, $price, $type, $reason, $buy=false)
+	{
+		$order = new Order();
+		$order->price = $price;
+		$order->count = $result['received'];
+		$order->summ = $order->count * $price;
+		
+		// Комиссия может быть в btc а может быть в rur
+		if ($type == 'buy')
+			$order->fee = round($order->count*self::fee, 5);
+		else
+			$order->fee = round($order->summ*self::fee, 5);
+		
+		if ($buy) $order->buy_id = $buy->id;
+		
+		$order->id = null;
+		$order->description = json_encode($reason);
+		$order->type = $type;		
+		$order->status = 'close';
+		$order->create_dtm = $this->current_exchange->dtm;
+		$order->close_dtm = $this->current_exchange->dtm;
+		$order->save();
+		
+		return ($order);
+	}
+	
+	private function makeOrder($cnt, $price, $type, $reason='', $buy=false)
 	{		
 		// Цена покупки / продажи
 	//	$price = $this->current_exchange->$type;
@@ -250,50 +303,45 @@ class Bot {
 
 		if (!$result) return false;
 		
+		$orders = array();
+		if ($result['remains']>0) $orders['remains'] = $this->createOrderRemains($result, $price, $type, $reason, $buy);
+		if ($result['received']>0) $orders['received'] = $this->createOrderReceived($result, $price, $type, $reason, $buy);
+		
+		/*
 		// Если все ок, добавляем в базу созданный заказ
 		$order = new Order();
-		
-		if ($result['order_id'])
-			$order->id = $result['order_id'];
-		else 
-			$order->id == null;
-		
-		$order->price = $price;		
+		$order->price = $price;
 		$order->summ = $cnt*$price;
-		$order->count = $cnt;
-		$order->description = json_encode($reason);
+		$order->description = json_encode($reason);		
+		$order->type = $type;
 		
 		// Комиссия может быть в btc а может быть в rur
-		if ($type == 'buy')
-		{
-			$order->fee = round($cnt*self::fee, 5);
-			//$order->count = $cnt-$order->fee;	
-		}
-		else
-		{
-			$order->fee = round($order->summ*self::fee, 5);
-			//$order->summ-=$order->fee;			
-		}		
+		if ($type == 'buy')		
+			$order->fee = round($cnt*self::fee, 5);		
+		else		
+			$order->fee = round($order->summ*self::fee, 5);				
 		
-		$order->type = $type;
+		$order->id = $result['order_id'];
+		
+		$order->count = $cnt;
 		$order->status = 'open';
 		$order->create_dtm = $this->current_exchange->dtm;
 		//if ($buy_id) $order->buy_id = $buy_id;
 		
 		// Заказ может быть сразу выполнене, в этом случае закрываем его в базе
-		if($result['received']>0)
+		if($result['received'] == $cnt)
 			$order->close($this->current_exchange->dtm);	
 		
 		$order->save();
-		
+		*/
 		
 		// Актуализируем баланс
 		$this->setBalance($result['funds']['rur']);
 		$this->setBalanceBtc($result['funds']['btc']);		
 		
-		$this->order_cnt++;
+		$this->order_cnt+=sizeof($orders);
 		
-		return($order);
+		return($orders);
 	}
 	
 	/**
@@ -303,24 +351,28 @@ class Bot {
 	public function startBuy($reason)
 	{		
 		// Создаем ордер
-		$order = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason);		
+		
+		
+		$orders = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason);		
 		
 		// Если создался
-		if ($order)
+		if (sizeof($orders)>0)
 		{	
-						
-			// Пишем в сводку
-			Balance::add('rur', 'Создан ордер №'.$order->id.' на покупку '.$order->count.' btc', -1*$order->summ);
-			
-			// Если создан ордер
-			if ($order->status == 'open')
-			{			
-				Log::Add('<b>Создана сделка на покупку '.$order->count.' ед. за '.$order->price.' ('.($order->fee).' комиссия) на сумму '.$order->summ.' руб.</b>', 1);			
+			// Если сразу купили
+			if (isset($orders['received']))
+			{
+				// Пишем в сводку
+				Balance::add('rur', 'Создан ордер №'.$orders['received']->id.' на покупку '.$orders['received']->count.' btc', -1*$orders['received']->summ);
+				$this->completeBuy($orders['received']);
 			}
-				// Если сразу куплено то закрыть ордер
-			else 
-				$this->completeBuy($order);			
 			
+			// Если отложенная покупка
+			if (isset($orders['remains']))
+			{
+				// Пишем в сводку
+				Balance::add('rur', 'Создан ордер №'.$orders['remains']->id.' на покупку '.$orders['remains']->count.' btc', -1*$orders['remains']->summ);
+				Log::Add('<b>Создан ордер на покупку '.$orders['remains']->count.' ед. за '.$orders['remains']->price.' ('.($orders['remains']->fee).' комиссия) на сумму '.$orders['remains']->summ.' руб.</b>', 1);
+			}			
 			
 		return(true);
 		}
@@ -336,25 +388,34 @@ class Bot {
 	{	
 
 		// Создаем ордер
-		$order = $this->makeOrder($buy->count, $this->current_exchange->sell, 'sell', $reason);
+		$orders = $this->makeOrder($buy->count, $this->current_exchange->sell, 'sell', $reason, $buy);
 		
-		if ($order)
+		if (sizeof($orders)>0)
 		{	
-			// Присваиваем BUY номер заказа по которому оно будет продано
-			$buy->order_id = $order->id;
-			$buy->update('order_id');					
+			// Если сразу продали
+			if (isset($orders['received']))
+			{
+				// Присваиваем BUY номер заказа по которому оно будет продано
+				$orders['received']->buy_id = $buy->id;
+				$orders['received']->update('buy_id');
+				
+				// Пишем в сводку
+				Balance::add('btc', 'Создан ордер №'.$orders['received']->id.' на продажу '.$orders['received']->count.' btc', -1*$orders['received']->count);
+				
+				$sell = $this->completeSell($orders['received']);
+			}
 			
-			// Пишем в сводку
-			Balance::add('btc', 'Создан ордер №'.$order->id.' на продажу '.$order->count.' btc', -1*$order->count);
-			
-			// Если не удалось сразу продать то заявка ждет 3 минуты своего покупателя
-			if ($order->status == 'open')			
-				Log::Add('<b>Создал сделку на продажу (№'.$buy->id.')  '. $order->count.' ед. (куплено за '.$buy->summ.') за '.$order->price.', комиссия='.$order->fee.', доход = '.($order->summ-$buy->summ-$buy->fee-$order->fee).' руб.</b>', 1);			
-			// Если сразу продали то закрываем позицию в бд
-			else
-			{			
-				$sell = $this->completeSell($order);				
-			}			
+			// Если отложенная покупка
+			if (isset($orders['remains']))
+			{
+				// Присваиваем BUY номер заказа по которому оно будет продано
+				$orders['remains']->buy_id = $buy->id;
+				$orders['remains']->update('buy_id');				
+				
+				// Пишем в сводку
+				Balance::add('btc', 'Создан ордер №'.$orders['remains']->id.' на продажу '.$orders['remains']->count.' btc', -1*$orders['remains']->count);
+				Log::Add('<b>Создал сделку на продажу (№'.$buy->id.')  '. $orders['remains']->count.' ед. (куплено за '.$buy->summ.') за '.$orders['remains']->price.', комиссия='.$orders['remains']->fee.', доход = '.($orders['remains']->summ - ($buy->summ / $buy->count) * $orders['remains']->count  - $buy->fee - $orders['remains']->fee).' руб.</b>', 1);
+			}		
 			
 			
 			return(true);
@@ -365,9 +426,12 @@ class Bot {
 	
 	public function completeBuy($order)
 	{
-		// Закрываем ордер
-		$order->close($this->current_exchange->dtm);
-		$order->save();
+		
+		if ($order->status == 'open')
+		{
+			$order->close($this->current_exchange->dtm);
+			$order->save();
+		}
 		
 		// Фиксируем в базе покупку
 		$buy = Buy::make($order);		
@@ -388,10 +452,13 @@ class Bot {
 	
 	public function completeSell($order)
 	{
-		// Закрываем ордер
-		$order->close($this->current_exchange->dtm);
-		$order->save();		
-		
+
+		if ($order->status == 'open')
+		{
+			$order->close($this->current_exchange->dtm);
+			$order->save();
+		}
+	
 		$sell=Sell::make($order);	
 		
 		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
@@ -514,7 +581,8 @@ class Bot {
 		$dt = date('Y-m-d H:i:s', $curtime);		
 
 		//Смотрим, что продать
-		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
+		//$bought = Buy::model()->findAll(array('condition'=>'sold=0 and order_id=0'));
+		$bought = Buy::getNotSold();
 		
 		// Если нечего продавать
 		if (sizeof($bought) == 0) return false;
@@ -553,9 +621,6 @@ class Bot {
 		foreach($this->sell_periods as $period)		
 			$all_tracks[] = $this->getGraphImage($curtime, $period, 'sell', $this->sell_imp_dif);		
 		
-		// Совершаем вынужденные продажи
-		$this->NecesarySell($all_tracks);
-		
 		
 		//Анализируем треки
 		$tracks = $this->getSellTracks($all_tracks);		
@@ -569,6 +634,9 @@ class Bot {
 		$reason['tracks']=$tracks;
 		$reason['all_tracks']=$all_tracks;
 
+		// Совершаем вынужденные продажи
+		$this->NecesarySell($all_tracks, $bought);
+		
 		// Ищем выгодные продажи
 		foreach($bought as $key=>$buy)
 		{
@@ -597,7 +665,7 @@ class Bot {
 	}
 	
 	// Вынужденная продажа, совершается когда купленный btc может залежаться
-	private function NecesarySell($all_tracks)
+	private function NecesarySell($all_tracks, $bought)
 	{
 		$reason = array();
 		//Анализируем треки
@@ -608,7 +676,6 @@ class Bot {
 			Log::notsell('Нет подходящих треков для вынужденной продажи');
 		}
 		
-		$bought = Buy::model()->with('sell')->findAll(array('condition'=>'sold=0 and order_id=0'));
 		
 		// Продаем то что может залежаться
 		foreach($bought as $buy)
@@ -677,7 +744,7 @@ class Bot {
 		// Получаем активные ордеры		
 		$active_orders = $this->api->getActiveOrders();		
 				
-		Log::Add('Найдены активные ордеры '.Dump::d($active_orders, true));
+		//Log::Add('Найдены активные ордеры '.Dump::d($active_orders, true));
 
 		foreach($orders as $order)
 		{			
@@ -697,7 +764,6 @@ class Bot {
 				// Переходим к следующему ордеру
 				continue;
 			}
-		
 			
 			// Если заказ не найден, значит он успешно выполнен (нужно это будет проверить)			
 			if ($order->type == 'buy')

@@ -156,7 +156,7 @@ class Exchange extends CActiveRecord
 						pair = '".$pair."'
 					group by dt
 					order by dtm
-					limit 1000000000
+					limit 5000000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		
