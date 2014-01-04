@@ -28,7 +28,7 @@ class Bot {
 	public $api; 
 	
 
-	//const min_buy = 0.01; // Мин. сумма покупки
+	const min_order_val = 0.01; // Мин. сумма покупки
 	const buy_value = 0.012; //0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
@@ -350,9 +350,7 @@ class Bot {
 	 */
 	public function startBuy($reason)
 	{		
-		// Создаем ордер
-		
-		
+		// Создаем ордер		
 		$orders = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason);		
 		
 		// Если создался

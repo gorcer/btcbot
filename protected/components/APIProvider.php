@@ -163,13 +163,13 @@ class APIProvider {
 		// Расчитываем баланс
 		if ($type == 'buy')
 		{
-			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee);
+			$balance_btc = $this->balance_btc+round($cnt*(1-Bot::fee), 5);
 			$balance = $this->balance - $summ;
 				
 		} else {
 				
 			$balance_btc = $this->balance_btc - $cnt;
-			$balance = $this->balance+$cnt*$price*(1-Bot::fee);
+			$balance = $this->balance+$cnt*round($price*(1-Bot::fee), 5);
 		}
 	
 		// Имитация возвращаемых данных
@@ -205,13 +205,13 @@ class APIProvider {
 		// Расчитываем баланс
 		if ($type == 'buy')
 		{
-			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee)*self::PART_SIZE;
+			$balance_btc = $this->balance_btc+round($cnt*(1-Bot::fee)*self::PART_SIZE,5);
 			$balance = $this->balance - $summ;
 	
 		} else {
 	
 			$balance_btc = $this->balance_btc - $cnt;
-			$balance = $this->balance+$cnt*$price*(1-Bot::fee)*self::PART_SIZE;
+			$balance = $this->balance+round($cnt*$price*(1-Bot::fee)*self::PART_SIZE,5);
 		}
 	
 		// Имитация возвращаемых данных
