@@ -3,7 +3,7 @@
 
 class APIProvider {
 	
-	const isVirtual=false; // Виртуальные покупки или реальные
+	const isVirtual=true; // Виртуальные покупки или реальные
 	const isVirtualForceOrder = true; // Покупать сразу без задержек в очереди
 	
 	private static $self=false;
@@ -101,7 +101,10 @@ class APIProvider {
 							'xpm' => 0
 					)
 			)
-	)*/
+	)
+	
+	@todo Ордер может быть выполнен не полностью
+	*/
 	public function makeOrder($cnt, $pair, $type, $price)
 	{
 		// Если покупаем виртуально
