@@ -149,9 +149,9 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						/* dtm >= '2013-12-09 09:00:00'*/
-						/*dtm >= '2014-01-05 05:00:00'*/
-						dtm >= '2013-12-14 09:00:00' and dtm <= '2013-12-17 01:00:00'
+						 dtm >= '2013-12-09 09:00:00'
+					/*	dtm >= '2014-01-01 05:00:00'*/
+						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
 						and
 						pair = '".$pair."'
 					group by dt
@@ -260,6 +260,74 @@ class Exchange extends CActiveRecord
 		
 		
 		return($val);
+	}
+	
+	public static function getHill($from, $to, $type='sell')
+	{
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						dtm, buy, sell
+	
+					FROM `exchange`
+					where
+						dtm >= '".$from."' and dtm <= '".$to."'
+					order by ".$type." desc
+					limit 1
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$val=$command->queryRow();	
+	
+		return($val);
+	}
+	
+
+	public static function AlreadyBought_period($period, $time)
+	{
+		$key = 'track.period.'.$period;
+		$tm = Yii::app()->cache->get($key);
+		if (!$tm || $tm<$time)
+			return false;
+		else
+			return true;
+	}
+	
+	public static function AlreadyBought_pit($pit_dtm)
+	{
+		$key = 'track.pit.last';
+		$last_pit = Yii::app()->cache->get($key);
+		if ($last_pit != $pit_dtm)
+			return false;
+		else
+			return true;
+	}
+	
+	
+	public static function ReservePeriod($period, $time)
+	{
+		$key = 'track.period.'.$period;
+		return Yii::app()->cache->set($key, $time+$period, $period);
+	}
+	
+	public static function ReservePit($pit_dtm)
+	{
+		$key = 'track.pit.last';
+		return Yii::app()->cache->set($key, $pit_dtm);
+	}
+	
+	public static function ReserveLastHill($hill_dtm)
+	{
+		$key = 'track.hill.last';
+		return Yii::app()->cache->set($key, $hill_dtm);
+	}
+	
+	// Вернуть последний холм на котором продавали
+	public static function getLastHill()
+	{
+		$key = 'track.hill.last';
+		return Yii::app()->cache->get($key);		
 	}
 	
 }
