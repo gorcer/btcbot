@@ -161,7 +161,7 @@ class Bot {
 								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][0]['val'].', а сейчас уже '.$track['items'][3]['val']);
 										
 							break; 
-			//	case '00+':	$result[] = $track; break; // __/
+				case '00+':	$result[] = $track; break; // __/
 				case '0-+':							   // _\/
 							// Если трек при падении не вернулся в исходную точку
 							if((1 - $track['items'][3]['val'] / $track['items'][1]['val']) > $this->buy_imp_dif)
@@ -170,6 +170,7 @@ class Bot {
 								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][1]['val'].', а сейчас уже '.$track['items'][3]['val']);
 							
 							break; 
+							
 			// Если есть долгосрочное падение, не покупать 
 				case '---':								// \\\
 				case '+--':								// /\\
