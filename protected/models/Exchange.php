@@ -149,9 +149,9 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						dtm >= '2013-12-09 09:00:00'
-						/*dtm >= '2014-01-05 00:00:00'*/
-						/*dtm >= '2013-12-21 00:00:00'*/
+						/* dtm >= '2013-12-09 09:00:00'*/
+						/*dtm >= '2014-01-05 05:00:00'*/
+						dtm >= '2013-12-14 09:00:00' and dtm <= '2013-12-17 01:00:00'
 						and
 						pair = '".$pair."'
 					group by dt
@@ -236,6 +236,30 @@ class Exchange extends CActiveRecord
 		$exchange->save();
 		
 		return ($exchange);
+	}
+	
+
+	// Ищем "яму"
+	public static function getPit($from, $to, $type='buy')
+	{
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						dtm, buy, sell
+		
+					FROM `exchange`
+					where
+						dtm >= '".$from."' and dtm <= '".$to."'						
+					order by ".$type."
+					limit 1
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$val=$command->queryRow();
+		
+		
+		return($val);
 	}
 	
 }

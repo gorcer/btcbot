@@ -5,7 +5,7 @@
  * @author Zaretskiy.E
  *
  * @todo Определение кол.ва закупа - когда курс падает от среднего за двое суток на 20%, пускай бот покупает 5 минимумов
- * 
+ * @todo Бот должен искать прошлую вершину при анализе ямы и принятии решения о покупке. И от неё отсчитывать поздно или нет.
  */
 class Bot {
 	
@@ -140,6 +140,7 @@ class Bot {
 		return($result);
 	} 
 	
+	
 	/**
 	 * Формирует список треков на которых выгодно покупать
 	 * @param unknown_type $tracks
@@ -155,17 +156,26 @@ class Bot {
 				case '-0+':								 // \_/
 				case '--+':								 // \\/
 							// Если трек при падении не вернулся в исходную точку
-							if ((1 - $track['items'][3]['val'] / $track['items'][0]['val']) > $this->buy_imp_dif)							
-								$result[] = $track; 
+							if ((1 - $track['items'][3]['val'] / $track['items'][0]['val']) > $this->buy_imp_dif)	
+							{						
+								$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
+								$result[] = $track;
+							} 
 							else 
 								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][0]['val'].', а сейчас уже '.$track['items'][3]['val']);
 										
 							break; 
-				case '00+':	$result[] = $track; break; // __/
+				case '00+':	// __/
+							$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
+							$result[] = $track; 
+							break; 
 				case '0-+':							   // _\/
 							// Если трек при падении не вернулся в исходную точку
 							if((1 - $track['items'][3]['val'] / $track['items'][1]['val']) > $this->buy_imp_dif)
+							{
+								$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
 								$result[] = $track;
+							}
 							else
 								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][1]['val'].', а сейчас уже '.$track['items'][3]['val']);
 							
@@ -226,9 +236,9 @@ class Bot {
 		return $result;
 	}
 	
-	private function AlreadyBought($period)
+	private function AlreadyBought_period($period)
 	{
-		$key = 'track.'.$period;
+		$key = 'track.period.'.$period;
 		$tm = Yii::app()->cache->get($key);
 		if (!$tm || $tm<$this->curtime)
 			return false;
@@ -236,10 +246,27 @@ class Bot {
 			return true;			
 	}
 	
+	private function AlreadyBought_pit($pit_dtm)
+	{
+		$key = 'track.pit.last';
+		$last_pit = Yii::app()->cache->get($key);
+		if ($last_pit != $pit_dtm)
+			return false;
+		else
+			return true;
+	}
+	
+	
 	private function ReservePeriod($period)
 	{
-		$key = 'track.'.$period;
+		$key = 'track.period.'.$period;
 		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
+	}
+	
+	private function ReservePit($pit_dtm)
+	{
+		$key = 'track.pit.last';
+		return Yii::app()->cache->set($key, $pit_dtm);
 	}
 	
 	// Создание отложенного ордера (если сразу не купили)
@@ -520,14 +547,25 @@ class Bot {
 			return false;
 		}
 		
-		
-		//Удаляем треки по которым уже были покупки
-		foreach($tracks as $key=>$track)		
-			if ($this->AlreadyBought($track['period']))		
+
+		foreach($tracks as $key=>$track)	
+		{	
+			//Удаляем треки по которым уже были покупки			
+			if ($this->AlreadyBought_period($track['period']))		
 			{
 				Log::notbuy('Уже была покупка PERIOD назад по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
+			
+			// Удаляем треки которые происходят из ям по которым уже были покупки
+			if ($this->AlreadyBought_pit($track['pit']['dtm']))
+			{
+				Log::notbuy('Уже была покупка в яме '.$track['pit']['dtm'].' по треку '.print_r($track, true));
+				unset($tracks[$key]);
+			}
+			
+		}
+			
 								//	Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
 			
 		// Если остались треки
@@ -545,7 +583,8 @@ class Bot {
 				{
 					//Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
 					//Dump::d($track);
-					$this->ReservePeriod($track['period']);					
+					$this->ReservePeriod($track['period']);
+					$this->ReservePit($track['pit']['dtm']);
 				}
 			}
 			else
