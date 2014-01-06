@@ -12,7 +12,7 @@ class APIProvider {
 	 * partial - 50 на 50
 	 * @var unknown_type
 	 */
-	const OrderPartialType = 'partial';
+	const OrderPartialType = 'receive';
 	
 	// При частичной виртуальной покупке размер доли
 	const PART_SIZE = 0.5;
@@ -163,13 +163,13 @@ class APIProvider {
 		// Расчитываем баланс
 		if ($type == 'buy')
 		{
-			$balance_btc = $this->balance_btc+round($cnt*(1-Bot::fee), 5);
+			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee);
 			$balance = $this->balance - $summ;
 				
 		} else {
 				
 			$balance_btc = $this->balance_btc - $cnt;
-			$balance = $this->balance+$cnt*round($price*(1-Bot::fee), 5);
+			$balance = $this->balance+$cnt*$price*(1-Bot::fee);
 		}
 	
 		// Имитация возвращаемых данных
@@ -205,13 +205,13 @@ class APIProvider {
 		// Расчитываем баланс
 		if ($type == 'buy')
 		{
-			$balance_btc = $this->balance_btc+round($cnt*(1-Bot::fee)*self::PART_SIZE,5);
+			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee)*self::PART_SIZE;
 			$balance = $this->balance - $summ;
 	
 		} else {
 	
 			$balance_btc = $this->balance_btc - $cnt;
-			$balance = $this->balance+round($cnt*$price*(1-Bot::fee)*self::PART_SIZE,5);
+			$balance = $this->balance+$cnt*$price*(1-Bot::fee)*self::PART_SIZE;
 		}
 	
 		// Имитация возвращаемых данных
@@ -335,7 +335,7 @@ class APIProvider {
 		try {
 			$orders = $BTCeAPI->apiQuery('ActiveOrders', array('pair'=>$pair));
 		} catch(BTCeAPIException $e) {			
-			Log::Error(0, 'Не удалось получить список заказов '.$e->getMessage());
+			Log::Error('Не удалось получить список заказов '.$e->getMessage());
 			return false;
 		}
 	

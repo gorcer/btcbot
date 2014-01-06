@@ -108,9 +108,7 @@ class SiteController extends Controller
 	}
 	
 	public function actionCron()
-	{
-		
-		
+	{	
 		// Пересчитываем рейтинги
 		$key = 'cron.bot.run.btc_rur';
 		if(Yii::app()->cache->get($key)===false)
@@ -171,7 +169,6 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{	
-		
 		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
 		$start = time();
@@ -258,19 +255,25 @@ class SiteController extends Controller
 	
 	public function actionOrders()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+			if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
-		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
-	
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy'];
-		$exchange->sell = $ticker['sell']+10000;
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		$btc = Buy::getLast();
-		$bot = new Bot($exchange);
+		$btc_rur = Exchange::updatePrices('btc_rur');			
+				
+		$bot = new Bot($btc_rur);
+		$info = $bot->api->getInfo();
 		
+		if ($info)
+		{
+			$bot->setBalance($info['funds']['rur']);
+			$bot->setBalanceBtc($info['funds']['btc']);			
+				
+			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance_btc', $info['funds']['btc']);
+		
+			Balance::actualize('rur', $bot->balance);
+			Balance::actualize('btc', $bot->balance_btc);
+		}	
+			
 		$bot->checkOrders();
 	}
 	

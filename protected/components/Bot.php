@@ -27,9 +27,11 @@ class Bot {
 	
 	public $api; 
 	
+	private $tomail=array(); // Собираем сюда то что нужно отправить на email;
+	
 
 	const min_order_val = 0.01; // Мин. сумма покупки
-	const buy_value = 0.012; //0.02; // Сколько покупать
+	const buy_value = 0.02; //0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
@@ -249,9 +251,9 @@ class Bot {
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
-			$order->fee = round($order->count*self::fee, 5);
+			$order->fee = $order->count*self::fee;
 		else
-			$order->fee = round($order->summ*self::fee, 5);
+			$order->fee = $order->summ*self::fee;
 		
 		if ($buy) $order->buy_id = $buy->id;
 		
@@ -276,9 +278,9 @@ class Bot {
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
-			$order->fee = round($order->count*self::fee, 5);
+			$order->fee = $order->count*self::fee;
 		else
-			$order->fee = round($order->summ*self::fee, 5);
+			$order->fee = $order->summ*self::fee;
 		
 		if ($buy) $order->buy_id = $buy->id;
 		
@@ -307,33 +309,6 @@ class Bot {
 		if ($result['remains']>0) $orders['remains'] = $this->createOrderRemains($result, $price, $type, $reason, $buy);
 		if ($result['received']>0) $orders['received'] = $this->createOrderReceived($result, $price, $type, $reason, $buy);
 		
-		/*
-		// Если все ок, добавляем в базу созданный заказ
-		$order = new Order();
-		$order->price = $price;
-		$order->summ = $cnt*$price;
-		$order->description = json_encode($reason);		
-		$order->type = $type;
-		
-		// Комиссия может быть в btc а может быть в rur
-		if ($type == 'buy')		
-			$order->fee = round($cnt*self::fee, 5);		
-		else		
-			$order->fee = round($order->summ*self::fee, 5);				
-		
-		$order->id = $result['order_id'];
-		
-		$order->count = $cnt;
-		$order->status = 'open';
-		$order->create_dtm = $this->current_exchange->dtm;
-		//if ($buy_id) $order->buy_id = $buy_id;
-		
-		// Заказ может быть сразу выполнене, в этом случае закрываем его в базе
-		if($result['received'] == $cnt)
-			$order->close($this->current_exchange->dtm);	
-		
-		$order->save();
-		*/
 		
 		// Актуализируем баланс
 		$this->setBalance($result['funds']['rur']);
@@ -434,9 +409,6 @@ class Bot {
 		// Фиксируем в базе покупку
 		$buy = Buy::make($order);		
 		
-		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
-		$this->order_cnt++;
-		
 		// Для актуализации баланса при тесте с задержкой		
 		if (APIProvider::isVirtual)
 			$this->balance_btc = $this->api->CompleteVirtualBuy($order);
@@ -444,6 +416,9 @@ class Bot {
 		// Пишем в сводку
 		Balance::add('btc', 'Закрыт ордер №'.$order->id.' на покупку '.$order->count.' btc', $order->count);
 		Balance::add('btc', 'Начислена комиссия '.$order->fee.' btc', -1 * $order->fee);
+		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
+				
+		$this->tomail[]='<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>';
 		
 		$this->order_cnt++;
 	}
@@ -457,12 +432,7 @@ class Bot {
 			$order->save();
 		}
 	
-		$sell=Sell::make($order);	
-		
-		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
-		
-		$this->order_cnt++;
-		$this->total_income+=$sell->income;
+		$sell=Sell::make($order);
 		
 		// Для актуализации баланса при тесте покупок с задержкой		
 		if (APIProvider::isVirtual)
@@ -471,7 +441,10 @@ class Bot {
 		// Пишем в сводку
 		Balance::add('rur', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
 		Balance::add('rur', 'Начислена комиссия '.$order->fee.' rur', -1*$order->fee);
+		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
+		$this->tomail[]='<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>';
 		
+		$this->total_income+=$sell->income;
 		$this->order_cnt++;
 	}
 	
@@ -505,19 +478,29 @@ class Bot {
 			$reason['avg_price']='Цена ниже средней за 7 дн. '.('.$avg_buy.'>'.$this->current_exchange->buy.');
 			*/
 		
-		// Проверяем была ли уже покупка за последнее время, если была и цена была более выгодная чем текущая то не покупаем
-		$lastBuy = Buy::getLast();		
+		$lastBuy = Buy::getLast();
+		$lastSell = Sell::getLast();
+				
 		if ($lastBuy)
 		{
 			$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;
 			$diff = (1 - $this->current_exchange->buy / $lastBuy->price);		
-			if ($tm>$this->curtime && $diff < $this->buy_imp_dif)
-			{
-				Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ');
-				return false;
+
+			if ( $tm > $this->curtime 								// была ли уже покупка за последнее время 
+				&& $diff < $this->buy_imp_dif  						// цена была более выгодная
+			//	&&  (!$lastSell || $lastSell->dtm < $lastBuy->dtm) 	// небыло после последней покупки продажи
+				)
+			{	
+					// Не покупаем		
+					Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'%.');
+				//	if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
+					return false;
+				
 			}
-			else
-				$reason['avg_price'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ';
+			else {
+				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ';
+				//if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm;
+			}
 		}		
 		
 		
@@ -531,7 +514,7 @@ class Bot {
 		$tracks = $this->getBuyTracks($all_tracks);
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
-			Log::notbuy('Не найдено подходящих для покупки треков'.Dump::d($all_tracks, true));
+			Log::notbuy('Не найдено подходящих для покупки треков'/*.Dump::d($all_tracks, true)*/);
 			
 			return false;
 		}
@@ -624,9 +607,9 @@ class Bot {
 		$tracks = $this->getSellTracks($all_tracks);		
 		
 		if (sizeof($tracks) == 0)
-		{			
-			return false;		
+		{	
 			Log::notsell('Нет подходящих треков для продажи');
+			return false;
 		}
 		
 		$reason['tracks']=$tracks;
@@ -798,10 +781,14 @@ class Bot {
 			Balance::actualize('btc', $this->balance_btc);
 		}	
 		
+		
+		$this->tomail=array();
+		
 		$this->NeedBuy();
 		$this->NeedSell();		
 		$this->checkOrders();
 		
+		if (sizeof($this->tomail)>0) $this->sendMail();
 		
 		Status::setParam('balance', $this->balance);
 		Status::setParam('balance_btc', $this->balance_btc);
@@ -810,15 +797,23 @@ class Bot {
 		{				
 			Log::Add('Баланс на начало');
 			Log::Add('Руб: '.$start_balance, 1);			
-			Log::Add('Btc: '.round($start_balance_btc, 5), 1);
+			Log::Add('Btc: '.$start_balance_btc, 1);
 			
 			Log::Add('Баланс на конец');
 			Log::Add('Руб: '.$this->balance, 1);
-			Log::Add('Btc: '.round($this->balance_btc, 5), 1);		
+			Log::Add('Btc: '.$this->balance_btc, 1);		
 				
 			Log::Add('Всего заработано: '.$this->total_income, 1);
 		}
 		
+	}
+	
+	private function sendMail()
+	{
+		$text='';
+		foreach ($this->tomail as $item)
+			$text.=$item.' <br/>';		
+		mail('gorcer@gmail.com', 'Btcbot - Новые сделки', $text);
 	}
 	
 	public function setBalance($summ)

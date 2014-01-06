@@ -146,7 +146,7 @@ class Buy extends CActiveRecord
 						and
 						o.id is null	
 						and
-						b.count > ".Bot::min_order_val."					
+						b.count >= ".Bot::min_order_val."					
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		
