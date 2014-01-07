@@ -97,10 +97,10 @@ class Bot {
 		{			 			
 			$step_ut = $from_tm+$step*$i;
 			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
-			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
-			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);
 			
-			//$val=Exchange::NOSQL_getAvg($name, $step_ut_f, $step_ut_t);
+			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
+			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);			
+			
 			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
 			
 			if (!$val) 
@@ -487,7 +487,8 @@ class Bot {
 			$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;			
 			$diff_buy = (1 - $this->current_exchange->buy / $lastBuy->price);
 			
-			if ($lastSell) $diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
+			if ($lastSell) 
+				$diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
 
 			if ( $tm > $this->curtime 								// была ли уже покупка за последнее время 
 				&& $diff_buy < $this->buy_imp_dif  					// и цена была более выгодная
@@ -504,7 +505,7 @@ class Bot {
 			}
 			else {
 				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff_buy.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ';
-				if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm;
+				if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm.' и цена последней покупки '.$lastSell->price.' выше текущей '.$this->current_exchange->buy;
 			}
 		}		
 		
@@ -563,6 +564,7 @@ class Bot {
 					Exchange::ReservePeriod($track['period'], $this->curtime);				
 				}
 				
+				// Резервируем покупку в яме
 				$first_track = array_pop($tracks);
 				Exchange::ReservePit($first_track['pit']['dtm']);
 			}
@@ -624,17 +626,20 @@ class Bot {
 		{
 			$tm = strtotime($lastSell->dtm)+self::min_sell_interval;
 			$diff = (1-$lastSell->price / $this->current_exchange->sell);				
-			$last_hill = Exchange::getLastHill();
+			$last_hill = Exchange::getLastSellHill();
 			$first_track = array_pop($tracks);
+			$lastBuy = Buy::getLast();
 			
 			if ($tm>$this->curtime // Если с прошлой покупки не вышло время
 					&& $diff < $this->sell_imp_dif // и цена не лучше
 					&& (!$last_hill || $last_hill == $first_track['hill']['dtm'])// и прошлая продажа была на той же горке
-					// @todo вставить проверку на покупку между продажами, если была то можно продавать иначе нет
+					&& (!$lastBuy || $lastBuy->dtm < $lastSell->dtm) // и с последней продажи небыло покупок
 			)
 			{
 				Log::notsell('Уже была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше прошлой '.$lastSell->price);
 				if ($last_hill) Log::notsell('Была уже продажа на этой ('.$last_hill.') горке');
+				if ($lastBuy) Log::notsell('С последней продажи небыло покупок');
+				
 				return false;
 			}
 			else
@@ -674,7 +679,7 @@ class Bot {
 			if ($this->startSell($buy, $reason))
 			{				
 				$first_track = array_pop($tracks);
-				Exchange::ReserveLastHill($first_track['hill']['dtm']); // резервируем холм
+				Exchange::ReserveLastSellHill($first_track['hill']['dtm']); // резервируем холм
 				break; 	// не более одной продажи по расчету за раз
 			}
 			

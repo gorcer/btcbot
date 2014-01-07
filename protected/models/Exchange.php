@@ -150,7 +150,7 @@ class Exchange extends CActiveRecord
 					FROM `exchange`
 					where
 						 dtm >= '2013-12-09 09:00:00'
-					/*	dtm >= '2014-01-01 05:00:00'*/
+						/* dtm >= '2014-01-01 00:00:00' */
 						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
 						and
 						pair = '".$pair."'
@@ -317,14 +317,14 @@ class Exchange extends CActiveRecord
 		return Yii::app()->cache->set($key, $pit_dtm);
 	}
 	
-	public static function ReserveLastHill($hill_dtm)
+	public static function ReserveLastSellHill($hill_dtm)
 	{
 		$key = 'track.hill.last';
 		return Yii::app()->cache->set($key, $hill_dtm);
 	}
 	
 	// Вернуть последний холм на котором продавали
-	public static function getLastHill()
+	public static function getLastSellHill()
 	{
 		$key = 'track.hill.last';
 		return Yii::app()->cache->get($key);		
