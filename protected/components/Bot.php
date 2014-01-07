@@ -101,14 +101,21 @@ class Bot {
 			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
 			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);			
 			
+			
+			
 			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
+			
 			
 			if (!$val) 
 			{
-				//Log::Add('Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t);
-				continue;
-			}
 				
+				$val = Exchange::getAvgBuyNear($name, $step_dt);
+				//Log::Add('Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t.' использую ближайшее значение '.$val);
+				if (!$val) continue;
+			}
+
+					
+			
 			$list[]=array(
 					'dtm'=>$step_dt,
 					'val'=>$val,
@@ -518,6 +525,9 @@ class Bot {
 		//Анализируем треки
 		$tracks=array();
 		$tracks = $this->getBuyTracks($all_tracks);
+		
+		
+		
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
 			Log::notbuy('Не найдено подходящих для покупки треков'/*.Dump::d($all_tracks, true)*/);
@@ -858,8 +868,12 @@ class Bot {
 	{
 		$text='';
 		foreach ($this->tomail as $item)
-			$text.=$item.' <br/>';		
-		mail('gorcer@gmail.com', 'Btcbot - Новые сделки', $text);
+			$text.=$item.' <br/>';
+
+		$headers  = 'MIME-Version: 1.0' . "\r\n";
+		$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+		
+		mail('gorcer@gmail.com', 'Btcbot - Новые сделки', $text, $headers);
 	}
 	
 	public function setBalance($summ)

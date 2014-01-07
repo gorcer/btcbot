@@ -149,8 +149,8 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-					/*	 dtm >= '2013-12-09 09:00:00'*/
-						 dtm >= '2014-01-05 00:00:00' 
+						 dtm >= '2013-12-09 09:00:00'
+						/* dtm >= '2014-01-06 14:54:00' */ 
 						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
 						and
 						pair = '".$pair."'
@@ -220,6 +220,53 @@ class Exchange extends CActiveRecord
 		
 		
 		return($val);
+	}
+	
+
+	// Ищем ближайшие точки к указанным
+	public static function getAvgBuyNear($name, $dt, $pair='btc_rur')
+	{
+		
+		// Ищем влево
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						".$name." as val
+	
+					FROM `exchange`
+					where
+						dtm <= '".$dt."'
+						and
+						pair = '".$pair."'
+					order by dtm desc
+					limit 1
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$val_f=$command->queryScalar();
+	
+		
+		// Ищем вправо
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						".$name." as val
+		
+					FROM `exchange`
+					where
+						dtm >= '".$dt."'
+						and
+						pair = '".$pair."'
+					order by dtm
+					limit 1
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$val_t=$command->queryScalar();
+	
+		return(($val_f + $val_t)/2);
 	}
 	
 	public static function updatePrices($pair='btc_rur')
