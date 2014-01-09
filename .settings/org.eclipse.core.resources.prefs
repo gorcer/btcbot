@@ -1,5 +1,7 @@
 eclipse.preferences.version=1
+encoding//protected/components/APIProvider.php=UTF-8
 encoding//protected/components/Bot.php=UTF-8
 encoding//protected/controllers/SiteController.php=UTF-8
 encoding//protected/models/Balance.php=UTF-8
 encoding//protected/views/site/chart.php=UTF-8
+encoding/<project>=UTF-8

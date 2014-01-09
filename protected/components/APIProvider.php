@@ -3,7 +3,19 @@
 
 class APIProvider {
 	
-	const isVirtual=true;
+	const isVirtual=true; // Ð’Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ñ‹Ðµ Ð¿Ð¾ÐºÑƒÐ¿ÐºÐ¸ Ð¸Ð»Ð¸ Ñ€ÐµÐ°Ð»ÑŒÐ½Ñ‹Ðµ
+	
+	/**
+	 * Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ñ‹ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾Ð³Ð¾ Ñ€ÐµÐ¶Ð¸Ð¼Ð° Ñ€Ð°Ð±Ð¾Ñ‚Ñ‹ Ñ Ð¾Ñ€Ð´ÐµÑ€Ð°Ð¼Ð¸
+	 * remains - Ð²ÑÐµ Ð¾Ñ€Ð´ÐµÑ€Ð° Ð¸Ð´ÑƒÑ‚ Ð² Ð¾Ñ‡ÐµÑ€ÐµÐ´ÑŒ
+	 * receive - Ð²ÑÐµ Ð¾Ñ€Ð´ÐµÑ€Ð° Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÑÑŽÑ‚ÑÑ ÑÑ€Ð°Ð·Ñƒ
+	 * partial - 50 Ð½Ð° 50
+	 * @var unknown_type
+	 */
+	const OrderPartialType = 'receive';
+	
+	// ÐŸÑ€Ð¸ Ñ‡Ð°ÑÑ‚Ð¸Ñ‡Ð½Ð¾Ð¹ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾Ð¹ Ð¿Ð¾ÐºÑƒÐ¿ÐºÐµ Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð´Ð¾Ð»Ð¸
+	const PART_SIZE = 0.5;
 	
 	private static $self=false;
 	private $activeOrders;
@@ -32,7 +44,7 @@ class APIProvider {
 	
 	public function getInfo()
 	{
-		// Åñëè ïîêóïàåì âèðòóàëüíî
+		// Ð•ÑÐ»Ð¸ Ð¿Ð¾ÐºÑƒÐ¿Ð°ÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾
 		if (self::isVirtual)
 			return $this->getInfoVirtual();
 		
@@ -47,10 +59,10 @@ class APIProvider {
 			return false;
 	}
 	
-	// Ñîçäàíèå çàêàçà
+	// Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð°
 	/*
-	 *Âîçâðàùàåò:
-	 1) Íå óäàëîñü êóïèòü - îðäåð îñòàëñÿ âèñåòü
+	 *Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚:
+	 1) ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÐºÑƒÐ¿Ð¸Ñ‚ÑŒ - Ð¾Ñ€Ð´ÐµÑ€ Ð¾ÑÑ‚Ð°Ð»ÑÑ Ð²Ð¸ÑÐµÑ‚ÑŒ
 	array
 	(
 			'success' => 1
@@ -76,7 +88,7 @@ class APIProvider {
 			)
 	)
 	
-	2) Óäàëîñü êóïèòü, îðäåð èñïîëíåí
+	2) Ð£Ð´Ð°Ð»Ð¾ÑÑŒ ÐºÑƒÐ¿Ð¸Ñ‚ÑŒ, Ð¾Ñ€Ð´ÐµÑ€ Ð¸ÑÐ¿Ð¾Ð»Ð½ÐµÐ½
 	array
 	(
 			'success' => 1
@@ -100,35 +112,141 @@ class APIProvider {
 							'xpm' => 0
 					)
 			)
-	)*/
+	)
+	
+	@todo ÐžÑ€Ð´ÐµÑ€ Ð¼Ð¾Ð¶ÐµÑ‚ Ð±Ñ‹Ñ‚ÑŒ Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½ Ð½Ðµ Ð¿Ð¾Ð»Ð½Ð¾ÑÑ‚ÑŒÑŽ
+	*/
 	public function makeOrder($cnt, $pair, $type, $price)
 	{
-		// Åñëè ïîêóïàåì âèðòóàëüíî
+		// Ð•ÑÐ»Ð¸ Ð¿Ð¾ÐºÑƒÐ¿Ð°ÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾
 		if (self::isVirtual)
-			return $this->makeOrderVirtual($cnt, $pair, $type, $price);
+		{
+			if (self::OrderPartialType == 'receive')
+				return $this->makeOrderVirtual_moment($cnt, $pair, $type, $price);
+			elseif (self::OrderPartialType == 'remains')
+				return $this->makeOrderVirtual($cnt, $pair, $type, $price);
+			else
+				return $this->makeOrderVirtual_partial($cnt, $pair, $type, $price);
+		}
 		
 		$BTCeAPI = BTCeAPI::get_Instance();
 		
-		try {
-				
+		try {				
+			
 			$btce = $BTCeAPI->makeOrder($cnt, $pair, $type, $price);
-		
+					
 		} catch(BTCeAPIInvalidParameterException $e) {
-			Log::Error('Íå óäàëîñü ñîçäàòü îðäåð '.$e->getMessage());
+			Log::Error('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¾Ð·Ð´Ð°Ñ‚ÑŒ Ð¾Ñ€Ð´ÐµÑ€ '.$e->getMessage());
 			return false;
 		} catch(BTCeAPIException $e) {
-			Log::Error('Íå óäàëîñü ñîçäàòü îðäåð '.$e->getMessage());
+			Log::Error('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¾Ð·Ð´Ð°Ñ‚ÑŒ Ð¾Ñ€Ð´ÐµÑ€ '.$e->getMessage());
 			return false;
 		}
 		
-		// Îøèáêà ñîçäàíèÿ çàêàçà
+		// ÐžÑˆÐ¸Ð±ÐºÐ° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ð·Ð°ÐºÐ°Ð·Ð°
 		if($btce['success'] == 0)
 		{
-			Log::Error('Íå óäàëîñü ñîçäàòü îðäåð '.$btce['error']);
+			Log::Error('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¾Ð·Ð´Ð°Ñ‚ÑŒ Ð¾Ñ€Ð´ÐµÑ€ '.$btce['error']);
 			return false;
 		}
 		
 		return $btce['return'];
+	}
+	
+	private function makeOrderVirtual_moment($cnt, $pair, $type, $price)
+	{
+		$bot = Bot::get_Instance();
+	
+		$summ = $cnt * $price;
+	
+		// Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½ÑƒÑŽ Ð·Ð°ÑÐ²ÐºÑƒ Ð½Ð° Ð¿Ð¾ÐºÑƒÐ¿ÐºÑƒ
+		// Ð Ð°ÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð±Ð°Ð»Ð°Ð½Ñ
+		if ($type == 'buy')
+		{
+			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee);
+			$balance = $this->balance - $summ;
+				
+		} else {
+				
+			$balance_btc = $this->balance_btc - $cnt;
+			$balance = $this->balance+$cnt*$price*(1-Bot::fee);
+		}
+	
+		// Ð˜Ð¼Ð¸Ñ‚Ð°Ñ†Ð¸Ñ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÐ¼Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…
+		$result = array
+		(
+				'success' => 1,
+				'return' => array
+				(
+						'received' => $cnt,
+						'remains' => 0,
+						'order_id' => 0,
+						'funds' => array
+						(
+								'btc' => (float)$balance_btc,
+								'rur' => (float)$balance,
+						)
+				)
+		);	
+		
+		$this->balance = $balance;
+		$this->balance_btc = $balance_btc;
+	
+		return $result['return'];
+	}
+	
+	private function makeOrderVirtual_partial($cnt, $pair, $type, $price)
+	{
+		$bot = Bot::get_Instance();
+	
+		$summ = $cnt * $price;
+		$remains = $cnt*(1-self::PART_SIZE);
+		// Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½ÑƒÑŽ Ð·Ð°ÑÐ²ÐºÑƒ Ð½Ð° Ð¿Ð¾ÐºÑƒÐ¿ÐºÑƒ
+		// Ð Ð°ÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð±Ð°Ð»Ð°Ð½Ñ
+		if ($type == 'buy')
+		{
+			$balance_btc = $this->balance_btc+$cnt*(1-Bot::fee)*self::PART_SIZE;
+			$balance = $this->balance - $summ;
+	
+		} else {
+	
+			$balance_btc = $this->balance_btc - $cnt;
+			$balance = $this->balance+$cnt*$price*(1-Bot::fee)*self::PART_SIZE;
+		}
+	
+		// Ð˜Ð¼Ð¸Ñ‚Ð°Ñ†Ð¸Ñ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÐ¼Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…
+		$result = array
+		(
+				'success' => 1,
+				'return' => array
+				(
+						'received' => $cnt*self::PART_SIZE,
+						'remains' => $remains,
+						'order_id' =>  87715140+rand(0,999)*10000+date('m')*1000+date('h')*100+date('m')*10+date('s'),
+						'funds' => array
+						(
+								'btc' => (float)$balance_btc,
+								'rur' => (float)$balance,
+						)
+				)
+		);
+		
+		// Ð”Ð¾Ð±Ð°Ð²Ð»ÑÐµÐ¼ Ð·Ð°ÐºÐ°Ð· Ð² ÑÐ¿Ð¸ÑÐ¾Ðº Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ñ… Ð·Ð°ÐºÐ°Ð·Ð¾Ð²
+		$lastEx = Exchange::getLast();
+		$this->activeOrders[$result['return']['order_id']]= array
+		(
+				'pair' => 'btc_rur',
+				'type' => $type,
+				'amount' => $remains,
+				'rate' => $price,
+				'timestamp_created' => $lastEx->dtm,
+				'status' => 0,
+		);
+	
+		$this->balance = $balance;
+		$this->balance_btc = $balance_btc;
+	
+		return $result['return'];
 	}
 	
 	private function makeOrderVirtual($cnt, $pair, $type, $price)
@@ -137,8 +255,8 @@ class APIProvider {
 		
 		$summ = $cnt * $price;
 		
-		// Ñîçäàåì âèðòóàëüíóþ çàÿâêó íà ïîêóïêó, áóäåò èñïîëíåíà ïðè ñëåäóþùåì çàïðîñå
-		// Ðàñ÷èòûâàåì áàëàíñ
+		// Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½ÑƒÑŽ Ð·Ð°ÑÐ²ÐºÑƒ Ð½Ð° Ð¿Ð¾ÐºÑƒÐ¿ÐºÑƒ, Ð±ÑƒÐ´ÐµÑ‚ Ð¸ÑÐ¿Ð¾Ð»Ð½ÐµÐ½Ð° Ð¿Ñ€Ð¸ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰ÐµÐ¼ Ð·Ð°Ð¿Ñ€Ð¾ÑÐµ
+		// Ð Ð°ÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ð±Ð°Ð»Ð°Ð½Ñ
 		if ($type == 'buy')
 		{
 			$balance_btc = $this->balance_btc;
@@ -150,7 +268,7 @@ class APIProvider {
 			$balance = $this->balance;
 		}		
 		
-		// Èìèòàöèÿ âîçâðàùàåìûõ äàííûõ
+		// Ð˜Ð¼Ð¸Ñ‚Ð°Ñ†Ð¸Ñ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÐ¼Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…
 		$result = array
 					(
 						'success' => 1,
@@ -167,7 +285,7 @@ class APIProvider {
 						)
 				);
 		
-		// Äîáàâëÿåì çàêàç â ñïèñîê àêòèâíûõ çàêàçîâ
+		// Ð”Ð¾Ð±Ð°Ð²Ð»ÑÐµÐ¼ Ð·Ð°ÐºÐ°Ð· Ð² ÑÐ¿Ð¸ÑÐ¾Ðº Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ñ… Ð·Ð°ÐºÐ°Ð·Ð¾Ð²
 		$lastEx = Exchange::getLast();
 		$this->activeOrders[$result['return']['order_id']]= array
 													(
@@ -186,9 +304,9 @@ class APIProvider {
 	}
 	
 	
-	// Ïîëó÷àåò àêòèâíûå çàêàçû
+	// ÐŸÐ¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ðµ Ð·Ð°ÐºÐ°Ð·Ñ‹
 	/*
-	 Âîçâðàùàåò:
+	 Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚:
 	 array
 	(
 			'success' => 1
@@ -208,7 +326,7 @@ class APIProvider {
 	*/
 	public function getActiveOrders($pair = 'btc_rur')
 	{		
-		// Åñëè ïîêóïàåì âèðòóàëüíî
+		// Ð•ÑÐ»Ð¸ Ð¿Ð¾ÐºÑƒÐ¿Ð°ÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾
 		if (self::isVirtual)
 			return $this->getActiveOrdersVirtual($pair);
 		
@@ -216,8 +334,8 @@ class APIProvider {
 	
 		try {
 			$orders = $BTCeAPI->apiQuery('ActiveOrders', array('pair'=>$pair));
-		} catch(BTCeAPIException $e) {
-			Log::AddText(0, 'Íå óäàëîñü ïîëó÷èòü ñïèñîê çàêàçîâ '.$e->getMessage());
+		} catch(BTCeAPIException $e) {			
+			Log::Error('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¿Ð¾Ð»ÑƒÑ‡Ð¸Ñ‚ÑŒ ÑÐ¿Ð¸ÑÐ¾Ðº Ð·Ð°ÐºÐ°Ð·Ð¾Ð² '.$e->getMessage());
 			return false;
 		}
 	
@@ -226,7 +344,7 @@ class APIProvider {
 	
 	private function getActiveOrdersVirtual($pair)
 	{
-		// Çàêðûâàåì ïðîèçâîëüíûå îðäåðû
+		// Ð—Ð°ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð»ÑŒÐ½Ñ‹Ðµ Ð¾Ñ€Ð´ÐµÑ€Ñ‹
 		if ($this->activeOrders)
 		foreach ($this->activeOrders as $key=>$order)
 		{
@@ -277,7 +395,7 @@ class APIProvider {
 	
 	public function CancelOrder($order)
 	{
-		// Åñëè îòìåíÿåì âèðòóàëüíî
+		// Ð•ÑÐ»Ð¸ Ð¾Ñ‚Ð¼ÐµÐ½ÑÐµÐ¼ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾
 		if (self::isVirtual)
 			return $this->CancelOrderVirtual($order);
 		
@@ -285,7 +403,7 @@ class APIProvider {
 		try {
 			$res = $BTCeAPI->apiQuery('CancelOrder', array('order_id'=>$order->id));
 		} catch(BTCeAPIException $e) {
-			Log::Error('Íå óäàëîñü óäàëèòü îðäåð '.$e->getMessage());
+			Log::Error('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ Ð¾Ñ€Ð´ÐµÑ€ '.$e->getMessage());
 			return false;
 		}
 		
@@ -293,17 +411,24 @@ class APIProvider {
 	}
 	
 	
-	// Ïðèìåíåíèå âèðòóàëüíîé ïîêóïêè
+	// ÐŸÑ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾Ð¹ Ð¿Ð¾ÐºÑƒÐ¿ÐºÐ¸
 	public function CompleteVirtualBuy($order)
 	{		
-		$this->balance_btc+=$order->count-$order->fee;
+		if (self::OrderPartialType == 'remains')
+			$this->balance_btc+=$order->count-$order->fee;
+		elseif (self::OrderPartialType == 'partial')
+			$this->balance_btc+=($order->count -$order->fee) * APIProvider::PART_SIZE;
+		
 		return $this->balance_btc;
 	}
 
-	// Ïðèìåíåíèå âèðòóàëüíîé ïðîäàæè
+	// ÐŸÑ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ Ð²Ð¸Ñ€Ñ‚ÑƒÐ°Ð»ÑŒÐ½Ð¾Ð¹ Ð¿Ñ€Ð¾Ð´Ð°Ð¶Ð¸
 	public function CompleteVirtualSell($order)
 	{
-		$this->balance+=$order->summ-$order->fee;
+		if (self::OrderPartialType == 'remains')
+			$this->balance+=$order->summ-$order->fee;
+		elseif  (self::OrderPartialType == 'partial')
+			$this->balance+=($order->summ - $order->fee) * APIProvider::PART_SIZE;
 		
 		return $this->balance; 
 	}

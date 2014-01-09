@@ -71,15 +71,18 @@ return array(
 		),
 		'log'=>array(
 			'class'=>'CLogRouter',
-			'routes'=>array(
-				array(
-					'class'=>'CFileLogRoute',
-					'levels'=>'error, warning',
-				),
+			'routes'=>array(				
 				array(
 						'class' => 'CFileLogRoute',
 						'logFile' => 'yii-error.log',						
 						'levels' => 'error, warning, info',
+				),
+				array(
+						'class' => 'CEmailLogRoute',
+						'categories' => 'error',
+						'emails' => array('gorcer@gmail.com'),
+						'sentFrom' => 'gorcer@gorcer.com',
+						'subject' => 'Error at btcbot.gorcer.com'
 				),
 				/*array(
 						'class'=>'ext.yii-debug-toolbar.YiiDebugToolbarRoute',

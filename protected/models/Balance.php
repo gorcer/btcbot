@@ -100,14 +100,13 @@ class Balance extends CActiveRecord
 	{
 		$last = Balance::model()->find(array(
 				'condition'=>'currency = "'.$currency.'"',
-				'order' => 'dtm desc'
+				'order' => 'id desc'
 		));
 		
 		if (!$last)
 			self::add($currency, 'Инициализация баланса', $summ);
-		elseif ($last['balance'] - $summ === 0)
-		{
-			echo '=корректировка '.$summ.', '.$last['balance'].'=';
+		elseif (round($summ-$last['balance'],5) != 0)
+		{		
 			self::add($currency, 'Корректировка баланса', ($summ - $last['balance']));
 		}
 		

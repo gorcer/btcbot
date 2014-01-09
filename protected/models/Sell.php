@@ -117,21 +117,23 @@ class Sell extends CActiveRecord
 		return $buy;
 	}
 	
-	// Ñîâåğøåíèå ïğîäàæè
+	// Ğ¡Ğ¾Ğ·Ğ´Ğ°Ğ½Ğ¸Ğµ Ğ·Ğ°ĞºĞ°Ğ·Ğ°
 	public static function make($order)
-	{
-		// Ñîõğàíÿåì èíôîğìàöèş î òîì ÷òî ïîêóïêà çàêğûòà
+	{	
 		$buy = $order->buy;		
-		$buy->sold=1;
+		$buy->sold+=$order->count;
 		$buy->update(array('sold'));
 	
+		// Ğ Ğ°ÑÑ‡Ğ¸Ñ‚Ñ‹Ğ²Ğ°ĞµĞ¼ ÑÑƒĞ¼Ğ¼Ñƒ Ğ¿Ğ¾ĞºÑƒĞ¿ĞºĞ¸, Ñ‚Ğ°Ğº ĞºĞ°Ğº Ğ½ÑƒĞ¶Ğ½Ğ¾ ÑÑ‡Ğ¸Ñ‚Ğ°Ñ‚ÑŒ Ğ´Ğ»Ñ Ğ¿Ñ€Ğ¾Ğ´Ğ°Ğ¶Ğ¸ Ğ´Ğ¾Ğ»Ğ¸
+		$buy_summ =  $buy->summ / $buy->count * $order->count;
+		
 		$sell = new Sell();
 		$sell->buy_id = $buy->id;
 		$sell->price = $order->price;
 		$sell->count = $order->count;
-		$sell->summ = $order->summ-$order->fee;
+		$sell->summ = $order->summ - $order->fee;
 		$sell->fee = $order->fee;
-		$sell->income = ($order->summ-$buy->summ)-$sell->fee;
+		$sell->income = ($order->summ-$buy_summ)-$sell->fee;
 		$sell->dtm = $order->close_dtm;		
 		$sell->save();
 	

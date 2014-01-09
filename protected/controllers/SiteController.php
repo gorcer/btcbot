@@ -107,16 +107,45 @@ class SiteController extends Controller
 		$this->redirect(Yii::app()->homeUrl);
 	}
 	
-	public function actionCron()
+
+	public function actionUploadData()
 	{
+		// Сохраняем информацию по всем ценам		
+			foreach (APIProvider::$pairs as $pair)
+			Exchange::updatePrices($pair);
+			
+	}
+	
+	public function actionCron()
+	{	
+		// Пересчитываем рейтинги
+		$key = 'cron.bot.run.btc_rur';
+		if(Yii::app()->cache->get($key)===false)
+		{	
+			Yii::app()->cache->set($key, true, 60*3);
+						
+			// Запускаем бота для анализа и сделок
+			$btc_rur = Exchange::updatePrices('btc_rur');
+			$bot = new Bot($btc_rur);
+			$bot->run();
+		}
+		
+		
+		// Сохраняем информацию по всем ценам
+		/*
 		foreach (APIProvider::$pairs as $pair)
 			Exchange::updatePrices($pair);
+			*/
+		
+		
 		
 	}
 	
 	public function actionRun()
 	{
 	
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
 		$ticker = $ticker['ticker'];
@@ -135,10 +164,13 @@ class SiteController extends Controller
 	
 	public function actionClear() {
 		
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
+		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 		Status::setParam('balance', 5000);
 		Status::setParam('balance_btc', 0);
 		
@@ -146,6 +178,7 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{	
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
 		$start = time();
 		
@@ -164,7 +197,7 @@ class SiteController extends Controller
 		foreach($exs as $exchange)
 		{
 			$obj = new stdClass;
-			$obj->dtm = $exchange['dtm'];
+			$obj->dtm = $exchange['dt'];
 			$obj->buy = $exchange['buy'];
 			$obj->sell = $exchange['sell'];
 			
@@ -182,65 +215,90 @@ class SiteController extends Controller
 	
 	public function actionBuy()
 	{
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
-		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
+		$btc_rur = Exchange::updatePrices('btc_rur');			
+				
+		$bot = new Bot($btc_rur);
+		$info = $bot->api->getInfo();
 		
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy']-10000;
-		$exchange->sell = $ticker['sell'];
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
+		if ($info)
+		{
+			$bot->setBalance($info['funds']['rur']);
+			$bot->setBalanceBtc($info['funds']['btc']);			
+				
+			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance_btc', $info['funds']['btc']);
 		
-		$bot = new Bot($exchange);
-		$bot->startBuy();
+			Balance::actualize('rur', $bot->balance);
+			Balance::actualize('btc', $bot->balance_btc);
+		}	
+			
+			$bot->startBuy(array('test'=>'test'));			
 	}
 	
 	public function actionSell()
 	{
-	
-		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
-	
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy'];
-		$exchange->sell = $ticker['sell']+10000;
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		$btc = Buy::getLast();
-		$bot = new Bot($exchange);
-		$bot->startSell($btc);
+		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		
+		$btc_rur = Exchange::updatePrices('btc_rur');			
+				
+		$bot = new Bot($btc_rur);
+		$info = $bot->api->getInfo();
+		
+		if ($info)
+		{
+			$bot->setBalance($info['funds']['rur']);
+			$bot->setBalanceBtc($info['funds']['btc']);			
+				
+			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance_btc', $info['funds']['btc']);
+		
+			Balance::actualize('rur', $bot->balance);
+			Balance::actualize('btc', $bot->balance_btc);
+		}	
+			$buy = Buy::model()->findByPk(1);	
+		
+			$bot->startSell($buy, array('test'=>'test'));
 	}
 	
 	public function actionOrders()
 	{
-		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
-		$ticker = $ticker['ticker'];
-	
-		$exchange = new Exchange();
-		$exchange->buy = $ticker['buy'];
-		$exchange->sell = $ticker['sell']+10000;
-		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
-		$btc = Buy::getLast();
-		$bot = new Bot($exchange);
+			if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
 		
+		$btc_rur = Exchange::updatePrices('btc_rur');			
+				
+		$bot = new Bot($btc_rur);
+		$info = $bot->api->getInfo();
+		
+		if ($info)
+		{
+			$bot->setBalance($info['funds']['rur']);
+			$bot->setBalanceBtc($info['funds']['btc']);			
+				
+			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance_btc', $info['funds']['btc']);
+		
+			Balance::actualize('rur', $bot->balance);
+			Balance::actualize('btc', $bot->balance_btc);
+		}	
+			
 		$bot->checkOrders();
 	}
 	
 	public function actionChart($type='btc_rur')
 	{	
 		$buy = new Buy();
+		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
 		$exch = Exchange::getAll($type);
-		
-		
+				
 		$data_buy=array();
 		$data_sell=array();
 		
 		
 		foreach($exch as $item)
 		{
-			$tm = strtotime($item['dtm'])*1000+4*60*60*1000;
+			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
 			$data_buy[]=array($tm, (float)$item['buy']);
 			$data_sell[]=array($tm, (float)$item['sell']);
 		}
@@ -286,8 +344,6 @@ class SiteController extends Controller
 				$margin = (Bot::getAvgMargin($i, $pair)*100);
 				$p = $margin/*/$i*60*24*360*/;
 				//echo 'Потенциал периода '.$period.' = '.$p.'% в год <br/>';			
-				
-				
 				
 				$res[$pair][] = array($period, $p);
 				

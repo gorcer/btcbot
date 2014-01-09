@@ -61,7 +61,9 @@ class Order extends CActiveRecord
 		// NOTE: you may need to adjust the relation name and the related
 		// class name for the relations automatically generated below.
 		return array(
-			'buy' => array(self::HAS_ONE, 'Buy', 'order_id'),			
+			/*'buy' => array(self::HAS_ONE, 'Buy', 'order_id'),*/
+			'buy'=>array(self::BELONGS_TO, 'Buy', 'buy_id'),
+			 			
 		);
 	}
 
