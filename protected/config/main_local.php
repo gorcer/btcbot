@@ -29,7 +29,7 @@ return CMap::mergeArray(
 			'connectionString' => 'mysql:host=localhost;dbname=btcbot',
 			'emulatePrepare' => true,
 			'username' => 'root',
-			'password' => '',
+			'password' => '159357',
 			'charset' => 'utf8',
 			'tablePrefix' => 'aim_',
 			'enableProfiling' => true,

@@ -107,6 +107,15 @@ class SiteController extends Controller
 		$this->redirect(Yii::app()->homeUrl);
 	}
 	
+
+	public function actionUploadData()
+	{
+		// Сохраняем информацию по всем ценам		
+			foreach (APIProvider::$pairs as $pair)
+			Exchange::updatePrices($pair);
+			
+	}
+	
 	public function actionCron()
 	{	
 		// Пересчитываем рейтинги
