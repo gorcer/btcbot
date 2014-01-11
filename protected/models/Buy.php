@@ -125,7 +125,8 @@ class Buy extends CActiveRecord
 			$buy->count = $order->count-$order->fee;
 			$buy->price =$order->price;
 			$buy->summ = $order->summ;
-			$buy->fee = $order->fee;			
+			$buy->fee = $order->fee;	
+			$buy->byPeriod = $order->byPeriod;		
 		}
 		
 		$buy->save();

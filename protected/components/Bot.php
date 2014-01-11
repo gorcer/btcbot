@@ -246,7 +246,8 @@ class Bot {
 				case '-0-':	$result[] = $track; break;
 				/*
 				case '+0-':	$result[] = $track; break;
-				case '0+-':	$result[] = $track; break;*/
+				case '0+-':	$result[] = $track; break;
+				*/
 			}
 		}
 		return $result;
@@ -613,8 +614,7 @@ class Bot {
 		}
 		else
 			$reason['avg_price'] = 'Текущая цена выше средней за 7 дней '.('.$this->avg_sell.'>'.$this->current_exchange->buy.'); 
-		*/
-		
+		*/		
 		
 		//Перебираем периоды		
 		$all_tracks=array();
@@ -662,25 +662,29 @@ class Bot {
 			}
 		}		
 		
-		
 		$reason['tracks']=$tracks;
 		$reason['all_tracks']=$all_tracks;
-
-		
 		
 		// Ищем выгодные продажи
 		foreach($bought as $key=>$buy)
 		{
+			
 			// Цена продажи
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
 									
 			// Сколько заработаем при продаже (комиссия была уже вычтена в btc при покупке)
 			$income = $curcost - $buy->summ;						
 			
+			// Определяем мин. доход
+			$life_days = ceil( (time() - strtotime($buy->dtm))/60/60/24 ); // Число прошедших дней с покупки
+			$days_income = $life_days * self::income_per_day; // Ожидаемый доход
+			if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.
+			$need_income =  $buy->summ * $days_income; // Требуемый доход в рублях
+			
 			// Достаточно ли заработаем
-			if ($income/$buy->summ < self::min_income)
+			if ($income < $need_income)
 			{
-				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);							
+				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.$need_income.'. Купил за '.$buy->summ.' можно продать за '.$curcost.' цена продажи='.$this->current_exchange->sell.', дней с момента покупки='.$days_income.', % ожидаемой прибыли '.($days_income*100));							
 				continue;
 			}			
 			
