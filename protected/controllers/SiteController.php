@@ -190,7 +190,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 					
-		Status::setParam('balance', 5000);
+		Status::setParam('balance', 50000);
 		Status::setParam('balance_btc', 0);
 		
 				
