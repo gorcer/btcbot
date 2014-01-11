@@ -193,6 +193,7 @@ class SiteController extends Controller
 		Status::setParam('balance', 50000);
 		Status::setParam('balance_btc', 0);
 		
+		$min_balance = false;;
 				
 		$exs = Exchange::getAll();
 		$cnt=0;
@@ -205,13 +206,16 @@ class SiteController extends Controller
 			
 			$cnt++;
 			$bot = new Bot($obj);
-			$bot->run();			
+			$bot->run();	
+
+			if (!$min_balance || $min_balance > $bot->balance) $min_balance = $bot->balance;			
 		}
 		
 		$end = time();
 		
 		echo '<b>Время выполнения: '.(($end-$start)/60).' мин.<br/>';
 		echo '<b>Сделано шагов: '.($cnt).'<br/>';
+		echo '<b>Мин. баланс: '.($min_balance).'<br/>';
 		//$this->render('index');
 	}
 	
