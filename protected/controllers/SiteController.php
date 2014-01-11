@@ -144,7 +144,7 @@ class SiteController extends Controller
 	public function actionRun()
 	{
 	
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
@@ -164,7 +164,7 @@ class SiteController extends Controller
 	
 	public function actionClear() {
 		
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
@@ -178,7 +178,9 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{	
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
+		if (APIProvider::isVirtual == false) return;
+			
 		
 		$start = time();
 		
@@ -215,7 +217,7 @@ class SiteController extends Controller
 	
 	public function actionBuy()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -239,7 +241,7 @@ class SiteController extends Controller
 	
 	public function actionSell()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -264,7 +266,7 @@ class SiteController extends Controller
 	
 	public function actionOrders()
 	{
-			if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+			if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
