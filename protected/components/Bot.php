@@ -41,7 +41,7 @@ class Bot {
 	const order_ttl = 180; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
 	
-	const freeze_warning_income = 0.01; // доход при котором есть шанс вморозить деньги, считается при падении
+	const freeze_warning_income = 0.005; // доход при котором есть шанс вморозить деньги, считается при падении
 	
 	public function __construct($exchange=false)
 	{
@@ -261,7 +261,7 @@ class Bot {
 		$order->price = $price;
 		$order->count = $result['remains'];
 		$order->summ = $order->count * $price;
-		$order->byPeriod = $reason['period'];
+		
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
@@ -289,7 +289,7 @@ class Bot {
 		$order->price = $price;
 		$order->count = $result['received'];
 		$order->summ = $order->count * $price;
-		$order->byPeriod = $reason['period'];
+		
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
