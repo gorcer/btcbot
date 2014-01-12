@@ -552,7 +552,8 @@ class Bot {
 			}
 			
 			// Удаляем треки которые происходят из ям по которым уже были покупки
-			if (Exchange::AlreadyBought_pit($track['pit']['dtm']))
+			$last_pit = Exchange::getLastPit($track['period']);
+			if ($last_pit == $track['pit']['dtm'])
 			{
 				Log::notbuy('Уже была покупка в яме '.$track['pit']['dtm'].' по треку '.print_r($track, true));
 				unset($tracks[$key]);
@@ -580,7 +581,7 @@ class Bot {
 				// Резервируем время покупки по резерву 
 				Exchange::ReservePeriod($first_track['period'], $this->curtime);
 				// Резервируем яму				
-				Exchange::ReservePit($first_track['pit']['dtm']);
+				Exchange::ReservePit($first_track['pit']['dtm'], $first_track['period']);
 			}
 			else
 				Log::notbuy('Ошибка, не удалось начать покупку');

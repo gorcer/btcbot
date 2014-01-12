@@ -149,9 +149,10 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						 dtm >= '2013-12-09 09:00:00'
-						 /*dtm >= '2014-01-05 01:00:00'*/  
+						dtm >= '2013-12-09 09:00:00'
+						/* dtm >= '2014-01-05 01:00:00'*/  
 						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
+					/*	dtm = '2014-01-12 12:33:00'*/
 						and
 						pair = '".$pair."'
 					group by dt
@@ -341,16 +342,11 @@ class Exchange extends CActiveRecord
 			return true;
 	}
 	
-	public static function AlreadyBought_pit($pit_dtm)
+	public static function getLastPit($period)
 	{
-		$key = 'track.pit.last';
-		$last_pit = Yii::app()->cache->get($key);
-		if ($last_pit != $pit_dtm)
-			return false;
-		else
-			return true;
-	}
-	
+		$key = 'track.pit.period.'.$period;
+		return Yii::app()->cache->get($key);		
+	}	
 	
 	public static function ReservePeriod($period, $time)
 	{
@@ -358,9 +354,9 @@ class Exchange extends CActiveRecord
 		return Yii::app()->cache->set($key, $time+$period, $period);
 	}
 	
-	public static function ReservePit($pit_dtm)
+	public static function ReservePit($pit_dtm, $period)
 	{
-		$key = 'track.pit.last';
+		$key = 'track.pit.period.'.$period;
 		return Yii::app()->cache->set($key, $pit_dtm);
 	}
 	
