@@ -149,8 +149,8 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						dtm >= '2013-12-09 09:00:00'
-						/* dtm >= '2014-01-05 01:00:00'*/  
+						/*dtm >= '2013-12-09 09:00:00'*/
+						 dtm >= '2014-01-05 01:00:00'  
 						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
 					/*	dtm = '2014-01-12 12:33:00'*/
 						and

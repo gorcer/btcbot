@@ -8,19 +8,47 @@ $flags=", {
 		        type: 'flags',
 		        name: 'Flags on series',
 		        data: [";
-foreach ($orders as $order)
+foreach ($buys as $buy)
 {
 	
+	$name = 'b';
+	$color='';
+	if ($buy->sold>0)
+	{
+		$name='<s>-b</s>';
+		$color="color: '#aaffaa',";
+	}
+	
 	$flags.="{
-					x: ".(strtotime($order->close_dtm)*1000+4*60*60*1000).",
-					title: '".substr($order->type, 0, 1)."',
+					x: ".(strtotime($buy->dtm)*1000+4*60*60*1000).",
+					title: '".$name."',
+					".$color."
 					events: {
 							click: function () {
-								document.location.href = '".Yii::app()->createUrl('site/vieworder', array('id'=>$order->id))."'										
+								document.location.href = '".Yii::app()->createUrl('buy/view', array('id'=>$buy->id))."'										
 								}
 							}
 				}, ";
 }
+
+foreach ($sells as $sell)
+{
+
+	$name = 's';
+	
+
+	$flags.="{
+					x: ".(strtotime($sell->dtm)*1000+4*60*60*1000).",
+					title: '".$name."',
+					color: '#ffaaaa',
+					events: {
+							click: function () {
+								document.location.href = '".Yii::app()->createUrl('sell/view', array('id'=>$sell->id))."'
+								}
+							}
+				}, ";
+}
+
 $flags.="],
 		        onSeries: 'dataseries',
 		        shape: 'squarepin'

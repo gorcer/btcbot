@@ -305,13 +305,16 @@ class SiteController extends Controller
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
-			$data_buy[]=array($tm, (float)$item['buy']);
-			$data_sell[]=array($tm, (float)$item['sell']);
+			$data_buy[]=array((string)$tm, (float)$item['buy']);
+			$data_sell[]=array((string)$tm, (float)$item['sell']);
 		}
 		
 				
 		// Покупки
-		$orders = Order::model()->findAll();
+		//$orders = Order::model()->findAll();
+		
+		$buys = Buy::model()->findAll();
+		$sells = Sell::model()->findAll();
 		
 		$lastEx = Exchange::getLast();
 		$status['total_income'] = Sell::getTotalIncome();
@@ -322,8 +325,9 @@ class SiteController extends Controller
 		$this->render('chart',
 				array(
 						'data_buy'	=> 	json_encode($data_buy),
-						'data_sell'	=> 	json_encode($data_sell),						
-						'orders'	=>	$orders,
+						'data_sell'	=> 	json_encode($data_sell),
+						'buys'	=>	$buys,
+						'sells'	=>	$sells,
 						'status'	=>	$status,
 						));
 	}
