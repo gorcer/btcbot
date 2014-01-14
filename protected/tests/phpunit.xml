@@ -1,9 +1,9 @@
 <phpunit bootstrap="bootstrap.php"
-		colors="false"
-		convertErrorsToExceptions="true"
-		convertNoticesToExceptions="true"
-		convertWarningsToExceptions="true"
-		stopOnFailure="false">
+        colors="false"
+        convertErrorsToExceptions="true"
+        convertNoticesToExceptions="true"
+        convertWarningsToExceptions="true"
+        stopOnFailure="false">
 
 	<selenium>
 		<browser name="Internet Explorer" browser="*iexplore" />
@@ -18,4 +18,5 @@
     <log type="junit" target="../../build/logs/junit.xml" logIncompleteSkipped="false"/>
   </logging>
   
+
 </phpunit>
