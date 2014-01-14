@@ -311,7 +311,9 @@ class SiteController extends Controller
 		
 				
 		// Покупки
-		//$orders = Order::model()->findAll();
+
+		$orders = Order::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
+
 		
 		$buys = Buy::model()->findAll();
 		$sells = Sell::model()->findAll();
@@ -327,6 +329,7 @@ class SiteController extends Controller
 						'data_buy'	=> 	json_encode($data_buy),
 						'data_sell'	=> 	json_encode($data_sell),
 						'buys'	=>	$buys,
+						'orders'	=>	$orders,
 						'sells'	=>	$sells,
 						'status'	=>	$status,
 						));

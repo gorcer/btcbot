@@ -64,6 +64,19 @@ $flags.="],
 Баланс (btc): <?php echo $status['balance_btc']; ?><br/>
 Заработано (руб.): <?php echo $status['total_income']; ?><br/>
 Общие активы (руб.): <?php echo $status['total_balance']; ?><br/>
+<br/>
+<h2>Последние сделки</h2>
+<table>
+<?php foreach ($orders as $order): ?>
+<tr>
+ <td><?php echo CHtml::link($order->id, array('site/viewOrder', 'id'=>$order->id )); ?></td>
+ <td><?php  echo $order->type; ?></td>
+ <td><?php  echo $order->price; ?> Х <?php  echo $order->count; ?> =</td>
+ <td><?php  echo $order->summ; ?></td>
+</tr>
+<?php endforeach; ?>
+</table>
+
 <script>
 $(function() {
 	
