@@ -30,12 +30,13 @@ class Bot {
 	private $tomail=array(); // Собираем сюда то что нужно отправить на email;
 	
 
-	const min_order_val = 0.01; // Мин. сумма покупки
+	const min_order_val = 0.011; // Мин. сумма покупки
 	const buy_value = 0.02; //0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
 	const min_income = 0.04; // Мин. доход - 4%
+	const income_per_day = 0.01; // доход в день для залежных покупок, в расчете на 400% в год
 	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 180; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
@@ -242,7 +243,11 @@ class Bot {
 			switch($track['track']){
 				case '---':	$result[] = $track; break;
 				case '0--':	$result[] = $track; break;
-				case '-0-':	$result[] = $track; break;				
+				case '-0-':	$result[] = $track; break;
+				/*
+				case '+0-':	$result[] = $track; break;
+				case '0+-':	$result[] = $track; break;
+				*/
 			}
 		}
 		return $result;
@@ -256,6 +261,7 @@ class Bot {
 		$order->price = $price;
 		$order->count = $result['remains'];
 		$order->summ = $order->count * $price;
+		$order->byPeriod = $reason['period'];
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
@@ -283,6 +289,7 @@ class Bot {
 		$order->price = $price;
 		$order->count = $result['received'];
 		$order->summ = $order->count * $price;
+		$order->byPeriod = $reason['period'];
 		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
@@ -530,8 +537,7 @@ class Bot {
 		
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
-			Log::notbuy('Не найдено подходящих для покупки треков'/*.Dump::d($all_tracks, true)*/);
-			
+			Log::notbuy('Не найдено подходящих для покупки треков'/*.Dump::d($all_tracks, true)*/);			
 			return false;
 		}
 		
@@ -563,19 +569,17 @@ class Bot {
 			$reason['tracks']=$tracks;
 			$reason['all_tracks'] = $all_tracks;
 			
+			// Берем первый удачный трек и по нему проводим покупку
+			$first_track = array_pop($tracks);
+			$reason['period'] = $first_track['period'];
+			
 			// Покупаем
 			if ($this->startBuy($reason))	
-			{		
-			// Резервируем время покупки
-				foreach($tracks as $track)	
-				{
-					//Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
-					//Dump::d($track);
-					Exchange::ReservePeriod($track['period'], $this->curtime);				
-				}
+			{				
 				
-				// Резервируем покупку в яме
-				$first_track = array_pop($tracks);
+				// Резервируем время покупки по резерву 
+				Exchange::ReservePeriod($first_track['period'], $this->curtime);
+				// Резервируем яму				
 				Exchange::ReservePit($first_track['pit']['dtm']);
 			}
 			else
@@ -610,8 +614,7 @@ class Bot {
 		}
 		else
 			$reason['avg_price'] = 'Текущая цена выше средней за 7 дней '.('.$this->avg_sell.'>'.$this->current_exchange->buy.'); 
-		*/
-		
+		*/		
 		
 		//Перебираем периоды		
 		$all_tracks=array();
@@ -659,25 +662,29 @@ class Bot {
 			}
 		}		
 		
-		
 		$reason['tracks']=$tracks;
 		$reason['all_tracks']=$all_tracks;
-
-		
 		
 		// Ищем выгодные продажи
 		foreach($bought as $key=>$buy)
 		{
+			
 			// Цена продажи
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
 									
 			// Сколько заработаем при продаже (комиссия была уже вычтена в btc при покупке)
 			$income = $curcost - $buy->summ;						
 			
+			// Определяем мин. доход
+			$life_days = ceil( (time() - strtotime($buy->dtm))/60/60/24 ); // Число прошедших дней с покупки
+			$days_income = $life_days * self::income_per_day; // Ожидаемый доход
+			if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.
+			$need_income =  $buy->summ * $days_income; // Требуемый доход в рублях
+			
 			// Достаточно ли заработаем
-			if ($income/$buy->summ < self::min_income)
+			if ($income < $need_income)
 			{
-				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);							
+				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.$need_income.'. Купил за '.$buy->summ.' можно продать за '.$curcost.' цена продажи='.$this->current_exchange->sell.', дней с момента покупки='.$days_income.', % ожидаемой прибыли '.($days_income*100));							
 				continue;
 			}			
 			
@@ -686,9 +693,11 @@ class Bot {
 			$reason['buy'] = 'Найдена подходящая продажа №'.$buy->id.' с доходом от сделки '.$income.' руб., что составляет '.($income/$buy->summ*100).'% от цены покупки'; 
 			Log::Add('Начало продажи №'.$buy->id);
 			
+			$first_track = array_pop($tracks);
+			$reason['period'] = $first_track['period'];
 			if ($this->startSell($buy, $reason))
 			{				
-				$first_track = array_pop($tracks);
+				
 				Exchange::ReserveLastSellHill($first_track['hill']['dtm']); // резервируем холм
 				break; 	// не более одной продажи по расчету за раз
 			}
@@ -735,6 +744,10 @@ class Bot {
 				$reason['sale'] = 'Вынужденная продажа №'.$buy->id.', купили за '.$buy->summ.', текущая цена '.$curcost.', доход '.$income.' ('.($income/$buy->summ*100).'% < '.(self::freeze_warning_income*100).'%)';
 				$reason['tracks']=$tracks;
 				$reason['all_tracks']=$all_tracks;
+				
+				$first_track = array_pop($tracks);
+				$reason['period'] = $first_track['period'];
+				
 				$this->startSell($buy, $reason);
 				continue;
 			}

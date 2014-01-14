@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
 
 
-if ($_SERVER['HTTP_HOST']=='btcbot.loc')
+if ($_SERVER['HTTP_HOST']!='btcbot.gorcer.com')
 {
 	$yii=dirname(__FILE__).'/../yii/framework/yii.php';
 	$config = dirname(__FILE__).'/protected/config/main_local.php';

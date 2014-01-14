@@ -125,7 +125,8 @@ class Buy extends CActiveRecord
 			$buy->count = $order->count-$order->fee;
 			$buy->price =$order->price;
 			$buy->summ = $order->summ;
-			$buy->fee = $order->fee;			
+			$buy->fee = $order->fee;	
+			$buy->byPeriod = $order->byPeriod;		
 		}
 		
 		$buy->save();
@@ -146,7 +147,8 @@ class Buy extends CActiveRecord
 						and
 						o.id is null	
 						and
-						b.count >= ".Bot::min_order_val."					
+						b.count >= ".Bot::min_order_val."	
+					order by price				
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		

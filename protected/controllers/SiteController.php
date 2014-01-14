@@ -144,7 +144,7 @@ class SiteController extends Controller
 	public function actionRun()
 	{
 	
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$BTCeAPI = new BTCeAPI();
 		$ticker = $BTCeAPI->getPairTicker('btc_rur');
@@ -164,7 +164,7 @@ class SiteController extends Controller
 	
 	public function actionClear() {
 		
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
@@ -178,7 +178,9 @@ class SiteController extends Controller
 	
 	public function actionTest()
 	{	
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
+		if (APIProvider::isVirtual == false) return;
+			
 		
 		$start = time();
 		
@@ -188,9 +190,10 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 					
-		Status::setParam('balance', 5000);
+		Status::setParam('balance', 50000);
 		Status::setParam('balance_btc', 0);
 		
+		$min_balance = false;;
 				
 		$exs = Exchange::getAll();
 		$cnt=0;
@@ -203,19 +206,22 @@ class SiteController extends Controller
 			
 			$cnt++;
 			$bot = new Bot($obj);
-			$bot->run();			
+			$bot->run();	
+
+			if (!$min_balance || $min_balance > $bot->balance) $min_balance = $bot->balance;			
 		}
 		
 		$end = time();
 		
 		echo '<b>Время выполнения: '.(($end-$start)/60).' мин.<br/>';
 		echo '<b>Сделано шагов: '.($cnt).'<br/>';
+		echo '<b>Мин. баланс: '.($min_balance).'<br/>';
 		//$this->render('index');
 	}
 	
 	public function actionBuy()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -239,7 +245,7 @@ class SiteController extends Controller
 	
 	public function actionSell()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -264,7 +270,7 @@ class SiteController extends Controller
 	
 	public function actionOrders()
 	{
-			if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+			if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -299,13 +305,16 @@ class SiteController extends Controller
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
-			$data_buy[]=array($tm, (float)$item['buy']);
-			$data_sell[]=array($tm, (float)$item['sell']);
+			$data_buy[]=array((string)$tm, (float)$item['buy']);
+			$data_sell[]=array((string)$tm, (float)$item['sell']);
 		}
 		
 				
 		// Покупки
-		$orders = Order::model()->findAll();
+		$orders = Order::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
+		
+		$buys = Buy::model()->findAll();
+		$sells = Sell::model()->findAll();
 		
 		$lastEx = Exchange::getLast();
 		$status['total_income'] = Sell::getTotalIncome();
@@ -316,8 +325,10 @@ class SiteController extends Controller
 		$this->render('chart',
 				array(
 						'data_buy'	=> 	json_encode($data_buy),
-						'data_sell'	=> 	json_encode($data_sell),						
+						'data_sell'	=> 	json_encode($data_sell),
+						'buys'	=>	$buys,
 						'orders'	=>	$orders,
+						'sells'	=>	$sells,
 						'status'	=>	$status,
 						));
 	}
