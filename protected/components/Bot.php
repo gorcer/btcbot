@@ -739,7 +739,9 @@ class Bot {
 			// Сколько заработаем при продаже
 			$income = $curcost - $buy->summ*(1+self::fee);
 			// Достаточно ли заработаем
+			
 			if ($income>0 && $income/$buy->summ < self::freeze_warning_income)
+			//if (abs($income/$buy->summ) < self::freeze_warning_income)				
 			{
 				
 				$reason['sale'] = 'Вынужденная продажа №'.$buy->id.', купили за '.$buy->summ.', текущая цена '.$curcost.', доход '.$income.' ('.($income/$buy->summ*100).'% < '.(self::freeze_warning_income*100).'%)';
