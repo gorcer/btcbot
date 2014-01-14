@@ -305,8 +305,8 @@ class SiteController extends Controller
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
-			$data_buy[]=array((string)$tm, (float)$item['buy']);
-			$data_sell[]=array((string)$tm, (float)$item['sell']);
+			$data_buy[]=array($tm, (float)$item['buy']);
+			$data_sell[]=array($tm, (float)$item['sell']);
 		}
 		
 				

@@ -149,8 +149,8 @@ class Exchange extends CActiveRecord
 						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						 dtm >= '2013-12-09 09:00:00'
-						 /*dtm >= '2014-01-05 01:00:00'*/  
+						 /*dtm >= '2013-12-09 09:00:00'*/
+						 dtm >= '2014-01-05 01:00:00'
 						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
 						and
 						pair = '".$pair."'
@@ -223,11 +223,11 @@ class Exchange extends CActiveRecord
 	}
 	
 
-	// Ищем ближайшие точки к указанным
+	// Р�С‰РµРј Р±Р»РёР¶Р°Р№С€РёРµ С‚РѕС‡РєРё Рє СѓРєР°Р·Р°РЅРЅС‹Рј
 	public static function getAvgBuyNear($name, $dt, $pair='btc_rur')
 	{
 		
-		// Ищем влево
+		// Р�С‰РµРј РІР»РµРІРѕ
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
@@ -247,7 +247,7 @@ class Exchange extends CActiveRecord
 		$val_f=$command->queryScalar();
 	
 		
-		// Ищем вправо
+		// Р�С‰РµРј РІРїСЂР°РІРѕ
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
@@ -286,7 +286,7 @@ class Exchange extends CActiveRecord
 	}
 	
 
-	// Ищем "яму"
+	// Р�С‰РµРј "СЏРјСѓ"
 	public static function getPit($from, $to, $type='buy')
 	{
 		$connection = Yii::app()->db;
@@ -370,7 +370,7 @@ class Exchange extends CActiveRecord
 		return Yii::app()->cache->set($key, $hill_dtm);
 	}
 	
-	// Вернуть последний холм на котором продавали
+	// Р’РµСЂРЅСѓС‚СЊ РїРѕСЃР»РµРґРЅРёР№ С…РѕР»Рј РЅР° РєРѕС‚РѕСЂРѕРј РїСЂРѕРґР°РІР°Р»Рё
 	public static function getLastSellHill()
 	{
 		$key = 'track.hill.last';

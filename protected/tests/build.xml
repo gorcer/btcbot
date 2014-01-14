@@ -1,0 +1,19 @@
+<project name="test_bot" basedir=".." default="build">
+    <property name="src_dir" value="../protected/" override="false"/>
+    <property name="res_dir" value="../" override="false"/>
+
+    <target name="clear_cache_dir">
+        <echo>Очищаем директории кэша</echo>
+        <delete>
+            <fileset dir="${res_dir}/assets/">
+                <include name="**"/>
+            </fileset>
+            <fileset dir="${src_dir}/runtime/cache/">
+                <include name="**"/>
+            </fileset>
+        </delete>
+    </target>
+
+    <target name="build" depends="clear_cache_dir">
+    </target>
+</project>
