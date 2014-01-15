@@ -225,9 +225,9 @@ class Exchange extends CActiveRecord
 	
 
 	// Ищем ближайшие точки к указанным
+
 	public static function getAvgByNear($name, $dt, $pair='btc_rur')
 	{
-		
 		// Ищем влево
 		$connection = Yii::app()->db;
 		$sql = "
