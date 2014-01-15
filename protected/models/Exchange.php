@@ -224,11 +224,11 @@ class Exchange extends CActiveRecord
 	}
 	
 
-	// Р�С‰РµРј Р±Р»РёР¶Р°Р№С€РёРµ С‚РѕС‡РєРё Рє СѓРєР°Р·Р°РЅРЅС‹Рј
-	public static function getAvgBuyNear($name, $dt, $pair='btc_rur')
+	// Ищем ближайшие точки к указанным
+	public static function getAvgByNear($name, $dt, $pair='btc_rur')
 	{
 		
-		// Р�С‰РµРј РІР»РµРІРѕ
+		// Ищем влево
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
@@ -242,13 +242,12 @@ class Exchange extends CActiveRecord
 					order by dtm desc
 					limit 1
 					";
-		//if ($curtime == '2013-12-11 16:42:00')
-		//Dump::d($sql);
+
 		$command = $connection->createCommand($sql);
 		$val_f=$command->queryScalar();
 	
 		
-		// Р�С‰РµРј РІРїСЂР°РІРѕ
+		// Ищем вправо
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
@@ -262,8 +261,7 @@ class Exchange extends CActiveRecord
 					order by dtm
 					limit 1
 					";
-		//if ($curtime == '2013-12-11 16:42:00')
-		//Dump::d($sql);
+
 		$command = $connection->createCommand($sql);
 		$val_t=$command->queryScalar();
 	

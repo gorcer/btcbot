@@ -110,7 +110,7 @@ class Bot {
 			if (!$val) 
 			{
 				
-				$val = Exchange::getAvgBuyNear($name, $step_dt);
+				$val = Exchange::getAvgByNear($name, $step_dt);
 				//Log::Add('Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t.' использую ближайшее значение '.$val);
 				if (!$val) continue;
 			}
