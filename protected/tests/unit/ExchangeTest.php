@@ -22,7 +22,7 @@ class ExchangeTest extends CDbTestCase {
 	public function testGetLast()
 	{
 		$last = Exchange::getLast('btc_rur');
-		$this->assertEquals('2013-01-01 04:00:00', $last['dtm']);
+		$this->assertEquals('2014-01-06 04:00:00', $last['dtm']);
 	}
 	
 	/**
@@ -31,7 +31,7 @@ class ExchangeTest extends CDbTestCase {
 	public function testGetAll()
 	{
 		$all = Exchange::getAll();
-		$this->assertEquals(4, sizeof($all));
+		$this->assertEquals(1, sizeof($all));
 	}
 	
 	
