@@ -16,6 +16,7 @@ return CMap::mergeArray(
 				'connectionString'=>'mysql:host=localhost;dbname=btcbot',
 				'username'=>'testuser',
 				'password'=>'159357',
+				'charset' => 'utf8',
 			),
 			
 		),
