@@ -285,7 +285,7 @@ class Exchange extends CActiveRecord
 	}
 	
 
-	// Р�С‰РµРј "СЏРјСѓ"
+	// Ищем "яму"
 	public static function getPit($from, $to, $type='buy')
 	{
 		$connection = Yii::app()->db;

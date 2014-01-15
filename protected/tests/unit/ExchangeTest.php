@@ -63,4 +63,37 @@ class ExchangeTest extends CDbTestCase {
 	}
 	
 	
+	/**
+	 * @test updatePrices
+	 */
+	public function testUpdatePrices()
+	{
+		$exch = Exchange::updatePrices();
+		$this->assertTrue($exch->buy > 0);
+	}
+	
+	/**
+	 * @test getPit
+	 */
+	public function testGetPit()
+	{
+		$from='2013-01-01 01:00:00';
+		$to='2013-01-01 04:00:00';
+		
+		$pit = Exchange::getPit($from, $to, 'sell');
+		$this->assertEquals(28900, $pit['sell']);
+	}
+	
+	/**
+	 * @test getHill
+	 */
+	public function testGetHill()
+	{
+		$from='2013-01-01 01:00:00';
+		$to='2013-01-01 04:00:00';
+	
+		$hill = Exchange::getHill($from, $to, 'sell');
+		$this->assertEquals(29901, $hill['sell']);
+	}
+	
 }
