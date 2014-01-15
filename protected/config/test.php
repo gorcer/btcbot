@@ -13,7 +13,10 @@ return CMap::mergeArray(
 				'class'=>'system.test.CDbFixtureManager',
 			),			 
 			'db'=>array(
-				'connectionString'=>'mysql:host=localhost;dbname=btcbot_4test',
+				'connectionString'=>'mysql:host=localhost;dbname=btcbot',
+				'username'=>'testuser',
+				'password'=>'159357',
+				'charset' => 'utf8',
 			),
 			
 		),
