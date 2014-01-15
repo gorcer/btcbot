@@ -9,7 +9,7 @@ class BotTest extends CTestCase {
 	
 	public function testVirtualBuy()
 	{
-		$this->assertTrue(true);
+		$this->assertTrue(false);
 	}
 	
 	
