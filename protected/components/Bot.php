@@ -100,9 +100,7 @@ class Bot {
 			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
 			
 			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
-			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);			
-			
-			
+			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);		
 			
 			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
 			
