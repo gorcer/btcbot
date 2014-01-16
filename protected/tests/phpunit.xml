@@ -19,4 +19,10 @@
   </logging>
   
 
+<filter>
+<blacklist>
+<directory suffix=".php">/var/lib/yii/</directory>
+</blacklist>
+</filter>
+
 </phpunit>
