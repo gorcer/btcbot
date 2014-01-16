@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="unit" tests="10" assertions="13" failures="0" errors="0" time="1.619842">
+    <testsuite name="BotTest" file="/home/gorcer/www/test_b/protected/tests/unit/BotTest.php" tests="2" assertions="5" failures="0" errors="0" time="0.090908">
+      <testcase name="testVirtualBuy" class="BotTest" file="/home/gorcer/www/test_b/protected/tests/unit/BotTest.php" line="13" assertions="1" time="0.005553"/>
+      <testcase name="testGetGraphImage" class="BotTest" file="/home/gorcer/www/test_b/protected/tests/unit/BotTest.php" line="21" assertions="4" time="0.085355"/>
+    </testsuite>
+    <testsuite name="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" tests="8" assertions="8" failures="0" errors="0" time="1.528934">
+      <testcase name="testGetDataFrom" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="12" assertions="1" time="0.087879"/>
+      <testcase name="testGetLast" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="22" assertions="1" time="0.037123"/>
+      <testcase name="testGetAll" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="31" assertions="1" time="0.036001"/>
+      <testcase name="testGetAvg" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="41" assertions="1" time="0.034273"/>
+      <testcase name="testGetAvgByNear" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="56" assertions="1" time="0.032520"/>
+      <testcase name="testUpdatePrices" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="69" assertions="1" time="1.146589"/>
+      <testcase name="testGetPit" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="78" assertions="1" time="0.080145"/>
+      <testcase name="testGetHill" class="ExchangeTest" file="/home/gorcer/www/test_b/protected/tests/unit/ExchangeTest.php" line="90" assertions="1" time="0.074404"/>
+    </testsuite>
+  </testsuite>
+</testsuites>
