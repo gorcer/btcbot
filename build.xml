@@ -14,18 +14,5 @@
         </exec>
     </target>
 
- 	<taskdef name="phpmd" classname="org.phpmd.ant.PHPMDTask"/>
- 	
- 	<target name="mess_detect"> 
- 		<phpmd failonerror="off"> 
- 			<ruleset>unusedcode</ruleset>
-			<ruleset>codesize</ruleset>
-	 		<formatter type="xml" toFile="${basedir}/build/logs/pmd.xml" /> 
-	 		<fileset dir="${basedir}/protected/"> 
-	 			<include name="*.php" /> 
-	 		</fileset> 
- 		</phpmd>
- 	</target>
-
-    <target name="build" depends="clean,phpunit,mess_detect"/>
+    <target name="build" depends="clean,phpunit"/>
 </project>

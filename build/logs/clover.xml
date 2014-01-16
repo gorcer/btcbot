@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1389834526">
-  <project timestamp="1389834526">
+<coverage generated="1389839193">
+  <project timestamp="1389839193">
     <file name="/home/gorcer/www/test_b/protected/components/APIProvider.php">
       <class name="APIProvider" namespace="global">
         <metrics methods="13" coveredmethods="1" conditionals="0" coveredconditionals="0" statements="163" coveredstatements="3" elements="176" coveredelements="4"/>
