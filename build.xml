@@ -18,7 +18,7 @@
  	
  	<target name="mess_detect"> 
  		<phpmd failonerror="off"> 
- 			<ruleset>unusedcode,codesize</ruleset>			
+ 			<ruleset>codesize</ruleset>			
 	 		<formatter type="xml" toFile="${basedir}/build/logs/pmd.xml" /> 
 	 		<fileset dir="${basedir}"> 
 	 			<include name="*.php" /> 
