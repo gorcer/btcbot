@@ -30,6 +30,7 @@ class BotTest extends CTestCase {
 		
 		$bot = Bot::get_Instance();
 		$img = $bot->getGraphImage($curtime, $period, $name, $imp_dif);
+		var_dump($img);
 		$this->assertEquals('--+', $img['track']);
 		$this->assertEquals($from, $img['from']);
 		$this->assertEquals('2013-01-01 00:00:00', $img['items'][0]['dtm']);
