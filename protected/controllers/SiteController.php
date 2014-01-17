@@ -177,7 +177,8 @@ class SiteController extends Controller
 	}
 	
 	public function actionTest()
-	{	
+	{			
+		
 		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		if (APIProvider::isVirtual == false) return;
 			
