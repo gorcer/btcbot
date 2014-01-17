@@ -21,8 +21,7 @@ class Bot {
 	private $sell_periods; // Определение периодов покупки
 	private $buy_periods; // Определение периодов продажи
 	
-	private $real_trade = false;
-	
+
 	private static $self=false;
 	
 	public $api; 
