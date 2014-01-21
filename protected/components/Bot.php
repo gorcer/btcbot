@@ -188,7 +188,8 @@ class Bot {
 				case '---':								// \\\
 				case '+--':								// /\\
 				case '0--':								// /\\
-							if ($track['period']>self::long_time) {
+							if ($track['period']>self::long_time)
+							 {
 								Log::notbuy('Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
 								return false;								
 							}
@@ -732,7 +733,7 @@ class Bot {
 			$income = $curcost - $buy->summ*(1+self::fee);
 			// Достаточно ли заработаем
 			
-			if ($income>0 && $income/$buy->summ < self::freeze_warning_income)
+			if ( ($income>0 && $income/$buy->summ < self::freeze_warning_income) )
 			//if (abs($income/$buy->summ) < self::freeze_warning_income)				
 			{
 				
