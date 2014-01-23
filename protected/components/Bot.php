@@ -21,8 +21,7 @@ class Bot {
 	private $sell_periods; // Определение периодов покупки
 	private $buy_periods; // Определение периодов продажи
 	
-	private $real_trade = false;
-	
+
 	private static $self=false;
 	
 	public $api; 
@@ -88,9 +87,7 @@ class Bot {
 		
 		$step = round($period/3);
 		$from_tm = $curtime-$period;
-		$from = date('Y-m-d H:i:s', $from_tm);		
-		$to = date('Y-m-d H:i:s', $curtime);		
-		
+		$from = date('Y-m-d H:i:s', $from_tm);
 		
 		$track="";
 		$prev=false;
@@ -157,7 +154,7 @@ class Bot {
 		$result = array();
 		foreach($tracks as $track)
 		{
-			$ret = false;
+			
 			switch($track['track']){
 				case '-0+':								 // \_/
 				case '--+':								 // \\/
@@ -191,7 +188,8 @@ class Bot {
 				case '---':								// \\\
 				case '+--':								// /\\
 				case '0--':								// /\\
-							if ($track['period']>self::long_time) {
+							if ($track['period']>self::long_time)
+							 {
 								Log::notbuy('Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
 								return false;								
 							}
@@ -210,8 +208,7 @@ class Bot {
 	{
 		$result = array();
 		foreach($tracks as $track)
-		{
-			$ret = false;
+		{			
 			switch($track['track']){
 				case '+0-':	 // /-\				
 				case '++-':	 // //\
@@ -236,8 +233,7 @@ class Bot {
 	{
 		$result = array();
 		foreach($tracks as $track)
-		{
-			$ret = false;
+		{			
 			switch($track['track']){
 				case '---':	$result[] = $track; break;
 				case '0--':	$result[] = $track; break;
@@ -388,7 +384,7 @@ class Bot {
 				// Пишем в сводку
 				Balance::add('btc', 'Создан ордер №'.$orders['received']->id.' на продажу '.$orders['received']->count.' btc', -1*$orders['received']->count);
 				
-				$sell = $this->completeSell($orders['received']);
+				$this->completeSell($orders['received']);
 			}
 			
 			// Если отложенная покупка
@@ -467,8 +463,7 @@ class Bot {
 		
 		$reason = array(); // Фиксируем причину покупки
 		
-		$curtime = $this->curtime; //Дата операции
-		$dt = date('Y-m-d H:i:s', $curtime);		
+		$curtime = $this->curtime; //Дата операции		
 		
 		// Есть ли деньги
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
@@ -593,7 +588,7 @@ class Bot {
 		// Составляем причину покупки
 		$reason=array();
 		$curtime = $this->curtime; //Дата операции
-		$dt = date('Y-m-d H:i:s', $curtime);		
+			
 
 		//Смотрим, что продать
 		//$bought = Buy::model()->findAll(array('condition'=>'sold=0 and order_id=0'));
@@ -665,7 +660,7 @@ class Bot {
 		$reason['all_tracks']=$all_tracks;
 		
 		// Ищем выгодные продажи
-		foreach($bought as $key=>$buy)
+		foreach($bought as $buy)
 		{
 			
 			// Цена продажи
@@ -738,7 +733,7 @@ class Bot {
 			$income = $curcost - $buy->summ*(1+self::fee);
 			// Достаточно ли заработаем
 			
-			if ($income>0 && $income/$buy->summ < self::freeze_warning_income)
+			if ( ($income>0 && $income/$buy->summ < self::freeze_warning_income) )
 			//if (abs($income/$buy->summ) < self::freeze_warning_income)				
 			{
 				
