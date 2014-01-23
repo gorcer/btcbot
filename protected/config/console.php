@@ -25,7 +25,7 @@ return array(
 		// uncomment the following to use a MySQL database
 		
 		'db'=>array(
-			'connectionString' => 'mysql:host=localhost;dbname=btcbot_real',
+			'connectionString' => 'mysql:host=localhost;dbname=btcbot',
 			'emulatePrepare' => true,
 			'username' => 'testuser',
 			'password' => '159357',

@@ -1,6 +1,6 @@
 <?php
 
-$yii=dirname(__FILE__).'/../../../yii/framework/yii.php';
+$yii=dirname(__FILE__).'/../../yii/framework/yii.php';
 $config=dirname(__FILE__).'/config/console.php'; // конфиг для консолек который выше описан
 
 // remove the following line when in production mode
