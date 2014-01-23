@@ -311,15 +311,25 @@ class SiteController extends Controller
 		}
 		
 				
-		// Покупки
-
-		$orders = Order::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
-
+		if ($type == 'btc_rur')
+		{
 		
-		$buys = Buy::model()->findAll();
-		$sells = Sell::model()->findAll();
+			// Покупки
+			$orders = Order::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));		
+			$buys = Buy::model()->findAll();
+			$sells = Sell::model()->findAll();
+		}
+		else
+		{
+			$orders = array();
+			$buys = array();
+			$sells = array();
+			
+		}
 		
 		$lastEx = Exchange::getLast();
+		
+		
 		$status['total_income'] = Sell::getTotalIncome();
 		$status['balance'] = Status::getParam('balance');
 		$status['balance_btc'] = Status::getParam('balance_btc');
