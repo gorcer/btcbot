@@ -77,6 +77,30 @@ $flags.="],
 <?php endforeach; ?>
 </table>
 
+<h2>Причины не покупки</h2>
+<?php 
+$i=0;
+for ($i=0;$i<5;$i++)
+{
+	$dt = strtotime('-'.$i.' days');
+	$path='logs/not-buy-'.date('Y-m-d', $dt).'.html';	
+	echo '<a href="'.$path.'">'.$path.'</a><br/>';
+}
+?>
+
+
+<h2>Причины не продажи</h2>
+<?php 
+$i=0;
+for ($i=0;$i<5;$i++)
+{
+	$dt = strtotime('-'.$i.' days');
+	$path='logs/not-sell-'.date('Y-m-d', $dt).'.html';	
+	echo '<a href="'.$path.'">'.$path.'</a><br/>';
+}
+?>
+
+
 <script>
 $(function() {
 	

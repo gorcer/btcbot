@@ -6,4 +6,5 @@ encoding//protected/models/Balance.php=UTF-8
 encoding//protected/models/Exchange.php=UTF-8
 encoding//protected/tests/fixtures/Exchange.php=UTF-8
 encoding//protected/views/site/chart.php=UTF-8
+encoding//protected/views/site/chart_by_tracks.php=UTF-8
 encoding/<project>=UTF-8

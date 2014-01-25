@@ -153,6 +153,9 @@ class Buy extends CActiveRecord
 		
 		
 		$list=Buy::model()->findAllBySql($sql);
+		
+		//if (sizeof($list)) Dump::d($list[0]->attributes);
+		
 		return($list);
 	}
 	

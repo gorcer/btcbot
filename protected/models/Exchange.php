@@ -141,18 +141,19 @@ class Exchange extends CActiveRecord
 		return $buy;
 	}
 	
-	public static function getAll($pair='btc_rur', $period = '%Y-%m-%d %H:%i:%s')
+	public static function getAll($pair='btc_rur', $format = '%Y-%m-%d %H:%i:%s')
 	{
 		$connection = Yii::app()->db;
 		$sql = "
 					SELECT
-						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell		
+						DATE_FORMAT(dtm, '".$format."') as dt, avg(buy) as buy, avg(sell) as sell		
 					FROM `exchange`
 					where
-						 /*dtm >= '2013-12-09 09:00:00'*/
-						 dtm >= '2014-01-05 01:00:00'
+						dtm >= '2013-12-09 09:00:00'
+						/* dtm >= '2014-01-05 01:00:00'*/
 						/*dtm >= '2013-12-16 10:56:00' and dtm <= '2013-12-17 01:00:00'*/
-					/*	dtm = '2014-01-12 12:33:00'*/
+						
+						/*dtm >= '2014-01-08 11:37:00' and dtm <= '2014-01-08 11:40:00'*/ 		
 						and
 						pair = '".$pair."'
 					group by dt
@@ -160,11 +161,39 @@ class Exchange extends CActiveRecord
 					limit 50000000
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
+		$command = $connection->createCommand($sql);
+		$list=$command->queryAll();
 		
+		return($list);
+		
+		//return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 10:00:02"', 'limit'=>10000000));
+	}
+	
+	
+	public static function getAllByDt($pair='btc_rur', $from, $to, $format = '%Y-%m-%d %H:%i:%s')
+	{
+		
+		
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						DATE_FORMAT(dtm, '".$format."') as dt, avg(buy) as buy, avg(sell) as sell
+					FROM `exchange`
+					where						
+						dtm >= '".$from."' and dtm <= '".$to."'
+						and
+						pair = '".$pair."'
+					group by dt
+					order by dtm
+					limit 50000000
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+		//Dump::d($sql);
 		$command = $connection->createCommand($sql);
 		$list=$command->queryAll();
 		return($list);
-		
+	
 		//return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 10:00:02"', 'limit'=>10000000));
 	}
 	

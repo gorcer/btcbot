@@ -15,8 +15,8 @@ class Bot {
 	public $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	private $buy_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
-	private $sell_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	public $buy_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+	public $sell_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
 	
 	private $sell_periods; // Определение периодов покупки
 	private $buy_periods; // Определение периодов продажи
@@ -35,7 +35,7 @@ class Bot {
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
 	const min_income = 0.04; // Мин. доход - 4%
-	const income_per_day = 0.01; // доход в день для залежных покупок, в расчете на 400% в год
+	const income_per_day = 0.002; // доход в день для залежных покупок, в расчете на 400% в год
 	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
 	const order_ttl = 180; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
@@ -51,13 +51,12 @@ class Bot {
 		$this->curtime = strtotime($exchange->dtm);
 		
 		$this->balance = Status::getParam('balance');
-		$this->balance_btc = Status::getParam('balance_btc');
-		$this->total_income=0;
+		$this->balance_btc = Status::getParam('balance_btc');		
 		$this->buy_imp_dif = 0.005;// Шаг при анализе покупки 5% //150;
 		$this->sell_imp_dif = 0.007; // Шаг при анализе продажи 7%
 		
 		$this->order_cnt=0;		
-		
+		$this->total_income=0;
 		
 		// Периоды анализа графика для покупки и продажи (в сек.)
 		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
@@ -89,6 +88,12 @@ class Bot {
 		$from_tm = $curtime-$period;
 		$from = date('Y-m-d H:i:s', $from_tm);
 		
+		
+		if ($step/2 < 60*60)
+			$smash = $step/2;
+		else 
+			$smash = 60*60; // 10 минут вокруг каждой точки для усреднения колебаний
+		
 		$track="";
 		$prev=false;
 		for($i=0;$i<=3;$i++)
@@ -96,8 +101,8 @@ class Bot {
 			$step_ut = $from_tm+$step*$i;
 			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
 			
-			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
-			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);		
+			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$smash/*$step/2*/); // Вокруг каждой точки отмеряем назад и вперед половину шага
+			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$smash/*$step/2*/);		
 			
 			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
 			
@@ -169,8 +174,12 @@ class Bot {
 										
 							break; 
 				case '00+':	// __/
-							$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
-							$result[] = $track; 
+							// Применяем только к длинным трекам
+							if ($track['period']>self::long_time)
+							{
+								$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
+								$result[] = $track;
+							} 
 							break; 
 				case '0-+':							   // _\/
 							// Если трек при падении не вернулся в исходную точку
@@ -458,6 +467,15 @@ class Bot {
 	}
 	
 	
+	public function getAllTracks($curtime, $type, $imp_diff)
+	{
+		$all_tracks=array();
+		foreach($this->buy_periods as $period)
+			$all_tracks[] = $this->getGraphImage($curtime, $period, $type, $imp_diff);
+		
+		return $all_tracks;
+	}
+	
 	public function NeedBuy()
 	{		
 		
@@ -517,16 +535,12 @@ class Bot {
 		}		
 		
 		
-		$all_tracks=array();		
-		foreach($this->buy_periods as $period)		
-			$all_tracks[] = $this->getGraphImage($curtime, $period, 'buy', $this->buy_imp_dif);
-
+		$all_tracks = $this->getAllTracks($curtime, 'buy', $this->buy_imp_dif);
+		
 		
 		//Анализируем треки
 		$tracks=array();
 		$tracks = $this->getBuyTracks($all_tracks);
-		
-		
 		
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
@@ -670,7 +684,7 @@ class Bot {
 			$income = $curcost - $buy->summ;						
 			
 			// Определяем мин. доход
-			$life_days = ceil( (time() - strtotime($buy->dtm))/60/60/24 ); // Число прошедших дней с покупки
+			$life_days = ceil( ($this->curtime - strtotime($buy->dtm))/60/60/24 ); // Число прошедших дней с покупки
 			$days_income = $life_days * self::income_per_day; // Ожидаемый доход
 			if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.
 			$need_income =  $buy->summ * $days_income; // Требуемый доход в рублях
@@ -825,6 +839,8 @@ class Bot {
 	
 	public function run()
 	{
+		
+		
 		
 		$info = $this->api->getInfo();
 		

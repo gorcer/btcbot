@@ -130,6 +130,18 @@ class SiteController extends Controller
 			$bot->run();
 		}
 		
+		// Првоеряем error_log
+		$fn='error_log';
+		
+		if (file_exists($fn))
+		{
+				$headers  = 'MIME-Version: 1.0' . "\r\n";
+				$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+				$text = file_get_contents($fn);
+				mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);					
+		}
+		
+		
 		
 		// Сохраняем информацию по всем ценам
 		/*
@@ -293,6 +305,43 @@ class SiteController extends Controller
 		$bot->checkOrders();
 	}
 	
+	public function actionChartByTrack($dt)	
+	{		
+		
+		$exch = Exchange::getAllByDt('btc_rur', date('Y-m-d H:i:s', strtotime($dt." - 2 days")),date('Y-m-d H:i:s', strtotime($dt." + 2 days")));
+		
+		foreach($exch as $item)
+		{
+			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
+			$data_buy[]=array((float)$tm, (float)$item['buy']);
+			$data_sell[]=array((float)$tm, (float)$item['sell']);
+		}
+		
+		$curtime = strtotime($dt);
+		$bot = new Bot();
+		$tracks = $bot->getAllTracks($curtime, 'buy', $bot->buy_imp_dif);
+		
+		$tracks_formed = array();
+		foreach($tracks as $track)
+		{
+			$name = $track['period'].' '.$track['track'];
+			foreach ($track['items'] as $point)
+			{
+				$tm = strtotime($point['dtm'])*1000+4*60*60*1000;				
+				$tracks_formed[$name][]=array($tm, (float)$point['val']);				
+			}
+			$tracks_formedj[$name] = json_encode($tracks_formed[$name]);
+		}
+		
+				$this->render('chart_by_tracks',
+				array(
+						'data_buy'	=> 	json_encode($data_buy),
+						'data_sell'	=> 	json_encode($data_sell),
+						'tracks' => $tracks_formedj,		
+						'tracks_origin' => $tracks,				
+						));		
+	}
+	
 	public function actionChart($type='btc_rur')
 	{	
 		$buy = new Buy();
@@ -306,8 +355,8 @@ class SiteController extends Controller
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
-			$data_buy[]=array((string)$tm, (float)$item['buy']);
-			$data_sell[]=array((string)$tm, (float)$item['sell']);
+			$data_buy[]=array((float)$tm, (float)$item['buy']);
+			$data_sell[]=array((float)$tm, (float)$item['sell']);
 		}
 		
 				
@@ -334,6 +383,8 @@ class SiteController extends Controller
 		$status['balance'] = Status::getParam('balance');
 		$status['balance_btc'] = Status::getParam('balance_btc');
 		$status['total_balance'] = $status['balance'] + $status['balance_btc']*$lastEx->sell;
+		
+		
 		
 		$this->render('chart',
 				array(
@@ -398,4 +449,6 @@ class SiteController extends Controller
 						'data'	=> 	$order,
 				));
 	}
+	
+	
 }
