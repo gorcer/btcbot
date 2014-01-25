@@ -350,14 +350,37 @@ class SiteController extends Controller
 				
 		$data_buy=array();
 		$data_sell=array();
+		$no_data=array();
+		$last=false;
 		
-		
+		$min_interval = 60 * 10 * 1000; 
+	
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
 			$data_buy[]=array((float)$tm, (float)$item['buy']);
 			$data_sell[]=array((float)$tm, (float)$item['sell']);
+			
+			// Заполняем информацию по пустым периодам
+			$i=0;
+			
+			
+			
+			//Dump::d('tm='.date('Y-m-d H:i:s', $tm/1000).' last='.date('Y-m-d H:i:s', $last/1000).' diff='.($tm - $last));
+			
+			if ($last)
+			while ($tm - $last > $min_interval)
+			{
+				//Dump::d('LOST='.date('Y-m-d H:i:s', $last/1000));
+			//	echo $tm- $last.'<br/>';
+				$i++;
+				$last=(float)($last+$i*$min_interval);
+				$no_data[] = array($last, (float)$item['buy']);				
+			}
+			
+			$last = $tm;
 		}
+		
 		
 				
 		if ($type == 'btc_rur')
@@ -383,13 +406,13 @@ class SiteController extends Controller
 		$status['balance'] = Status::getParam('balance');
 		$status['balance_btc'] = Status::getParam('balance_btc');
 		$status['total_balance'] = $status['balance'] + $status['balance_btc']*$lastEx->sell;
-		
-		
+		$status['start_balance'] = Status::getStartBalance();
 		
 		$this->render('chart',
 				array(
 						'data_buy'	=> 	json_encode($data_buy),
 						'data_sell'	=> 	json_encode($data_sell),
+						'no_data' => json_encode($no_data),
 						'buys'	=>	$buys,
 						'orders'	=>	$orders,
 						'sells'	=>	$sells,

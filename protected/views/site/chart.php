@@ -25,7 +25,7 @@ foreach ($buys as $buy)
 					".$color."
 					events: {
 							click: function () {
-								document.location.href = '".Yii::app()->createUrl('buy/view', array('id'=>$buy->id))."'										
+								document.location.href = '".Yii::app()->createUrl('site/chartByTrack', array('dt'=>$buy->dtm))."'										
 								}
 							}
 				}, ";
@@ -43,7 +43,7 @@ foreach ($sells as $sell)
 					color: '#ffaaaa',
 					events: {
 							click: function () {
-								document.location.href = '".Yii::app()->createUrl('sell/view', array('id'=>$sell->id))."'
+								document.location.href = '".Yii::app()->createUrl('site/chartByTrack', array('dt'=>$sell->dtm))."'
 								}
 							}
 				}, ";
@@ -64,6 +64,7 @@ $flags.="],
 Баланс (btc): <?php echo $status['balance_btc']; ?><br/>
 Заработано (руб.): <?php echo $status['total_income']; ?><br/>
 Общие активы (руб.): <?php echo $status['total_balance']; ?><br/>
+Всего вложено (руб.): <?php echo $status['start_balance']; ?><br/>
 <br/>
 <h2>Последние сделки</h2>
 <table>
@@ -135,6 +136,19 @@ $(function() {
 		        name: 'sell',
 		        data: <?php echo $data_sell; ?>,
 				id: 'dataseries',
+				tooltip: {
+					valueDecimals: 4
+				}
+		    }, {
+		        name: 'no-data',
+		        data: <?php echo $no_data; ?>,
+		        lineWidth : 0,
+				marker : {
+							enabled : true,
+							radius : 2
+						},
+				id: 'dataseries',
+				color: '#ff3333',
 				tooltip: {
 					valueDecimals: 4
 				}

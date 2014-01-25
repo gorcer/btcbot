@@ -629,6 +629,10 @@ class Bot {
 		foreach($this->sell_periods as $period)		
 			$all_tracks[] = $this->getGraphImage($curtime, $period, 'sell', $this->sell_imp_dif);		
 		
+		
+		// Совершаем вынужденные продажи
+		$this->NecesarySell($all_tracks, $bought);
+		
 		//Анализируем треки
 		$tracks = $this->getSellTracks($all_tracks);		
 		
@@ -638,8 +642,7 @@ class Bot {
 			return false;
 		}
 		
-		// Совершаем вынужденные продажи
-		$this->NecesarySell($all_tracks, $bought);
+		
 		
 		// Проверка прошлой продажи
 		$lastSell = Sell::getLast();
@@ -722,8 +725,9 @@ class Bot {
 	private function NecesarySell($all_tracks, $bought)
 	{
 		$reason = array();
-		//Анализируем треки
+		//Анализируем треки		
 		$tracks = $this->getNecessarySellTracks($all_tracks);
+		
 		if (sizeof($tracks) == 0)
 		{
 			return false;
@@ -761,7 +765,7 @@ class Bot {
 				$this->startSell($buy, $reason);
 				continue;
 			}
-			//else Log::Add($this->curtime, 'Вынужденная продажа №'.$buy->id.' не состоялась $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);
+			//else Log::Add('Вынужденная продажа №'.$buy->id.' не состоялась $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);
 		
 				
 		}
