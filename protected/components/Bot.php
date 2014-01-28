@@ -60,7 +60,8 @@ class Bot {
 		
 		// Периоды анализа графика для покупки и продажи (в сек.)
 		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
-		$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);
+		//$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60); 2127/51028
+		$this->sell_periods = array(	  30*60, 60*60, 2*60*60,);
 		
 		$this->api = APIProvider::get_Instance();
 		
