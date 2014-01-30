@@ -5,7 +5,7 @@ class SiteTest extends WebTestCase
 	public function testIndex()
 	{
 		$this->open('/');
-		$this->assertTextPresent('Welcome');
+		$this->assertTextPresent('Wel2come');
 	}
 /*
 	public function testContact()
