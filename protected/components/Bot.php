@@ -90,7 +90,7 @@ class Bot {
 		$from = date('Y-m-d H:i:s', $from_tm);
 		
 		
-		if ($step/2 < 60*60)
+		if ($step/2 <= 60*60)
 			$smash = $step/2;
 		else 
 			$smash = 60*60; // 10 минут вокруг каждой точки для усреднения колебаний
