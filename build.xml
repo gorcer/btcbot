@@ -10,7 +10,7 @@
 
     <target name="phpunit">
         <exec dir="${basedir}/protected/tests" executable="phpunit" failonerror="true">
-            <arg line="unit" />
+            <arg line="." />
         </exec>
     </target>
 
