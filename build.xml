@@ -32,5 +32,5 @@
 	</target>
 
 
-    <target name="build" depends="clean,phpunit,phpmd"/>
+    <target name="build" depends="clean,migrations,phpunit,phpmd"/>
 </project>
