@@ -9,8 +9,10 @@
     </target>
 
     <target name="migrations">
-        <exec dir="${basedir}/protected" executable="php yiic migrate" failonerror="true">
-            <arg line="--interactive=0" />
+        <exec dir="${basedir}/protected" executable="php" failonerror="true">         
+         <arg line="yiic" />
+         <arg line="migrate" />
+         <arg line="--interactive=0" />
         </exec>
     </target>
 
