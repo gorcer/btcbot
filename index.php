@@ -9,18 +9,18 @@ error_reporting(E_ALL);
 defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
 
 
-if ($_SERVER['HTTP_HOST']!='btcbot.gorcer.com')
-{
-	$yii=dirname(__FILE__).'/../yii/framework/yii.php';
-	$config = dirname(__FILE__).'/protected/config/main_local.php';
-	define('YII_DEBUG',true);
-	defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
-}
-else
+if ($_SERVER['HTTP_HOST']=='btcbot.gorcer.com' || $_SERVER['HTTP_HOST']=='btcbot-test.gorcer.com')
 {
 	$yii=dirname(__FILE__).'/../../yii/framework/yii.php';
 	$config=dirname(__FILE__).'/protected/config/main.php';
 	define('YII_DEBUG',false);
+}
+else
+{	
+	$yii=dirname(__FILE__).'/../yii/framework/yii.php';
+	$config = dirname(__FILE__).'/protected/config/main_local.php';
+	define('YII_DEBUG',true);
+	defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
 }
 
 // remove the following lines when in production mode

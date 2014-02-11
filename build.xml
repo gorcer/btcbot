@@ -8,9 +8,15 @@
         <mkdir dir="${basedir}/build/logs"/>
     </target>
 
+    <target name="migrations">
+        <exec dir="${basedir}/protected" executable="php yiic migrate" failonerror="true">
+            <arg line="--interactive=0" />
+        </exec>
+    </target>
+
     <target name="phpunit">
         <exec dir="${basedir}/protected/tests" executable="phpunit" failonerror="true">
-            <arg line="." />
+            <arg line="unit" />
         </exec>
     </target>
 
