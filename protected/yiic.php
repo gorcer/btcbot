@@ -8,6 +8,6 @@ $yii_path = '/var/lib/yii';
 $yiic=$yii_path.'/framework/yiic.php';
 
 
-$config=dirname(__FILE__).'/config/console.php';
+$config=dirname(__FILE__).'/config/test.php';
 
 require_once($yiic);
