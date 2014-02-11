@@ -259,7 +259,7 @@ class Bot {
 	
 	
 	// Создание отложенного ордера (если сразу не купили)
-	private function createOrderRemains($result, $price, $type, $reason, $buy=false)
+	private function createOrderRemains($result, $price, $type, $reason, $obj=false)
 	{
 		$order = new Order();
 		$order->price = $price;
@@ -273,7 +273,8 @@ class Bot {
 		else
 			$order->fee = $order->summ*self::fee;
 		
-		if ($buy) $order->buy_id = $buy->id;
+		if ($obj)
+			$order->assignObj($obj);
 		
 		$order->description = json_encode($reason);
 		$order->type = $type;
@@ -287,7 +288,7 @@ class Bot {
 	}
 	
 	// Создание закрытого ордера на покупку(если сразу купили)
-	private function createOrderReceived($result, $price, $type, $reason, $buy=false)
+	private function createOrderReceived($result, $price, $type, $reason, $obj=false)
 	{
 		$order = new Order();
 		$order->price = $price;
@@ -300,8 +301,9 @@ class Bot {
 			$order->fee = $order->count*self::fee;
 		else
 			$order->fee = $order->summ*self::fee;
-		
-		if ($buy) $order->buy_id = $buy->id;
+				
+		if ($obj)
+			$order->assignObj($obj);
 		
 		$order->id = null;
 		$order->description = json_encode($reason);
@@ -309,12 +311,15 @@ class Bot {
 		$order->status = 'close';
 		$order->create_dtm = $this->current_exchange->dtm;
 		$order->close_dtm = $this->current_exchange->dtm;
+		Dump::d($order->sell_id);
 		$order->save();
+		Dump::d($order->sell_id);
+		
 		
 		return ($order);
 	}
 	
-	private function makeOrder($cnt, $price, $type, $reason='', $buy=false)
+	private function makeOrder($cnt, $price, $type, $reason='', $obj=false)
 	{		
 		// Цена покупки / продажи
 	//	$price = $this->current_exchange->$type;
@@ -325,8 +330,8 @@ class Bot {
 		if (!$result) return false;
 		
 		$orders = array();
-		if ($result['remains']>0) $orders['remains'] = $this->createOrderRemains($result, $price, $type, $reason, $buy);
-		if ($result['received']>0) $orders['received'] = $this->createOrderReceived($result, $price, $type, $reason, $buy);
+		if ($result['remains']>0) $orders['remains'] = $this->createOrderRemains($result, $price, $type, $reason, $obj);
+		if ($result['received']>0) $orders['received'] = $this->createOrderReceived($result, $price, $type, $reason, $obj);
 		
 		
 		// Актуализируем баланс
@@ -342,10 +347,10 @@ class Bot {
 	 * Подготовка к покупке (создание ордера, записей в бд)
 	 * @return boolean
 	 */
-	public function startBuy($reason)
+	public function startBuy($sell, $reason)
 	{		
 		// Создаем ордер		
-		$orders = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason);		
+		$orders = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason, $sell);		
 		
 		// Если создался
 		if (sizeof($orders)>0)
@@ -485,6 +490,7 @@ class Bot {
 		$curtime = $this->curtime; //Дата операции		
 		
 		// Есть ли деньги
+		/*
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
 		{
 			Log::notbuy('Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
@@ -492,6 +498,9 @@ class Bot {
 		}
 		else
 			$reason['balance']='Хватает денег '.$this->balance.'>'.($this->current_exchange->buy*self::buy_value); 
+		*/
+		
+	
 		/*
 		// Если текущая цена выше средней не покупаем
 		$from = date('Y-m-d H:i:s',$this->curtime-60*60*24*7);
@@ -568,9 +577,8 @@ class Bot {
 			}
 			
 		}
-			
-								//	Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
-			
+	
+		
 		// Если остались треки
 		if (sizeof($tracks)>0)
 		{
@@ -582,17 +590,45 @@ class Bot {
 			$first_track = array_pop($tracks);
 			$reason['period'] = $first_track['period'];
 			
-			// Покупаем
-			if ($this->startBuy($reason))	
-			{				
+			
+			//Смотрим, с какой продажи покупать
+			$sells = Sell::getNotBuyed();			
+			// Если не с чего поупать выходим
+			if (sizeof($sells) == 0) return false;
+
+			foreach ($sells as $sell)
+			{			
+			// Расчитываем обратную прибыль						
+			$summ = $sell->summ + $sell->income; // Сумма покупки 634.93
+			$cnt = ($summ / $this->current_exchange->buy) *(1-self::fee); // Покупаемое количество 0,0209821238410596
+			
+			// @todo переделать buyed в рубли и сделать лимиты
+			
+			$curcost = $cnt*$this->current_exchange->buy; // Итоговая цена 633.66
+			$income = $sell->price*$cnt - $curcost; // Доход 667.23 - 633 = 34.23
+
+			$need_income = $summ * $this->getMinIncome($sell->dtm);
 				
-				// Резервируем время покупки по резерву 
-				Exchange::ReservePeriod($first_track['period'], $this->curtime);
-				// Резервируем яму				
-				Exchange::ReservePit($first_track['pit']['dtm'], $first_track['period']);
+			// Достаточно ли заработаем
+			if ($income < $need_income)
+			{
+				if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$summ.' можно купить за '.$curcost.' цена покупки='.$this->current_exchange->buy);
+				continue;
+			}	
+			
+				// Покупаем
+				if ($this->startBuy($sell, $reason))	
+				{				
+					
+					// Резервируем время покупки по резерву 
+					Exchange::ReservePeriod($first_track['period'], $this->curtime);
+					// Резервируем яму				
+					Exchange::ReservePit($first_track['pit']['dtm'], $first_track['period']);
+				}
+				else
+					Log::notbuy('Ошибка, не удалось начать покупку');
+			
 			}
-			else
-				Log::notbuy('Ошибка, не удалось начать покупку');
 		}				
 		else
 		Log::notbuy('Нет интересных покупок');		
@@ -686,17 +722,13 @@ class Bot {
 									
 			// Сколько заработаем при продаже (комиссия была уже вычтена в btc при покупке)
 			$income = $curcost - $buy->summ;						
-			
-			// Определяем мин. доход
-			$life_days = ceil( ($this->curtime - strtotime($buy->dtm))/60/60/24 ); // Число прошедших дней с покупки
-			$days_income = $life_days * self::income_per_day; // Ожидаемый доход
-			if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.
-			$need_income =  $buy->summ * $days_income; // Требуемый доход в рублях
+		
+			$need_income = $buy->summ * $this->getMinIncome($buy->dtm);
 			
 			// Достаточно ли заработаем
 			if ($income < $need_income)
 			{
-				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.$need_income.'. Купил за '.$buy->summ.' можно продать за '.$curcost.' цена продажи='.$this->current_exchange->sell.', дней с момента покупки='.$days_income.', % ожидаемой прибыли '.($days_income*100));							
+				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.$need_income.'. Купил за '.$buy->summ.' можно продать за '.$curcost.' цена продажи='.$this->current_exchange->sell);							
 				continue;
 			}			
 			
@@ -720,6 +752,17 @@ class Bot {
 			
 		}
 		
+	}
+	
+	private function getMinIncome($dtm)
+	{
+
+		// Определяем мин. доход
+		$life_days = ceil( ($this->curtime - strtotime($dtm))/60/60/24 ); // Число прошедших дней с покупки
+		$days_income = $life_days * self::income_per_day; // Ожидаемый доход
+		if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.		
+				
+		return $days_income;
 	}
 	
 	// Вынужденная продажа, совершается когда купленный btc может залежаться

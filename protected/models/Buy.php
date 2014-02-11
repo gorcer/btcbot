@@ -109,6 +109,12 @@ class Buy extends CActiveRecord
 	// Создание заказа
 	public static function make($order)
 	{		
+		
+		$sell = $order->sell;
+		$sell->buyed+=$order->count;
+		$sell->update(array('buyed'));
+		
+		
 		// Пробуем присоединить покупку к уже существующей
 		$buy = Buy::model()->findByAttributes(array('price'=>$order->price, 'sold'=>0));
 		

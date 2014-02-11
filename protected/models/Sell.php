@@ -127,17 +127,54 @@ class Sell extends CActiveRecord
 		// Расчитываем сумму покупки, так как нужно считать для продажи доли
 		$buy_summ =  $buy->summ / $buy->count * $order->count;
 		
-		$sell = new Sell();
-		$sell->buy_id = $buy->id;
-		$sell->price = $order->price;
-		$sell->count = $order->count;
-		$sell->summ = $order->summ - $order->fee;
-		$sell->fee = $order->fee;
-		$sell->income = ($order->summ-$buy_summ)-$sell->fee;
-		$sell->dtm = $order->close_dtm;		
+		// Пробуем присоединить покупку к уже существующей
+		$sell = Sell::model()->findByAttributes(array('price'=>$order->price, 'buyed'=>0));
+		
+		if ($sell)
+		{
+			$sell->count += $order->count;
+			$sell->summ += $order->summ-$order->fee;
+			$sell->fee += $order->fee;
+		}
+		else
+		{
+			$sell = new Sell();
+			$sell->buy_id = $buy->id;
+			$sell->price = $order->price;
+			$sell->count = $order->count;
+			$sell->summ = $order->summ - $order->fee;
+			$sell->fee = $order->fee;
+			$sell->income = ($order->summ-$buy_summ)-$sell->fee;
+			$sell->dtm = $order->close_dtm;		
+		}
+		
 		$sell->save();
 	
 		return $sell;
+	}
+	
+	public static function getNotBuyed()
+	{
+	
+		$sql = "
+					SELECT
+							s.*
+					FROM `sell` s
+					left join `order` o on o.sell_id = s.id
+					where
+						s.buyed < s.count
+						and
+						o.id is null						
+					order by price
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+	
+	
+		$list=Sell::model()->findAllBySql($sql);
+	
+		//if (sizeof($list)) Dump::d($list[0]->attributes);
+	
+		return($list);
 	}
 	
 	
