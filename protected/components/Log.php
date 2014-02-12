@@ -64,7 +64,7 @@ class Log {
 		$bot = Bot::get_Instance();
 		
 		// Не пишем файл при дебаге
-		if (YII_DEBUG) return;
+		//if (YII_DEBUG) return;
 		
 		$dtm = date('Y-m-d H:i:s', $bot->curtime);
 	

@@ -140,10 +140,12 @@ class Order extends CActiveRecord
 	
 	public function assignObj($obj)
 	{	
-			if (get_class($obj) == 'buy')
+		
+		
+			if (get_class($obj) == 'Buy')
 				$this->buy_id = $obj->id;
-			elseif (get_class($obj) == 'sell')
-			{				
+			elseif (get_class($obj) == 'Sell')
+			{	
 				$this->sell_id = $obj->id;				
 			}
 			

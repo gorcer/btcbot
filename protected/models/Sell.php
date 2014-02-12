@@ -159,13 +159,10 @@ class Sell extends CActiveRecord
 		$sql = "
 					SELECT
 							s.*
-					FROM `sell` s
-					left join `order` o on o.sell_id = s.id
+					FROM `sell` s					
 					where
-						s.buyed < s.count
-						and
-						o.id is null						
-					order by price
+						s.buyed < s.summ+s.income												
+					order by price desc
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 	
