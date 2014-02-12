@@ -203,6 +203,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 
+		$exs = Exchange::getAll();
 		
 		$sell = new Sell();
 		$sell->buy_id=0;
@@ -211,7 +212,7 @@ class SiteController extends Controller
 		$sell->summ = 14000;
 		$sell->count=$sell->summ / $sell->price;
 		$sell->income = 0;
-		$sell->dtm = '2014-01-01';
+		$sell->dtm = $exs[0]['dt'];
 		$sell->buyed=0;
 		$sell->save();
 		
@@ -220,7 +221,7 @@ class SiteController extends Controller
 		
 		$min_balance = false;;
 				
-		$exs = Exchange::getAll();
+		
 		$cnt=0;
 		foreach($exs as $exchange)
 		{

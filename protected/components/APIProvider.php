@@ -19,7 +19,7 @@ class APIProvider {
 	
 	private static $self=false;
 	private $activeOrders;
-	public $balance=50000;
+	public $balance=14000;
 	private $balance_btc=0;
 	
 	public static $pairs = array('btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd', 'ltc_btc');
