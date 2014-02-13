@@ -19,7 +19,7 @@ class APIProvider {
 	
 	private static $self=false;
 	private $activeOrders;
-	public $balance=14000;
+	public $balance;
 	private $balance_btc=0;
 	
 	public static $pairs = array('btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd', 'ltc_btc');
@@ -29,6 +29,11 @@ class APIProvider {
 		if (!self::$self)
 			self::$self = new APIProvider();
 		return self::$self;
+	}
+	
+	public function __construct()
+	{
+		$this->balance = Bot::start_balance;
 	}
 	
 	private function getInfoVirtual()

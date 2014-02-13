@@ -183,7 +183,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
-		Status::setParam('balance', 14000);
+		Status::setParam('balance', Bot::start_balance);
 		Status::setParam('balance_btc', 0);
 		
 	}
@@ -209,7 +209,7 @@ class SiteController extends Controller
 		$sell->buy_id=0;
 		$sell->price=35000;
 		$sell->fee = 0;		
-		$sell->summ = 14000;
+		$sell->summ = Bot::start_balance;;
 		$sell->count=$sell->summ / $sell->price;
 		$sell->income = 0;
 		$sell->dtm = $exs[0]['dt'];

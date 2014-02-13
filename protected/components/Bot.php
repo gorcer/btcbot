@@ -42,6 +42,8 @@ class Bot {
 	
 	const freeze_warning_income = 0.005; // доход при котором есть шанс вморозить деньги, считается при падении
 	
+	const start_balance = 14000;
+	
 	public function __construct($exchange=false)
 	{
 		if (!$exchange)
@@ -616,7 +618,7 @@ class Bot {
 			// Расчитываем обратную прибыль						
 			$cnt = self::buy_value; // кол-во
 			$cost = $this->current_exchange->buy * $cnt; // стоимость
-			$summ = $sell->summ + $sell->income;
+			$summ = $sell->summ + $sell->income - $sell->buyed;
 			
 			// Если после покупки не останется денег на ещё одну такую же, то берем на все.
 			if ($cost * 2 > $summ) { 
@@ -635,14 +637,7 @@ class Bot {
 			$income = $old_cost - $cost; // Доход 667.23 - 633 = 34.23
 
 			$need_income = $old_cost * $this->getMinIncome($sell->dtm);
-				
-			echo '$old_price:'.$sell->price.'<br/>';
-			echo '$price:'.$this->current_exchange->buy.'<br/>';
-			echo '$income:'.$income.'<br/>';
-			echo '$need_income:'.$need_income.'<br/>';
-			echo '$cnt:'.$cnt.'<br/>';
-			echo '$cost:'.$cost.'<br/><br/>';
-			
+						
 			// Достаточно ли заработаем
 			if ($income < $need_income)
 			{
@@ -650,7 +645,18 @@ class Bot {
 				continue;
 			}
 
+
+			echo '$old_price:'.$sell->price.'<br/>';
+			echo '$price:'.$this->current_exchange->buy.'<br/>';
+			echo '$$summ:'.$summ.'<br/>';
+			echo '$income:'.$income.'<br/>';
+			echo '$need_income:'.$need_income.'<br/>';
+			echo '$cnt:'.$cnt.'<br/>';
+			echo '$cost:'.$cost.'<br/><br/>';
+			
 			echo 'Покупаем:'.$cnt.'<br/>';
+			
+			
 			
 				// Покупаем
 				if ($this->startBuy($sell, $cnt, $reason))	
@@ -976,6 +982,8 @@ class Bot {
 				
 			Log::Add('Всего заработано: '.$this->total_income, 1);
 		}
+		
+		
 		
 	}
 	
