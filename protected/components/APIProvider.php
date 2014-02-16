@@ -22,7 +22,7 @@ class APIProvider {
 	public $balance;
 	private $balance_btc=0;
 	
-	public static $pairs = array('btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd', 'ltc_btc');
+	public static $pairs = array('btc_usd', 'btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd', 'ltc_btc');
 	
 	public static function get_Instance()
 	{
