@@ -28,7 +28,7 @@ class Bot {
 
 	
 	const min_order_val = 0.011; // Мин. сумма покупки
-	const buy_value = 0.02; //0.02; // Сколько покупать
+	const buy_value = 0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
@@ -39,7 +39,7 @@ class Bot {
 	
 	const freeze_warning_income = 0.005; // доход при котором есть шанс вморозить деньги, считается при падении
 	
-	const start_balance = 14000;
+	const start_balance = 400; //$
 	
 	public function __construct($exchange=false)
 	{
@@ -56,7 +56,7 @@ class Bot {
 		$this->total_income=0;
 				
 		$this->api = APIProvider::get_Instance();
-		$this->analize = new Rempel($this);
+		$this->analize = new Rempel();
 		
 		
 		self::$self = $this;
@@ -69,14 +69,6 @@ class Bot {
 		return self::$self;
 	}
 
-	/**
-	 * Формирует список треков на которых выгодно покупать
-	 * @param unknown_type $tracks
-	 * @return multitype:unknown
-	 */
-	
-	
-	
 	// Создание отложенного ордера (если сразу не купили)
 	private function createOrderRemains($result, $price, $type, $reason, $obj=false)
 	{
@@ -84,8 +76,7 @@ class Bot {
 		$order->price = $price;
 		$order->count = $result['remains'];
 		$order->summ = $order->count * $price;
-		
-		
+
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
 			$order->fee = $order->count*self::fee;
@@ -114,7 +105,6 @@ class Bot {
 		$order->count = $result['received'];
 		$order->summ = $order->count * $price;
 		
-		
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
 			$order->fee = $order->count*self::fee;
@@ -132,8 +122,6 @@ class Bot {
 		$order->close_dtm = $this->current_exchange->dtm;
 		
 		$order->save();
-		
-		
 		
 		return ($order);
 	}
@@ -423,21 +411,14 @@ class Bot {
 			$cost = $this->current_exchange->buy * $cnt; // стоимость
 			$summ = $sell->summ + $sell->income - $sell->buyed;
 			
-			// Если после покупки не останется денег на ещё одну такую же, то берем на все.
+			// Если после покупки не останется денег на ещё одну такую же, то берем на все
 			if ($cost * 2 > $summ) { 
 				$cost = $summ; 
 				$cnt = $cost / $this->current_exchange->buy;
 			}
-			
 			$old_cost = $sell->price*$cnt; // Стоимость по старой цене
 			
-			/*
-			$summ = $sell->summ + $sell->income; // Сумма покупки 634.93
-			$cnt = ($summ / $this->current_exchange->buy) *(1-self::fee); // Покупаемое количество 0,0209821238410596
-			$curcost = $cnt*$this->current_exchange->buy; // Итоговая цена 633.66
-			*/
-			
-			$income = $old_cost - $cost; // Доход 667.23 - 633 = 34.23
+			$income = $old_cost - $cost;
 
 			$need_income = $old_cost * $this->getMinIncome($sell->dtm);
 						
@@ -447,20 +428,6 @@ class Bot {
 				if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$summ.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
 				continue;
 			}
-
-/*
-			echo '$old_price:'.$sell->price.'<br/>';
-			echo '$price:'.$this->current_exchange->buy.'<br/>';
-			echo '$$summ:'.$summ.'<br/>';
-			echo '$income:'.$income.'<br/>';
-			echo '$need_income:'.$need_income.'<br/>';
-			echo '$cnt:'.$cnt.'<br/>';
-			echo '$cost:'.$cost.'<br/><br/>';
-			
-			echo 'Покупаем:'.$cnt.'<br/>';
-*/
-			
-			
 				// Покупаем
 				if ($this->startBuy($sell, $cnt, $reason))	
 				{	

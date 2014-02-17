@@ -11,6 +11,9 @@
  */
 class Exchange extends CActiveRecord
 {
+	
+	const def_curr = 'btc_usd';
+	
 	/**
 	 * Returns the static model of the specified AR class.
 	 * @param string $className active record class name.
@@ -132,7 +135,7 @@ class Exchange extends CActiveRecord
 		return($result);
 	}
 	
-	public static function getLast($pair='btc_rur')
+	public static function getLast($pair=self::def_curr)
 	{
 		$buy = Exchange::model()->find(array(
 				'condition' => 'pair="'.$pair.'"',				
@@ -141,7 +144,7 @@ class Exchange extends CActiveRecord
 		return $buy;
 	}
 	
-	public static function getAll($pair='btc_rur', $format = '%Y-%m-%d %H:%i:%s')
+	public static function getAll($pair=self::def_curr, $format = '%Y-%m-%d %H:%i:%s')
 	{
 		$connection = Yii::app()->db;
 		$sql = "
@@ -171,7 +174,7 @@ class Exchange extends CActiveRecord
 	}
 	
 	
-	public static function getAllByDt($pair='btc_rur', $from, $to, $format = '%Y-%m-%d %H:%i:%s')
+	public static function getAllByDt($pair=self::def_curr, $from, $to, $format = '%Y-%m-%d %H:%i:%s')
 	{
 		
 		
@@ -228,7 +231,7 @@ class Exchange extends CActiveRecord
 		return ($val);
 	}
 	
-	public static function getAvg($name, $from, $to, $pair='btc_rur')
+	public static function getAvg($name, $from, $to, $pair=self::def_curr)
 	{
 		$connection = Yii::app()->db;
 		$sql = "
@@ -255,7 +258,7 @@ class Exchange extends CActiveRecord
 
 	// Ищем ближайшие точки к указанным
 
-	public static function getAvgByNear($name, $dt, $pair='btc_rur')
+	public static function getAvgByNear($name, $dt, $pair=self::def_curr)
 	{
 		// Ищем влево
 		$connection = Yii::app()->db;
@@ -297,7 +300,7 @@ class Exchange extends CActiveRecord
 		return(($val_f + $val_t)/2);
 	}
 	
-	public static function updatePrices($pair='btc_rur')
+	public static function updatePrices($pair=self::def_curr)
 	{
 		$BTCeAPI = BTCeAPI::get_Instance();
 		

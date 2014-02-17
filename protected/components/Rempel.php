@@ -9,7 +9,7 @@
 class Rempel {
 	
 	private static $self=false;
-	private $bot=false;
+	
 
 	private $sell_periods; // Определение периодов покупки
 	private $buy_periods; // Определение периодов продажи
@@ -27,10 +27,8 @@ class Rempel {
 		return self::$self;
 	}
 	
-	public function __construct($bot)
-	{
-		$this->bot = $bot;
-		
+	public function __construct()
+	{	
 		// Периоды анализа графика для покупки и продажи (в сек.)
 		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);
 		//$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60); 2127/51028

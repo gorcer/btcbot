@@ -207,7 +207,7 @@ class SiteController extends Controller
 		
 		$sell = new Sell();
 		$sell->buy_id=0;
-		$sell->price=35000;
+		$sell->price=1000;
 		$sell->fee = 0;		
 		$sell->summ = Bot::start_balance;;
 		$sell->count=$sell->summ / $sell->price;
@@ -245,7 +245,7 @@ class SiteController extends Controller
 		//$this->render('index');
 	}
 	
-	public function actionBuy()
+	/*public function actionBuy()
 	{
 		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
@@ -316,12 +316,12 @@ class SiteController extends Controller
 		}	
 			
 		$bot->checkOrders();
-	}
+	}*/
 	
 	public function actionChartByTrack($dt)	
 	{		
 		
-		$exch = Exchange::getAllByDt('btc_rur', date('Y-m-d H:i:s', strtotime($dt." - 2 days")),date('Y-m-d H:i:s', strtotime($dt." + 2 days")));
+		$exch = Exchange::getAllByDt('btc_usd', date('Y-m-d H:i:s', strtotime($dt." - 2 days")),date('Y-m-d H:i:s', strtotime($dt." + 2 days")));
 		
 		foreach($exch as $item)
 		{
@@ -331,8 +331,8 @@ class SiteController extends Controller
 		}
 		
 		$curtime = strtotime($dt);
-		$bot = new Bot();
-		$tracks = $bot->getAllTracks($curtime, 'buy', $bot->buy_imp_dif);
+		$analize = Rempel::get_Instance();
+		$tracks = $analize->getAllTracks($curtime, 'buy');
 		
 		$tracks_formed = array();
 		foreach($tracks as $track)
@@ -355,7 +355,7 @@ class SiteController extends Controller
 						));		
 	}
 	
-	public function actionChart($type='btc_rur')
+	public function actionChart($type=Exchange::def_curr)
 	{	
 		$buy = new Buy();
 		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
@@ -396,7 +396,7 @@ class SiteController extends Controller
 		
 		
 				
-		if ($type == 'btc_rur')
+		if ($type == Exchange::def_curr)
 		{
 		
 			// Покупки
