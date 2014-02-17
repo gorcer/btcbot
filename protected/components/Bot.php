@@ -15,28 +15,25 @@ class Bot {
 	public $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	public $buy_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
-	public $sell_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
-	
-	private $sell_periods; // Определение периодов покупки
-	private $buy_periods; // Определение периодов продажи
+
 	
 
+
 	private static $self=false;
-	
+	private $analize;	
 	public $api; 
 	
 	private $tomail=array(); // Собираем сюда то что нужно отправить на email;
 	
 
+	
 	const min_order_val = 0.011; // Мин. сумма покупки
 	const buy_value = 0.02; //0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
 	const min_income = 0.04; // Мин. доход - 4%
-	const income_per_day = 0.0027; // доход в день для залежных покупок, в расчете на 100% в год
-	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
+	const income_per_day = 0.0027; // доход в день для залежных покупок, в расчете на 100% в год	
 	const order_ttl = 180; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
 	
@@ -54,18 +51,12 @@ class Bot {
 		
 		$this->balance = Status::getParam('balance');
 		$this->balance_btc = Status::getParam('balance_btc');		
-		$this->buy_imp_dif = 0.005;// Шаг при анализе покупки 5% //150;
-		$this->sell_imp_dif = 0.007; // Шаг при анализе продажи 7%
 		
 		$this->order_cnt=0;		
 		$this->total_income=0;
-		
-		// Периоды анализа графика для покупки и продажи (в сек.)
-		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
-		//$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60); 2127/51028
-		$this->sell_periods = array(	  30*60, 60*60, 2*60*60,);
-		
+				
 		$this->api = APIProvider::get_Instance();
+		$this->analize = new Rempel($this);
 		
 		
 		self::$self = $this;
@@ -77,187 +68,13 @@ class Bot {
 			self::$self = new Bot();
 		return self::$self;
 	}
-	
-	/**
-	 * Получает изображение графика за период - -0+
-	 * @param  $period - период расчета в сек.
-	 * @param $name - buy, sell
-	 */
-	public function getGraphImage($curtime, $period, $name, $imp_dif)
-	{		
-		// @todo переделать - диапазоны расчитывать более точно
-		
-		$step = round($period/3);
-		$from_tm = $curtime-$period;
-		$from = date('Y-m-d H:i:s', $from_tm);
-		
-		
-		if ($step/2 <= 60*60)
-			$smash = $step/2;
-		else 
-			$smash = 60*60; // 10 минут вокруг каждой точки для усреднения колебаний
-		
-		$track="";
-		$prev=false;
-		for($i=0;$i<=3;$i++)
-		{			 			
-			$step_ut = $from_tm+$step*$i;
-			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
-			
-			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$smash/*$step/2*/); // Вокруг каждой точки отмеряем назад и вперед половину шага
-			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$smash/*$step/2*/);		
-			
-			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
-			
-			
-			if (!$val) 
-			{
-				
-				$val = Exchange::getAvgByNear($name, $step_dt);
-				//Log::Add('Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t.' использую ближайшее значение '.$val);
-				if (!$val) continue;
-			}
 
-					
-			
-			$list[]=array(
-					'dtm'=>$step_dt,
-					'val'=>$val,
-			);				
-			
-			if (!$prev)
-			{
-				$prev = $val;
-				continue;
-			}		
-			
-			// Определяем направление
-			$dif = (1-$prev/$val);			
-			if ($dif<(-1*$imp_dif)) $track.="-";
-			elseif ($dif>$imp_dif) $track.="+";
-			else $track.="0";		
-			
-			$prev = $val;
-		}
-		
-		$result = array(
-				'track'=>$track,
-				'from' => $from,
-				'step' => $step,
-				'period'=>$period,			
-				'items' =>$list,	
-				);
-		
-		return($result);
-	} 
-	
-	
 	/**
 	 * Формирует список треков на которых выгодно покупать
 	 * @param unknown_type $tracks
 	 * @return multitype:unknown
 	 */
-	private function getBuyTracks($tracks)
-	{
-		$result = array();
-		foreach($tracks as $track)
-		{
-			
-			switch($track['track']){
-				case '-0+':								 // \_/
-				case '--+':								 // \\/
-							// Если трек при падении не вернулся в исходную точку
-							if ((1 - $track['items'][3]['val'] / $track['items'][0]['val']) > $this->buy_imp_dif)	
-							{						
-								$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
-								$result[] = $track;
-							} 
-							else 
-								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][0]['val'].', а сейчас уже '.$track['items'][3]['val']);
-										
-							break; 
-				case '00+':	// __/
-							// Применяем только к длинным трекам
-							if ($track['period']>self::long_time)
-							{
-								$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
-								$result[] = $track;
-							} 
-							break; 
-				case '0-+':							   // _\/
-							// Если трек при падении не вернулся в исходную точку
-							if((1 - $track['items'][3]['val'] / $track['items'][1]['val']) > $this->buy_imp_dif)
-							{
-								$track['pit']=Exchange::getPit($track['items'][0]['dtm'], $track['items'][3]['dtm']);
-								$result[] = $track;
-							}
-							else
-								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][1]['val'].', а сейчас уже '.$track['items'][3]['val']);
-							
-							break; 
-							
-			// Если есть долгосрочное падение, не покупать 
-				case '---':								// \\\
-				case '+--':								// /\\
-				case '0--':								// /\\
-							if ($track['period']>self::long_time)
-							 {
-								Log::notbuy('Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
-								return false;								
-							}
-							break;				
-			}			
-		}		
-		return $result;		
-	}
 	
-	/**
-	 * Формирует список треков на которых выгодно продавать
-	 * @param unknown_type $tracks
-	 * @return multitype:unknown
-	 */
-	private function getSellTracks($tracks)
-	{
-		$result = array();
-		foreach($tracks as $track)
-		{			
-			switch($track['track']){
-				case '+0-':	 // /-\				
-				case '++-':	 // //\
-							$track['hill'] = Exchange::getHill($track['items'][0]['dtm'], $track['items'][3]['dtm']);
-							$result[] = $track; 
-							break;
-			//	case '00-':	$result[] = $track; break; // --\
-			//	case '0+-':	$result[] = $track; break; // -/\				
-			}
-			
-			
-		}
-		return $result;
-	}
-	
-	/**
-	 * Формирует список треков на которых может быть вынужденная продажа
-	 * @param unknown_type $tracks
-	 * @return multitype:unknown
-	 */
-	private function getNecessarySellTracks($tracks)
-	{
-		$result = array();
-		foreach($tracks as $track)
-		{			
-			switch($track['track']){
-				case '---':	$result[] = $track; break;
-				case '0--':	$result[] = $track; break;
-				case '-0-':	$result[] = $track; break;
-				/*
-				case '+0-':	$result[] = $track; break;
-				case '0+-':	$result[] = $track; break;
-				*/
-			}
-		}
-		return $result;
-	}
 	
 	
 	// Создание отложенного ордера (если сразу не купили)
@@ -488,16 +305,6 @@ class Bot {
 		$this->order_cnt++;
 	}
 	
-	
-	public function getAllTracks($curtime, $type, $imp_diff)
-	{
-		$all_tracks=array();
-		foreach($this->buy_periods as $period)
-			$all_tracks[] = $this->getGraphImage($curtime, $period, $type, $imp_diff);
-		
-		return $all_tracks;
-	}
-	
 	public function NeedBuy()
 	{		
 		
@@ -514,8 +321,6 @@ class Bot {
 		}
 		else
 			$reason['balance']='Хватает денег '.$this->balance.'>'.($this->current_exchange->buy*self::buy_value); 
-		
-		
 	
 		/*
 		// Если текущая цена выше средней не покупаем
@@ -538,39 +343,38 @@ class Bot {
 			$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;			
 			$diff_buy = (1 - $this->current_exchange->buy / $lastBuy->price);
 			
-			if ($lastSell) 
-				$diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
+			//if ($lastSell)  $diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
 
 			if ( $tm > $this->curtime 								// была ли уже покупка за последнее время 
-				&& $diff_buy < $this->buy_imp_dif  					// и цена была более выгодная
-				&&  (!$lastSell  || $lastSell->dtm < $lastBuy->dtm	// и небыло до этого продажи
+				&& $diff_buy < $this->analize->buy_imp_dif  					// и цена была более выгодная
+				/*&&  (!$lastSell  || $lastSell->dtm < $lastBuy->dtm	// и небыло до этого продажи
 						|| $diff_sell < $this->buy_imp_dif	// или была но цена была ниже текущей цены покупки
-					)
+					)*/
 				)
 			{	
 					// Не покупаем		
-					Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff_buy.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'%.');
-					if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
+					Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff_buy.'% , мин. порог для покупки '.($this->analize->sell_imp_dif*100).'%.');
+					//if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
 					return false;
 				
 			}
 			else {
-				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff_buy.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ';
+				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff_buy.'% , мин. порог для покупки '.($this->analize->sell_imp_dif*100).'% ';
 				if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm.' и цена последней покупки '.$lastSell->price.' выше текущей '.$this->current_exchange->buy;
 			}
 		}		
 		
 		
-		$all_tracks = $this->getAllTracks($curtime, 'buy', $this->buy_imp_dif);
+		$all_tracks = $this->analize->getAllTracks($curtime, 'buy');
 		
 		
 		//Анализируем треки
 		$tracks=array();
-		$tracks = $this->getBuyTracks($all_tracks);
+		$tracks = $this->analize->getBuyTracks($all_tracks);
 		
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
-			Log::notbuy('Не найдено подходящих для покупки треков'/*.Dump::d($all_tracks, true)*/);			
+			Log::notbuy('Не найдено подходящих для покупки треков');			
 			return false;
 		}
 		
@@ -605,7 +409,6 @@ class Bot {
 			// Берем первый удачный трек и по нему проводим покупку
 			$first_track = array_pop($tracks);
 			$reason['period'] = $first_track['period'];
-			
 			
 			//Смотрим, с какой продажи покупать
 			$sells = Sell::getNotBuyed();			
@@ -645,7 +448,7 @@ class Bot {
 				continue;
 			}
 
-
+/*
 			echo '$old_price:'.$sell->price.'<br/>';
 			echo '$price:'.$this->current_exchange->buy.'<br/>';
 			echo '$$summ:'.$summ.'<br/>';
@@ -655,13 +458,12 @@ class Bot {
 			echo '$cost:'.$cost.'<br/><br/>';
 			
 			echo 'Покупаем:'.$cnt.'<br/>';
-			
+*/
 			
 			
 				// Покупаем
 				if ($this->startBuy($sell, $cnt, $reason))	
-				{				
-					
+				{	
 					// Резервируем время покупки по резерву 
 					Exchange::ReservePeriod($first_track['period'], $this->curtime);
 					// Резервируем яму				
@@ -681,7 +483,6 @@ class Bot {
 		// Составляем причину покупки
 		$reason=array();
 		$curtime = $this->curtime; //Дата операции
-			
 
 		//Смотрим, что продать
 		//$bought = Buy::model()->findAll(array('condition'=>'sold=0 and order_id=0'));
@@ -704,24 +505,19 @@ class Bot {
 		*/		
 		
 		//Перебираем периоды		
-		$all_tracks=array();
-		foreach($this->sell_periods as $period)		
-			$all_tracks[] = $this->getGraphImage($curtime, $period, 'sell', $this->sell_imp_dif);		
-		
+		$all_tracks=$this->analize->getAllTracks($curtime, 'sell');
 		
 		// Совершаем вынужденные продажи
 		$this->NecesarySell($all_tracks, $bought);
 		
 		//Анализируем треки
-		$tracks = $this->getSellTracks($all_tracks);		
+		$tracks = $this->analize->getSellTracks($all_tracks);		
 		
 		if (sizeof($tracks) == 0)
 		{	
 			Log::notsell('Нет подходящих треков для продажи');
 			return false;
 		}
-		
-		
 		
 		// Проверка прошлой продажи
 		$lastSell = Sell::getLast();
@@ -734,7 +530,7 @@ class Bot {
 			$lastBuy = Buy::getLast();
 			
 			if ($tm>$this->curtime // Если с прошлой покупки не вышло время
-					&& $diff < $this->sell_imp_dif // и цена не лучше
+					&& $diff < $this->analize->sell_imp_dif // и цена не лучше
 					&& (!$last_hill || $last_hill == $first_track['hill']['dtm'])// и прошлая продажа была на той же горке
 					&& (!$lastBuy || $lastBuy->dtm < $lastSell->dtm) // и с последней продажи небыло покупок
 			)
@@ -747,7 +543,7 @@ class Bot {
 			}
 			else
 			{
-				$reason['last_sell'] = 'Прошлая продажа была '.(($this->curtime-strtotime($lastSell->dtm))/60).' мин. назад (допустимы продажи раз в '.(self::min_sell_interval/60).' мин. при отсутствии ощутимого роста цены), цена отличалась от текущей на '.($diff*100).'%, минимальное отличие должно быть '.($this->sell_imp_dif*100).'% ';
+				$reason['last_sell'] = 'Прошлая продажа была '.(($this->curtime-strtotime($lastSell->dtm))/60).' мин. назад (допустимы продажи раз в '.(self::min_sell_interval/60).' мин. при отсутствии ощутимого роста цены), цена отличалась от текущей на '.($diff*100).'%, минимальное отличие должно быть '.($this->analize->sell_imp_dif*100).'% ';
 				if ($last_hill) $reason['last_hill'] = 'Прошлая продажа была на горке '.$last_hill.', а текущая на горке '.$first_track['hill']['dtm']; 
 			}
 		}		
@@ -758,7 +554,6 @@ class Bot {
 		// Ищем выгодные продажи
 		foreach($bought as $buy)
 		{
-			
 			// Цена продажи
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
 									
@@ -813,7 +608,7 @@ class Bot {
 	{
 		$reason = array();
 		//Анализируем треки		
-		$tracks = $this->getNecessarySellTracks($all_tracks);
+		$tracks = $this->analize->getNecessarySellTracks($all_tracks);
 		
 		if (sizeof($tracks) == 0)
 		{
