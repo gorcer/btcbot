@@ -20,9 +20,8 @@ How to try it
 
  How to start earn money
  =======================
- 
- # In protected/components/APIProvider.php set constant isVirtual = false;
- # Public code on server
+ 1. In protected/components/APIProvider.php set constant isVirtual = false;
+ 2. Public code on server
  3. Run migrations
  4. In cron add job which every 3 minutes executes - yiic cron run
  5. Enjoy
