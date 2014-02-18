@@ -1,8 +1,8 @@
 Trading bot for btc-e.com
 =========================
 
-This bot can analize stock chart and determine when buy and when sell.
-The strategy is buy bitcoins in a grow and sell in a fall, bitcoins sells only with some profit, if no profit, then bot waiting and not selling.
+This bot can analize stock chart and determine when buy and sell.
+The strategy is buys bitcoins in a grow and selling in a fall, bitcoins sells only with some profit, if no profit, then bot waiting and not selling.
 In this version it's work only with btc_rur pair.
 Powered by Yii.
 
@@ -15,13 +15,13 @@ Requirements
 How to try it?
 ===============
 1. Clone repository to your system
-2. Create database with utf8_general ci collation 
+2. Create database with utf8_general_ci collation 
 3. Go to config/main.php, set your database setting for production and btc-e key info (take it in your profile in btc-e.com)
 4. Go to config/main_local.php, set your database setting for test and develop on local
 5. Start console and go to /protected/
 6. Start migration - yiic migrate --interactive=0
 7. Start bot to demonstrate work on last period - yiic cron test
-8. Configure virtual hosts to profect folder from btcbot.loc
+8. Configure virtual hosts to project folder from btcbot.loc
 9. Go to http://btcbot.loc/index.php?r=site/chart to see result. It's looks like this:
 ![](demo.png)
 
