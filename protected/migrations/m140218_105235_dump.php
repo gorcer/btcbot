@@ -14,8 +14,7 @@ class m140218_105235_dump extends CDbMigration
 		));
 		
 		$this->createTable('buy', array(
-				'id' => 'pk',
-				'count' => 'decimal(30,6)',
+				'id' => 'pk',				
 				'price' => 'decimal(30,6)',
 				'fee' => 'decimal(30,6)',
 				'count' => 'decimal(30,6)',
@@ -29,6 +28,7 @@ class m140218_105235_dump extends CDbMigration
 				'buy_id' => 'int(11) NOT NULL',
 				'price' => 'decimal(30,6)',
 				'fee' => 'decimal(30,6)',
+				'count' => 'decimal(30,6)',
 				'summ' => 'decimal(30,6)',
 				'income' => 'decimal(30,6)',				
 				'dtm' => 'timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',				

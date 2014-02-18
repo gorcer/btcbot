@@ -22,7 +22,7 @@ class Log {
 			file_put_contents($fn_all, $text, FILE_APPEND);
 		}
 		else
-			echo '['.date('Y-m-d H:i:s', $dt).'] '.$data.PHP_EOL;
+			echo '['.date('Y-m-d H:i:s', $dt).'] '.$data."\r\n";
 	} 
 	
 	

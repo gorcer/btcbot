@@ -18,7 +18,7 @@ class CronCommand extends CConsoleCommand {
 		Status::setParam('balance_btc', 0);
 		
 				
-		$exs = Exchange::getAllByDt('btc_rur','2013-12-01', '2014-01-06');
+		$exs = Exchange::getAllByDt('btc_rur','2013-12-16', '2014-01-06');
 		$cnt=0;
 		foreach($exs as $exchange)
 		{
@@ -37,6 +37,21 @@ class CronCommand extends CConsoleCommand {
 		echo '<b>Elapsed time: '.(($end-$start)/60).' min.<br/>';
 		echo '<b>Steps count: '.($cnt).'<br/>';
 
+	}
+	
+	public function actionRun()
+	{
+		// Пересчитываем рейтинги
+		$key = 'cron.bot.run.btc_rur';
+		if(Yii::app()->cache->get($key)===false)
+		{
+			Yii::app()->cache->set($key, true, 60*3);
+		
+			// Запускаем бота для анализа и сделок
+			$btc_rur = Exchange::updatePrices('btc_rur');
+			$bot = new Bot($btc_rur);
+			$bot->run();
+		}
 	}
 
 
