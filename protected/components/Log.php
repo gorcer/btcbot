@@ -22,7 +22,7 @@ class Log {
 			file_put_contents($fn_all, $text, FILE_APPEND);
 		}
 		else
-			echo '<i>['.date('Y-m-d H:i:s', $dt).']</i> '.$data.'<br/>';
+			echo '['.date('Y-m-d H:i:s', $dt).'] '.$data.PHP_EOL;
 	} 
 	
 	
@@ -37,7 +37,7 @@ class Log {
 		if (!YII_DEBUG)
 			file_put_contents($fn, $text, FILE_APPEND);
 		else			
-			echo '<i>'.$cdt.'</i> : '.$text.' <br/>';
+			echo 'ERROR '.$cdt.': '.$text.PHP_EOL;
 	}
 	
 	public static function notbuy($reason)

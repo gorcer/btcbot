@@ -19,8 +19,9 @@ class BTCeAPI {
     protected $RETRY_FLAG = false;
     
     public function __construct($base_noonce = false) {
-        $this->api_key = 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H';
-        $this->api_secret = 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66';
+        $this->api_key = Yii::app()->params['api_key'];
+        $this->api_secret = Yii::app()->params['api_secret'];
+        
         if($base_noonce === false) {
             // Try 1?
             $this->noonce = time();

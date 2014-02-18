@@ -58,7 +58,7 @@ return array(
 		// uncomment the following to use a MySQL database
 		
 		'db'=>array(
-			'connectionString' => 'mysql:host=gorcercom.fatcowmysql.com;dbname=btcbot',
+			'connectionString' => 'mysql:host=localhost;dbname=btcbot',
 			'emulatePrepare' => true,
 			'username' => 'btcbot',
 			'password' => '159357',
@@ -76,14 +76,7 @@ return array(
 						'class' => 'CFileLogRoute',
 						'logFile' => 'yii-error.log',						
 						'levels' => 'error, warning, info',
-				),
-				array(
-						'class' => 'CEmailLogRoute',
-						'categories' => 'error',
-						'emails' => array('gorcer@gmail.com'),
-						'sentFrom' => 'gorcer@gorcer.com',
-						'subject' => 'Error at btcbot.gorcer.com'
-				),
+				),				
 				/*array(
 						'class'=>'ext.yii-debug-toolbar.YiiDebugToolbarRoute',
 						'ipFilters'=>array('127.0.0.1'),
@@ -102,6 +95,8 @@ return array(
 	// using Yii::app()->params['paramName']
 	'params'=>array(
 		// this is used in contact page
-		'adminEmail'=>'gorcer@gmail.com',
+		'adminEmail'=>'main@mail.com',
+		'api_key' => '',
+		'api_secret'=>'',
 	),
 );

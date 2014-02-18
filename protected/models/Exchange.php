@@ -105,33 +105,6 @@ class Exchange extends CActiveRecord
 		return($command->queryAll());
 	}
 	
-	public static function getTestData()
-	{
-		
-		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
-		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
-		Status::setParam('balance', 1000);
-		
-		
-		$result[]=array('dt'	=>	'2013-01-01',		'buy'	=>	5000,		'sell'	=>	5000);
-		$result[]=array('dt'	=>	'2013-01-02',		'buy'	=>	5000,		'sell'	=>	5000);
-		$result[]=array('dt'	=>	'2013-01-03',		'buy'	=>	5000,		'sell'	=>	5000);
-		$result[]=array('dt'	=>	'2013-01-04',		'buy'	=>	5000,		'sell'	=>	5000);
-		$result[]=array('dt'	=>	'2013-01-05',		'buy'	=>	5000,		'sell'	=>	5000);
-		$result[]=array('dt'	=>	'2013-01-06',		'buy'	=>	5110,		'sell'	=>	5100);
-		$result[]=array('dt'	=>	'2013-01-07',		'buy'	=>	5210,		'sell'	=>	5200);
-		$result[]=array('dt'	=>	'2013-01-08',		'buy'	=>	5310,		'sell'	=>	5300);
-		$result[]=array('dt'	=>	'2013-01-09',		'buy'	=>	5410,		'sell'	=>	5400);
-		$result[]=array('dt'	=>	'2013-01-10',		'buy'	=>	5510,		'sell'	=>	5500); //+1
-		$result[]=array('dt'	=>	'2013-01-11',		'buy'	=>	6010,		'sell'	=>	6000); //0
-		$result[]=array('dt'	=>	'2013-01-11',		'buy'	=>	6010,		'sell'	=>	6000); //0
-		$result[]=array('dt'	=>	'2013-01-12',		'buy'	=>	5910,		'sell'	=>	5900); //-1
-		$result[]=array('dt'	=>	'2013-01-13',		'buy'	=>	5810,		'sell'	=>	5800); 
-		$result[]=array('dt'	=>	'2013-01-14',		'buy'	=>	5710,		'sell'	=>	5700);
-		$result[]=array('dt'	=>	'2013-01-15',		'buy'	=>	5610,		'sell'	=>	5600);
-		return($result);
-	}
-	
 	public static function getLast($pair='btc_rur')
 	{
 		$buy = Exchange::model()->find(array(
@@ -139,6 +112,32 @@ class Exchange extends CActiveRecord
 				'order' => 'dtm desc'
 		));
 		return $buy;
+	}
+	
+	public static function getAllByDt($pair='btc_rur', $from, $to, $period = '%Y-%m-%d %H:%i:%s')
+	{
+		$connection = Yii::app()->db;
+		$sql = "
+					SELECT
+						DATE_FORMAT(dtm, '".$period."') as dt, avg(buy) as buy, avg(sell) as sell
+					FROM `exchange`
+					where
+						dtm >= '2013-12-09 09:00:00'
+						/*dtm >= '2014-01-05 00:00:00'*/
+						/*dtm >= '2013-12-21 00:00:00'*/
+						and
+						pair = '".$pair."'
+					group by dt
+					order by dtm
+					limit 50000000
+					";
+		//if ($curtime == '2013-12-11 16:42:00')
+	
+		$command = $connection->createCommand($sql);
+		$list=$command->queryAll();
+		return($list);
+	
+		//return Exchange::model()->cache(60*60)->findAll(array('condition'=>'dt>"2013-12-09 10:00:02"', 'limit'=>10000000));
 	}
 	
 	public static function getAll($pair='btc_rur', $period = '%Y-%m-%d %H:%i:%s')
