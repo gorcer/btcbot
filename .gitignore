@@ -4,3 +4,4 @@
 log.html
 log_all.html
 /logs/*
+/build/*
