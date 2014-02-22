@@ -29,7 +29,20 @@ class CronCommand extends CConsoleCommand {
 		Status::setParam('balance_btc', 0);
 	
 	
-		$exs = Exchange::getAllByDt('btc_rur','2013-12-16', '2014-01-06');
+		$exs = Exchange::getAllByDt('btc_usd','2014-01-01', '2015-01-06');
+
+		$sell = new Sell();
+		$sell->buy_id=0;
+		$sell->price=1000;
+		$sell->fee = 0;
+		$sell->summ = Bot::start_balance;;
+		$sell->count=$sell->summ / $sell->price;
+		$sell->income = 0;
+		$sell->dtm = $exs[0]['dt'];
+		$sell->buyed=0;
+		$sell->save();
+		
+		
 		$cnt=0;
 		foreach($exs as $exchange)
 		{

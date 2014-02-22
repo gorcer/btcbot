@@ -203,7 +203,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 
-		$exs = Exchange::getAll();
+		$exs = Exchange::getAllByDt('btc_usd','2013-12-16', '2014-01-06');
 		
 		$sell = new Sell();
 		$sell->buy_id=0;
@@ -359,7 +359,8 @@ class SiteController extends Controller
 	{	
 		$buy = new Buy();
 		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
-		$exch = Exchange::getAll($type);
+		//$exch = Exchange::getAll($type);
+		$exch = Exchange::getAllByDt($type,'2014-01-01', '2015-01-06');
 				
 		$data_buy=array();
 		$data_sell=array();
