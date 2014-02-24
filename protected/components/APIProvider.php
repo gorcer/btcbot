@@ -40,7 +40,7 @@ class APIProvider {
 	{
 		$result = array(
 				'funds' => array (
-						'rur'=>$this->balance,
+						'usd'=>$this->balance,
 						'btc'=>$this->balance_btc,
 						)
 				);
@@ -189,7 +189,7 @@ class APIProvider {
 						'funds' => array
 						(
 								'btc' => (float)$balance_btc,
-								'rur' => (float)$balance,
+								'usd' => (float)$balance,
 						)
 				)
 		);	
@@ -231,7 +231,7 @@ class APIProvider {
 						'funds' => array
 						(
 								'btc' => (float)$balance_btc,
-								'rur' => (float)$balance,
+								'usd' => (float)$balance,
 						)
 				)
 		);
@@ -285,7 +285,7 @@ class APIProvider {
 								'funds' => array
 								(										
 										'btc' => (float)$balance_btc,										
-										'rur' => (float)$balance,									
+										'usd' => (float)$balance,									
 								)
 						)
 				);
@@ -319,7 +319,7 @@ class APIProvider {
 			(
 					88287800 => array
 					(
-							'pair' => 'btc_rur'
+							'pair' => 'btc_usd'
 							'type' => 'buy'
 							'amount' => 0.01
 							'rate' => 19157.54
@@ -386,7 +386,7 @@ class APIProvider {
 						"return" => array (
 							"order_id"=>$order->id,
 							"funds" => array (
-								"rur"=>$balance,
+								"usd"=>$balance,
 								"btc"=>$balance_btc,																
 							)
 						)

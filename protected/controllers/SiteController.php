@@ -203,7 +203,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 
-		$exs = Exchange::getAllByDt('btc_usd','2013-12-16', '2014-01-06');
+		$exs = Exchange::getAllByDt('btc_usd','2014-01-07 22:35', '2014-01-08 07:00');
 		
 		$sell = new Sell();
 		$sell->buy_id=0;

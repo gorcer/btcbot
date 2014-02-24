@@ -161,7 +161,7 @@ class Sell extends CActiveRecord
 							s.*
 					FROM `sell` s					
 					where
-						s.buyed < s.summ+s.income												
+						s.buyed < s.summ+s.income																		
 					order by price desc
 					";
 		//if ($curtime == '2013-12-11 16:42:00')

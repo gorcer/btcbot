@@ -60,9 +60,9 @@ $flags.="],
 
 <div id="container" style="height: 500px; min-width: 500px"></div>
 
-Баланс (руб.): <?php echo $status['balance']; ?><br/>
+Баланс ($): <?php echo $status['balance']; ?><br/>
 Баланс (btc): <?php echo $status['balance_btc']; ?><br/>
-Заработано (руб.): <?php echo $status['total_income']; ?><br/>
+Заработано ($): <?php echo $status['total_income']; ?><br/>
 Общие активы (руб.): <?php echo $status['total_balance']; ?><br/>
 Всего вложено (руб.): <?php echo $status['start_balance']; ?><br/>
 <br/>
@@ -116,7 +116,7 @@ $(function() {
 		    },
 
 		    title: {
-		        text: 'BTC-RUR'
+		        text: 'BTC-USD'
 		    },
 
 		    yAxis: {
