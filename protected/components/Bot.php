@@ -132,7 +132,7 @@ class Bot {
 	//	$price = $this->current_exchange->$type;
 		
 		// Пытаемся создать заказ на бирже
-		$result = $this->api->makeOrder($cnt, 'btc_rur', $type, $price);
+		$result = $this->api->makeOrder($cnt, 'btc_usd', $type, $price);
 
 		if (!$result) return false;
 		
@@ -772,7 +772,7 @@ class Bot {
 	}
 	
 	
-	public static function getAvgMargin($period, $pair='btc_rur')
+	public static function getAvgMargin($period, $pair='btc_usd')
 	{
 		$connection = Yii::app()->db;
 		$sql = "

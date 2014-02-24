@@ -66,14 +66,14 @@ class CronCommand extends CConsoleCommand {
 	public function actionRun()
 	{
 		// Пересчитываем рейтинги
-		$key = 'cron.bot.run.btc_rur';
+		$key = 'cron.bot.run.btc_usd';
 		if(Yii::app()->cache->get($key)===false)
 		{
 			Yii::app()->cache->set($key, true, 60*3);
 	
 			// Запускаем бота для анализа и сделок
-			$btc_rur = Exchange::updatePrices('btc_rur');
-			$bot = new Bot($btc_rur);
+			$btc_usd = Exchange::updatePrices('btc_usd');
+			$bot = new Bot($btc_usd);
 			$bot->run();
 		}
 	}

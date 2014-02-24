@@ -119,14 +119,14 @@ class SiteController extends Controller
 	public function actionCron()
 	{	
 		// Пересчитываем рейтинги
-		$key = 'cron.bot.run.btc_rur';
+		$key = 'cron.bot.run.btc_usd';
 		if(Yii::app()->cache->get($key)===false)
 		{	
 			Yii::app()->cache->set($key, true, 60*3);
 						
 			// Запускаем бота для анализа и сделок
-			$btc_rur = Exchange::updatePrices('btc_rur');
-			$bot = new Bot($btc_rur);
+			$exch = Exchange::updatePrices('btc_usd');
+			$bot = new Bot($exch);
 			$bot->run();
 		}
 		
@@ -159,7 +159,7 @@ class SiteController extends Controller
 		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $BTCeAPI->getPairTicker('btc_usd');
 		$ticker = $ticker['ticker'];
 	/*	
 		$exchange = new Exchange();
