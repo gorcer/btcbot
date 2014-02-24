@@ -119,7 +119,7 @@ class SiteController extends Controller
 	public function actionCron()
 	{	
 		// Пересчитываем рейтинги
-		$key = 'cron.bot.run.btc_usd';
+		$key = 'cron.bot.run.btc_usd.3';
 		if(Yii::app()->cache->get($key)===false)
 		{	
 			Yii::app()->cache->set($key, true, 60*3);
@@ -128,19 +128,23 @@ class SiteController extends Controller
 			$exch = Exchange::updatePrices('btc_usd');
 			$bot = new Bot($exch);
 			$bot->run();
+		//	echo 'bot run ok';
 		}
 		
 		// Првоеряем error_log
-		$fn='error_log';
-		
-		if (file_exists($fn))
+		$key = 'cron.email.error-logs';
+		if(Yii::app()->cache->get($key)===false)
 		{
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
-				$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
-				$text = file_get_contents($fn);
-				mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);					
+			Yii::app()->cache->set($key, true, 60*60);
+			$fn='error.log';		
+			if (file_exists($fn))
+			{
+					$headers  = 'MIME-Version: 1.0' . "\r\n";
+					$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+					$text = file_get_contents($fn);
+					mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);
+			}
 		}
-		
 		
 		
 		// Сохраняем информацию по всем ценам

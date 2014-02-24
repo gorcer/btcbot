@@ -306,13 +306,13 @@ class Exchange extends CActiveRecord
 		
 		$ticker = $BTCeAPI->getPairTicker($pair);
 		$ticker = $ticker['ticker'];
+		
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
 		$exchange->sell = $ticker['sell'];
 		$exchange->dtm = date('Y-m-d H:i:s', $ticker['updated']/*+9*60*60*/);
 		$exchange->pair = $pair;
-		$exchange->save();
-		
+		$exchange->save();		
 		return ($exchange);
 	}
 	
