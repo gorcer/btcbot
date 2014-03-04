@@ -19,8 +19,8 @@ class BTCeAPI {
     protected $RETRY_FLAG = false;
     
     public function __construct($base_noonce = false) {
-        $this->api_key = 'A6D0N5N2-MADY6TR3-4P3HYPAK-IQTZ8AOH-ILUSEX8H';
-        $this->api_secret = 'f5175557ba8e6ec598a2a8d1d1ff97695e244670119c5098a406bfbd091b8b66';
+        $this->api_key = 'V8PKGRZK-QBK7RDK9-P8ZBVMX7-N3O2OBS2-LG9TBREG';
+        $this->api_secret = '4e4ba09f936c427b2001fbac50088774347a1a2742ef06685303fd32284a965d';
         if($base_noonce === false) {
             // Try 1?
             $this->noonce = time();

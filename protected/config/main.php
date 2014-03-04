@@ -58,7 +58,7 @@ return array(
 		// uncomment the following to use a MySQL database
 		
 		'db'=>array(
-			'connectionString' => 'mysql:host=gorcercom.fatcowmysql.com;dbname=btcbot_test',
+			'connectionString' => 'mysql:host=gorcercom.fatcowmysql.com;dbname=btcbot',
 			'emulatePrepare' => true,
 			'username' => 'btcbot',
 			'password' => '159357',

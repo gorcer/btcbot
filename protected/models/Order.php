@@ -128,7 +128,7 @@ class Order extends CActiveRecord
 		if ($res['success'] == 1)
 		{
 			
-			$bot->setBalance($res['return']['funds']['rur']);
+			$bot->setBalance($res['return']['funds']['usd']);
 			$bot->setBalanceBtc($res['return']['funds']['btc']);
 			
 			$this->status = 'cancel';

@@ -29,7 +29,7 @@ $(function() {
 		    },
 
 		    title: {
-		        text: 'BTC-RUR'
+		        text: 'BTC-USD'
 		    },
 
 		    yAxis: {

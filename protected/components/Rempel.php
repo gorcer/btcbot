@@ -30,11 +30,11 @@ class Rempel {
 	public function __construct()
 	{	
 		// Периоды анализа графика для покупки и продажи (в сек.)
-		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);
+		$this->buy_periods = array(/*15*60,*/ 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);
 		//$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60); 2127/51028
 		$this->sell_periods = array(	  30*60, 60*60, 2*60*60,);
 		
-		$this->buy_imp_dif = 0.005;// Шаг при анализе покупки 5% //150;
+		$this->buy_imp_dif = 0.007;// Шаг при анализе покупки 7%;
 		$this->sell_imp_dif = 0.007; // Шаг при анализе продажи 7%
 		
 	}	
@@ -157,7 +157,7 @@ class Rempel {
 				case '0--':								// /\\
 					if ($track['period']>$this->long_time)
 					{
-						Log::notbuy('Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
+						Log::notbuy('Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60/60).' ч., не покупаем');
 						return false;
 					}
 					break;

@@ -119,28 +119,32 @@ class SiteController extends Controller
 	public function actionCron()
 	{	
 		// Пересчитываем рейтинги
-		$key = 'cron.bot.run.btc_rur';
+		$key = 'cron.bot.run.btc_usd.3';
 		if(Yii::app()->cache->get($key)===false)
 		{	
 			Yii::app()->cache->set($key, true, 60*3);
 						
 			// Запускаем бота для анализа и сделок
-			$btc_rur = Exchange::updatePrices('btc_rur');
-			$bot = new Bot($btc_rur);
+			$exch = Exchange::updatePrices('btc_usd');
+			$bot = new Bot($exch);
 			$bot->run();
+		//	echo 'bot run ok';
 		}
 		
 		// Првоеряем error_log
-		$fn='error_log';
-		
-		if (file_exists($fn))
+		$key = 'cron.email.error-logs';
+		if(Yii::app()->cache->get($key)===false)
 		{
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
-				$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
-				$text = file_get_contents($fn);
-				mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);					
+			Yii::app()->cache->set($key, true, 60*60);
+			$fn='error.log';		
+			if (file_exists($fn))
+			{
+					$headers  = 'MIME-Version: 1.0' . "\r\n";
+					$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+					$text = file_get_contents($fn);
+					mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);
+			}
 		}
-		
 		
 		
 		// Сохраняем информацию по всем ценам
@@ -159,7 +163,7 @@ class SiteController extends Controller
 		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $BTCeAPI->getPairTicker('btc_usd');
 		$ticker = $ticker['ticker'];
 	/*	
 		$exchange = new Exchange();
@@ -203,7 +207,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 
-		$exs = Exchange::getAll();
+		$exs = Exchange::getAllByDt('btc_usd','2014-01-07 22:35', '2014-01-08 07:00');
 		
 		$sell = new Sell();
 		$sell->buy_id=0;
@@ -359,7 +363,8 @@ class SiteController extends Controller
 	{	
 		$buy = new Buy();
 		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
-		$exch = Exchange::getAll($type);
+		//$exch = Exchange::getAll($type);
+		$exch = Exchange::getAllByDt($type,'2014-01-01', '2015-01-06');
 				
 		$data_buy=array();
 		$data_sell=array();

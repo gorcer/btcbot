@@ -11,8 +11,7 @@ class CronCommand extends CConsoleCommand {
 ';
 		}	
 		
-	}
-	
+	}		
 	// Тестируем бота на текущих данных
 	public function actionTest() {
 	
@@ -29,7 +28,20 @@ class CronCommand extends CConsoleCommand {
 		Status::setParam('balance_btc', 0);
 	
 	
-		$exs = Exchange::getAllByDt('btc_rur','2013-12-16', '2014-01-06');
+		$exs = Exchange::getAllByDt('btc_usd','2014-01-01', '2015-01-06');
+
+		$sell = new Sell();
+		$sell->buy_id=0;
+		$sell->price=1000;
+		$sell->fee = 0;
+		$sell->summ = Bot::start_balance;;
+		$sell->count=$sell->summ / $sell->price;
+		$sell->income = 0;
+		$sell->dtm = $exs[0]['dt'];
+		$sell->buyed=0;
+		$sell->save();
+		
+		
 		$cnt=0;
 		foreach($exs as $exchange)
 		{
@@ -53,16 +65,17 @@ class CronCommand extends CConsoleCommand {
 	public function actionRun()
 	{
 		// Пересчитываем рейтинги
-		$key = 'cron.bot.run.btc_rur';
+		$key = 'cron.bot.run.btc_usd';
 		if(Yii::app()->cache->get($key)===false)
 		{
 			Yii::app()->cache->set($key, true, 60*3);
 	
 			// Запускаем бота для анализа и сделок
-			$btc_rur = Exchange::updatePrices('btc_rur');
-			$bot = new Bot($btc_rur);
+			$btc_usd = Exchange::updatePrices('btc_usd');
+			$bot = new Bot($btc_usd);
 			$bot->run();
 		}
+
 	}
 
 	
