@@ -155,13 +155,16 @@ class Sell extends CActiveRecord
 	
 	public static function getNotBuyed()
 	{
+		// Мин остаток должен быть больше 5$
 	
 		$sql = "
 					SELECT
 							s.*
 					FROM `sell` s					
 					where
-						s.buyed < s.summ+s.income																		
+						(s.summ+s.income - s.buyed) > 5	
+						
+																							
 					order by price desc
 					";
 		//if ($curtime == '2013-12-11 16:42:00')

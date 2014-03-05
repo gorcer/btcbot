@@ -200,15 +200,15 @@ class SiteController extends Controller
 			
 		
 		$start = time();
-		
+		/*
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
-
-		$exs = Exchange::getAllByDt('btc_usd','2014-01-07 22:35', '2014-01-08 07:00');
-		
+*/
+		$exs = Exchange::getAllByDt('btc_usd','2014-03-04 20:00', '2015-01-08 07:00');
+		/*
 		$sell = new Sell();
 		$sell->buy_id=0;
 		$sell->price=1000;
@@ -222,7 +222,7 @@ class SiteController extends Controller
 		
 		Status::setParam('balance', $sell->summ);
 		Status::setParam('balance_btc', 0);
-		
+		*/
 		$min_balance = false;;
 				
 		

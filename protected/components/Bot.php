@@ -159,6 +159,8 @@ class Bot {
 		// Создаем ордер		
 		$orders = $this->makeOrder($cnt, $this->current_exchange->buy, 'buy', $reason, $sell);		
 		
+		if (!$orders) return false;
+		
 		// Если создался
 		if (sizeof($orders)>0)
 		{	
@@ -373,7 +375,7 @@ class Bot {
 			//Удаляем треки по которым уже были покупки			
 			if (Exchange::AlreadyBought_period($track['period'], $this->curtime))		
 			{
-				Log::notbuy('Уже была покупка PERIOD назад по треку '.print_r($track, true));
+				Log::notbuy('Уже была покупка '.$track['period'].' назад по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
 			
@@ -415,7 +417,7 @@ class Bot {
 			// Если после покупки не останется денег на ещё одну такую же, то берем на все
 			if ($cost * 2 > $summ) { 
 				$cost = $summ; 
-				$cnt = $cost / $this->current_exchange->buy;
+				$cnt = round($cost / $this->current_exchange->buy, 6); // В случае округления в большую сторону денег может не хватить
 			}
 			$old_cost = $sell->price*$cnt; // Стоимость по старой цене
 			
@@ -426,7 +428,7 @@ class Bot {
 			// Достаточно ли заработаем
 			if ($income < $need_income)
 			{
-				if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$summ.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
+				if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$old_cost.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
 				continue;
 			}
 			

@@ -25,9 +25,9 @@ return CMap::mergeArray(
 					'class'=>'system.caching.CDummyCache',
 			),*/
 		'db'=>array(
-			'connectionString' => 'mysql:host=localhost;dbname=btcbot',
+			'connectionString' => 'mysql:host=localhost;dbname=testb',
 			'emulatePrepare' => true,
-			'username' => 'testuser',
+			'username' => 'root',
 			'password' => '159357',
 			'charset' => 'utf8',
 			'tablePrefix' => 'aim_',

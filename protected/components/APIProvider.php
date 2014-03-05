@@ -123,6 +123,9 @@ class APIProvider {
 	*/
 	public function makeOrder($cnt, $pair, $type, $price)
 	{
+		
+		Log::Add('Создаем ордер на '.$cnt.' шт. пара:'.$pair.' тип:'.$type.' по цене:'.$price);
+		
 		// Если покупаем виртуально
 		if (self::isVirtual)
 		{
@@ -141,7 +144,7 @@ class APIProvider {
 			$btce = $BTCeAPI->makeOrder($cnt, $pair, $type, $price);
 					
 		} catch(BTCeAPIInvalidParameterException $e) {
-			Log::Error('Не удалось создать ордер '.$e->getMessage());
+			Log::Error('Не удалось создать ордер '.$e->getMessage().' параметры: $cnt '.$cnt.', $pair '.$pair.', $type '.$type.', $price '.$price);
 			return false;
 		} catch(BTCeAPIException $e) {
 			Log::Error('Не удалось создать ордер '.$e->getMessage());
