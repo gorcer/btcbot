@@ -180,6 +180,8 @@ class SiteController extends Controller
 	
 	public function actionClear() {
 		
+		Yii::app()->cache->flush();
+		/*
 		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		Yii::app()->cache->flush();
@@ -188,7 +190,7 @@ class SiteController extends Controller
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
 		Status::setParam('balance', Bot::start_balance);
-		Status::setParam('balance_btc', 0);
+		Status::setParam('balance_btc', 0);*/
 		
 	}
 	
@@ -485,6 +487,8 @@ class SiteController extends Controller
 		
 		$order->description = json_decode($order->description, false);
 		 
+		
+		
 		$this->render('order',
 				array(
 						'data'	=> 	$order,

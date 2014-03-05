@@ -263,9 +263,9 @@ class Bot {
 		// Пишем в сводку
 		Balance::add('btc', 'Закрыт ордер №'.$order->id.' на покупку '.$order->count.' btc', $order->count);
 		Balance::add('btc', 'Начислена комиссия '.$order->fee.' btc', -1 * $order->fee);
-		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
+		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.'$.</b>', 1);
 				
-		$this->tomail[]='<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>';
+		$this->tomail[]='<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.'$.</b>';
 		
 		$this->order_cnt++;
 	}
@@ -287,7 +287,7 @@ class Bot {
 		
 		// Пишем в сводку
 		Balance::add('usd', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
-		Balance::add('usd', 'Начислена комиссия '.$order->fee.' rur', -1*$order->fee);
+		Balance::add('usd', 'Начислена комиссия '.$order->fee.' usd', -1*$order->fee);
 		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
 		$this->tomail[]='<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>';
 		
@@ -409,41 +409,42 @@ class Bot {
 			foreach ($sells as $sell)
 			{	
 						
-			// Расчитываем обратную прибыль						
-			$cnt = self::buy_value; // кол-во
-			$cost = $this->current_exchange->buy * $cnt; // стоимость
-			$summ = $sell->summ + $sell->income - $sell->buyed;
-			
-			// Если после покупки не останется денег на ещё одну такую же, то берем на все
-			if ($cost * 2 > $summ) { 
-				$cost = $summ; 
-				$cnt = round($cost / $this->current_exchange->buy, 6); // В случае округления в большую сторону денег может не хватить
-			}
-			$old_cost = $sell->price*$cnt; // Стоимость по старой цене
-			
-			$income = $old_cost - $cost;
-
-			$need_income = $old_cost * $this->getMinIncome($sell->dtm);
-						
-			// Достаточно ли заработаем
-			if ($income < $need_income)
-			{
-				if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$old_cost.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
-				continue;
-			}
-			
-			$reason['sell'] = 'Найдена подходящая продажа №'.$sell->id.' с доходом от сделки '.$income.' btc., что составляет '.($income/$sell->summ*100).'% от цены покупки. А требуется не менее '.$need_income;
-			
-				// Покупаем
-				if ($this->startBuy($sell, $cnt, $reason))	
-				{	
-					// Резервируем время покупки по резерву 
-					Exchange::ReservePeriod($first_track['period'], $this->curtime);
-					// Резервируем яму				
-					Exchange::ReservePit($first_track['pit']['dtm'], $first_track['period']);
+				// Расчитываем обратную прибыль						
+				$cnt = self::buy_value; // кол-во
+				$cost = $this->current_exchange->buy * $cnt; // стоимость
+				$summ = $sell->summ + $sell->income - $sell->buyed;
+				
+				// Если после покупки не останется денег на ещё одну такую же, то берем на все
+				if ($cost * 2 > $summ) { 
+					$cost = $summ; 
+					$cnt = round($cost / $this->current_exchange->buy, 6); // В случае округления в большую сторону денег может не хватить
 				}
-				else
-					Log::notbuy('Ошибка, не удалось начать покупку');
+				$old_cost = $sell->price*$cnt; // Стоимость по старой цене
+				
+				$income = $old_cost - $cost;
+	
+				$need_income = $old_cost * $this->getMinIncome($sell->dtm);
+							
+				// Достаточно ли заработаем
+				if ($income < $need_income)
+				{
+					if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$old_cost.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
+					continue;
+				}
+				
+				$reason['sell'] = 'Найдена подходящая продажа №'.$sell->id.' с доходом от сделки '.$income.' btc., что составляет '.($income/$sell->summ*100).'% от цены покупки. А требуется не менее '.$need_income;
+				
+					// Покупаем
+					if ($this->startBuy($sell, $cnt, $reason))	
+					{	
+						// Резервируем время покупки по резерву 
+						Exchange::ReservePeriod($first_track['period'], $this->curtime);
+						// Резервируем яму				
+						Exchange::ReservePit($first_track['pit']['dtm'], $first_track['period']);
+						continue;
+					}
+					else
+						Log::notbuy('Ошибка, не удалось начать покупку');
 			
 			}
 		}				
