@@ -412,7 +412,7 @@ class Bot {
 				// Расчитываем обратную прибыль						
 				$cnt = self::buy_value; // кол-во
 				$cost = $this->current_exchange->buy * $cnt; // стоимость
-				$summ = $sell->summ + $sell->income - $sell->buyed;
+				$summ = $sell->summ - $sell->buyed;
 				
 				// Если после покупки не останется денег на ещё одну такую же, то берем на все
 				if ($cost * 2 > $summ) { 

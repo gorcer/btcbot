@@ -162,7 +162,7 @@ class Sell extends CActiveRecord
 							s.*
 					FROM `sell` s					
 					where
-						(s.summ+s.income - s.buyed) > 5	
+						(s.summ - s.buyed) > 5	
 						
 																							
 					order by price desc
