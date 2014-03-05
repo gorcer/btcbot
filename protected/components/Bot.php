@@ -485,13 +485,14 @@ class Bot {
 		$this->NecesarySell($all_tracks, $bought);
 		
 		//Анализируем треки
-		$tracks = $this->analize->getSellTracks($all_tracks);		
-		
+		$tracks = $this->analize->getSellTracks($all_tracks);
 		if (sizeof($tracks) == 0)
 		{	
 			Log::notsell('Нет подходящих треков для продажи');
 			return false;
 		}
+		reset($tracks);
+		$first_track = current($tracks);
 		
 		// Проверка прошлой продажи
 		$lastSell = Sell::getLast();
@@ -500,7 +501,7 @@ class Bot {
 			$tm = strtotime($lastSell->dtm)+self::min_sell_interval;
 			$diff = (1-$lastSell->price / $this->current_exchange->sell);				
 			$last_hill = Exchange::getLastSellHill();
-			$first_track = array_pop($tracks);
+			
 			$lastBuy = Buy::getLast();
 			
 			if ($tm>$this->curtime // Если с прошлой покупки не вышло время
@@ -548,7 +549,6 @@ class Bot {
 			$reason['buy'] = 'Найдена подходящая покупка №'.$buy->id.' с доходом от сделки '.$income.' руб., что составляет '.($income/$buy->summ*100).'% от цены покупки'; 
 			//Log::Add('Начало продажи №'.$buy->id);
 			
-			$first_track = array_pop($tracks);
 			$reason['period'] = $first_track['period'];
 			if ($this->startSell($buy, $reason))
 			{				
