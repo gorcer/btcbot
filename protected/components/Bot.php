@@ -377,6 +377,7 @@ class Bot {
 			{
 				Log::notbuy('Уже была покупка '.$track['period'].' назад по треку '.print_r($track, true));
 				unset($tracks[$key]);
+				continue;
 			}
 			
 			// Удаляем треки которые происходят из ям по которым уже были покупки
@@ -398,7 +399,8 @@ class Bot {
 			$reason['all_tracks'] = $all_tracks;
 			
 			// Берем первый удачный трек и по нему проводим покупку
-			$first_track = array_pop($tracks);
+			reset($tracks);
+			$first_track = current($tracks);
 			$reason['period'] = $first_track['period'];
 			
 			//Смотрим, с какой продажи покупать
@@ -589,7 +591,8 @@ class Bot {
 			return false;
 			Log::notsell('Нет подходящих треков для вынужденной продажи');
 		}
-		
+		reset($tracks);
+		$first_track = current($tracks);
 		
 		// Продаем то что может залежаться
 		foreach($bought as $buy)
@@ -615,7 +618,6 @@ class Bot {
 				$reason['tracks']=$tracks;
 				$reason['all_tracks']=$all_tracks;
 				
-				$first_track = array_pop($tracks);
 				$reason['period'] = $first_track['period'];
 				
 				$this->startSell($buy, $reason);
@@ -629,9 +631,7 @@ class Bot {
 	}
 	
 	public function cancelOrder($order)
-	{
-	
-		
+	{	
 		$res = $this->api->CancelOrder($order); 
 		
 		if ($res['success'] == 1)
