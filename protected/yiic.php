@@ -9,6 +9,6 @@ $yiic=dirname(__FILE__).'/../../yii/framework/yiic.php';
 
 
 //$config=dirname(__FILE__).'/config/test.php';
-$config=dirname(__FILE__).'/config/main_local.php';
+$config=dirname(__FILE__).'/config/main.php';
 
 require_once($yiic);
