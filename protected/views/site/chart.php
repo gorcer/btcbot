@@ -71,9 +71,11 @@ $flags.="],
 <?php foreach ($orders as $order): ?>
 <tr>
  <td><?php echo CHtml::link($order->id, array('site/viewOrder', 'id'=>$order->id )); ?></td>
+    <td><?php  echo $order->create_dtm; ?></td>
  <td><?php  echo $order->type; ?></td>
  <td><?php  echo $order->price; ?> Х <?php  echo $order->count; ?> =</td>
  <td><?php  echo $order->summ; ?></td>
+ <td><?php  echo $order->status; ?></td>
 </tr>
 <?php endforeach; ?>
 </table>

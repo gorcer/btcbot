@@ -34,7 +34,7 @@ class Bot {
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
 	const min_income = 0.04; // Мин. доход - 4%
 	const income_per_day = 0.0027; // доход в день для залежных покупок, в расчете на 100% в год	
-	const order_ttl = 180; // 180
+	const order_ttl = 600; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
 	
 	const freeze_warning_income = 0.005; // доход при котором есть шанс вморозить деньги, считается при падении
