@@ -45,11 +45,11 @@ class Log {
 		$bot = Bot::get_Instance();
 				
 		// Не пишем файл при дебаге
-		//if (YII_DEBUG) return;
+	//	if (YII_DEBUG) return;
 		
 		$dtm = date('Y-m-d H:i:s', $bot->curtime);
 		
-		$fn = 'logs/not-buy-'.date('Y-m-d', $bot->curtime).'.html';
+		$fn = Yii::app()->basePath.'/../logs/not-buy-'.date('Y-m-d', $bot->curtime).'.html';
 		
 		
 		$dtm = CHtml::link($dtm, array('site/chartByTrack', 'dt'=>$dtm));
@@ -64,11 +64,11 @@ class Log {
 		$bot = Bot::get_Instance();
 		
 		// Не пишем файл при дебаге
-		if (YII_DEBUG) return;
+	//	if (YII_DEBUG) return;
 		
 		$dtm = date('Y-m-d H:i:s', $bot->curtime);
 	
-		$fn = 'logs/not-sell-'.date('Y-m-d', $bot->curtime).'.html';	
+		$fn = Yii::app()->basePath.'/../logs/not-sell-'.date('Y-m-d', $bot->curtime).'.html';	
 		$text=  '<i>'.$dtm.'</i> '.$reason.'<br/>';
 		file_put_contents($fn, $text, FILE_APPEND);
 	}

@@ -15,9 +15,9 @@ ini_set('error_reporting', E_ALL);
 defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
 
 
-if ($_SERVER['HTTP_HOST']=='btcbot.gorcer.com' || $_SERVER['HTTP_HOST']=='btcbot-test.gorcer.com')
+if ($_SERVER['HTTP_HOST']=='btcbot.gorcer.com' || $_SERVER['HTTP_HOST']=='btcbot.gorcer.my')
 {
-	$yii=dirname(__FILE__).'/../../yii/framework/yii.php';
+	$yii=dirname(__FILE__).'/../yii/framework/yii.php';
 	$config=dirname(__FILE__).'/protected/config/main.php';
 	define('YII_DEBUG',false);
 }

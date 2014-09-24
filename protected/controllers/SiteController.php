@@ -366,7 +366,7 @@ class SiteController extends Controller
 		$buy = new Buy();
 		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
 		//$exch = Exchange::getAll($type);
-		$exch = Exchange::getAllByDt($type,'2014-01-01', '2015-01-06');
+		$exch = Exchange::getAllByDt($type,'2014-07-11', '2015-01-06');
 				
 		$data_buy=array();
 		$data_sell=array();

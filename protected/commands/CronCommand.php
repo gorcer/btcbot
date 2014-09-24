@@ -11,7 +11,8 @@ class CronCommand extends CConsoleCommand {
 ';
 		}	
 		
-	}		
+	}
+		
 	// Тестируем бота на текущих данных
 	public function actionTest() {
 	
@@ -75,22 +76,6 @@ class CronCommand extends CConsoleCommand {
 			$bot = new Bot($btc_usd);
 			$bot->run();
 		}
-		
-		// Првоеряем error_log
-		$key = 'cron.email.error-logs';
-		if(Yii::app()->cache->get($key)===false)
-		{
-			Yii::app()->cache->set($key, true, 60*60);
-			$fn='error.log';
-			if (file_exists($fn))
-			{
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
-				$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
-				$text = file_get_contents($fn);
-				mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);
-			}
-		}
-
 	}
 
 	

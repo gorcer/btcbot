@@ -297,7 +297,8 @@ class Bot {
 	
 	public function NeedBuy()
 	{		
-		
+		echo "Проверяем, нужно ли покупать".PHP_EOL;
+
 		$reason = array(); // Фиксируем причину покупки
 		
 		$curtime = $this->curtime; //Дата операции		
@@ -335,24 +336,24 @@ class Bot {
 			$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;			
 			$diff_buy = (1 - $this->current_exchange->buy / $lastBuy->price);
 			
-			//if ($lastSell)  $diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
+			if ($lastSell)  $diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
 
 			if ( $tm > $this->curtime 								// была ли уже покупка за последнее время 
 				&& $diff_buy < $this->analize->buy_imp_dif  					// и цена была более выгодная
-				/*&&  (!$lastSell  || $lastSell->dtm < $lastBuy->dtm	// и небыло до этого продажи
+				&&  (!$lastSell  || $lastSell->dtm < $lastBuy->dtm	// и небыло до этого продажи
 						|| $diff_sell < $this->buy_imp_dif	// или была но цена была ниже текущей цены покупки
-					)*/
+					)
 				)
 			{	
 					// Не покупаем		
 					Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60/60).' часов. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.($diff_buy*100).'% , мин. порог для покупки '.($this->analize->buy_imp_dif*100).'%.');
-					//if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
+					if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
 					return false;
 				
 			}
 			else {
 				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60/60).' часов. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.($diff_buy*100).'% , мин. порог для покупки '.($this->analize->buy_imp_dif*100).'% ';
-				//if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm.' и цена последней покупки '.$lastSell->price.' выше текущей '.$this->current_exchange->buy;
+				if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm.' и цена последней покупки '.$lastSell->price.' выше текущей '.$this->current_exchange->buy;
 			}
 		}
 		
@@ -394,6 +395,8 @@ class Bot {
 		// Если остались треки
 		if (sizeof($tracks)>0)
 		{
+			echo "Найдены удачные треки".PHP_EOL;
+
 			// Треки
 			$reason['tracks']=$tracks;
 			$reason['all_tracks'] = $all_tracks;
@@ -433,7 +436,8 @@ class Bot {
 					if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$old_cost.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
 					continue;
 				}
-				
+
+				echo "Найдена подходящая продажа".$sell->id.PHP_EOL;
 				$reason['sell'] = 'Найдена подходящая продажа №'.$sell->id.' с доходом от сделки '.$income.' btc., что составляет '.($income/$sell->summ*100).'% от цены покупки. А требуется не менее '.$need_income;
 				
 					// Покупаем
@@ -484,7 +488,7 @@ class Bot {
 		$all_tracks=$this->analize->getAllTracks($curtime, 'sell');
 		
 		// Совершаем вынужденные продажи
-		$this->NecesarySell($all_tracks, $bought);
+//		$this->NecesarySell($all_tracks, $bought);
 		
 		//Анализируем треки
 		$tracks = $this->analize->getSellTracks($all_tracks);
@@ -706,7 +710,7 @@ class Bot {
 	{
 		
 		
-		
+		echo "Run bot".PHP_EOL;
 		$info = $this->api->getInfo();
 		
 		$start_balance = 0;
