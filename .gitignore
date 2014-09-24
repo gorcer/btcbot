@@ -7,3 +7,4 @@ log_all.html
 /logs/*
 /build/
 /.settings
+.idea

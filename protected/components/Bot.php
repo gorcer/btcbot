@@ -288,8 +288,8 @@ class Bot {
 		// Пишем в сводку
 		Balance::add('usd', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
 		Balance::add('usd', 'Начислена комиссия '.$order->fee.' usd', -1*$order->fee);
-		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
-		$this->tomail[]='<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>';
+		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' $.</b>', 1);
+		$this->tomail[]='<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' $.</b>';
 		
 		$this->total_income+=$sell->income;
 		$this->order_cnt++;
@@ -302,7 +302,7 @@ class Bot {
 		$reason = array(); // Фиксируем причину покупки
 		
 		$curtime = $this->curtime; //Дата операции		
-		
+        $reason['info'] = 'Время: '.date('Y-m-d H:i:s')." покупка ". $this->current_exchange->buy . ", продажа " .$this->current_exchange->sell;
 		// Есть ли деньги
 		
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
@@ -437,8 +437,8 @@ class Bot {
 					continue;
 				}
 
-				echo "Найдена подходящая продажа".$sell->id.PHP_EOL;
-				$reason['sell'] = 'Найдена подходящая продажа №'.$sell->id.' с доходом от сделки '.$income.' btc., что составляет '.($income/$sell->summ*100).'% от цены покупки. А требуется не менее '.$need_income;
+				//echo "Найдена подходящая продажа".$sell->id.PHP_EOL;
+				$reason['sell'] = 'Найдена подходящая продажа №'.$sell->id.' с доходом от сделки '.$income.'$., что составляет '.($income/$sell->summ*100).'% от цены покупки. А требуется не менее '.$need_income.'$';
 				
 					// Покупаем
 					if ($this->startBuy($sell, $cnt, $reason))	
@@ -462,11 +462,12 @@ class Bot {
 	{
 		// Составляем причину покупки
 		$reason=array();
+        $reason['info'] = 'Время: '.date('Y-m-d H:i:s')." покупка ". $this->current_exchange->buy . ", продажа " .$this->current_exchange->sell;
 		$curtime = $this->curtime; //Дата операции
 
 		//Смотрим, что продать
 		//$bought = Buy::model()->findAll(array('condition'=>'sold=0 and order_id=0'));
-		$bought = Buy::getNotSold();
+		$bought = Buy::getNotdd();
 		
 		// Если нечего продавать
 		if (sizeof($bought) == 0) return false;
@@ -653,11 +654,22 @@ class Bot {
 				Balance::add('usd', 'Отмена ордера №'.$order->id.' на покупку', $order->summ);			
 			else
 				Balance::add('btc', 'Отмена ордера №'.$order->id.' на продажу', $order->count);
-			
-			// Возвращаем деньги в продажу
-			$sell = $order->sell;
-			$sell->buyed-=$order->summ;
-			$sell->update(array('buyed'));
+
+            if ($order->sell !== null)
+            {
+                // Возвращаем деньги в продажу
+                $sell = $order->sell;
+                $sell->buyed-=$order->summ;
+                $sell->update(array('buyed'));
+            }
+            else
+            if ($order->buy !== null)
+            {
+                // Возвращаем деньги в продажу
+                $buy = $order->buy;
+                $buy->sold-=$order->count;
+                $buy->update(array('sold'));
+            }
 		}
 	}
 
