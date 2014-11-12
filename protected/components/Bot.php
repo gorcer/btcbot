@@ -467,7 +467,7 @@ class Bot {
 
 		//Смотрим, что продать
 		//$bought = Buy::model()->findAll(array('condition'=>'sold=0 and order_id=0'));
-		$bought = Buy::getNotdd();
+		$bought = Buy::getNotSold();
 		
 		// Если нечего продавать
 		if (sizeof($bought) == 0) return false;
