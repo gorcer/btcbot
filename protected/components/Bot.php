@@ -428,7 +428,7 @@ class Bot {
 				
 				$income = $old_cost - $cost;
 	
-				$need_income = $old_cost * $this->getMinIncome($sell->dtm);
+				$need_income = $old_cost * $this::getMinIncome($this->curtime, $sell->dtm);
 							
 				// Достаточно ли заработаем
 				if ($income < $need_income)
@@ -542,7 +542,7 @@ class Bot {
 			// Сколько заработаем при продаже (комиссия была уже вычтена в btc при покупке)
 			$income = $curcost - $buy->summ;						
 		
-			$need_income = $buy->summ * $this->getMinIncome($buy->dtm);
+			$need_income = $buy->summ * $this::getMinIncome($this->curtime, $buy->dtm);
 			
 			// Достаточно ли заработаем
 			if ($income < $need_income)
@@ -570,14 +570,14 @@ class Bot {
 	
 	/**
 	 * Возвращает накопленный процент прибыли
-	 * @param unknown_type $dtm
-	 * @return Ambigous <number, string>
+	 * @param int $fromTome
+	 * @param string $fromTome
+	 * @return number
 	 */
-	private function getMinIncome($dtm)
+	public static function getMinIncome($toTime, $fromTome)
 	{
-
 		// Определяем мин. доход
-		$life_days = ceil( ($this->curtime - strtotime($dtm))/60/60/24 ); // Число прошедших дней с покупки
+		$life_days = ceil( ($toTime - strtotime($fromTome))/60/60/24 ); // Число прошедших дней с покупки
 		$days_income = $life_days * self::income_per_day; // Ожидаемый доход
 		if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.		
 				

@@ -30,7 +30,7 @@ return CMap::mergeArray(
 			'username' => 'testuser',
 			'password' => '159357',
 			'charset' => 'utf8',
-			'tablePrefix' => 'aim_',
+			'tablePrefix' => '',
 			'enableProfiling' => true,
 			'enableParamLogging' => true,
 			'schemaCachingDuration' => 60*60*24,			

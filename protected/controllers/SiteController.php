@@ -408,8 +408,8 @@ class SiteController extends Controller
 		
 			// Покупки
 			$orders = Order::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));		
-			$buys = Buy::model()->findAll();
-			$sells = Sell::model()->findAll();
+			$buys = Buy::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
+			$sells = Sell::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
 		}
 		else
 		{
@@ -493,6 +493,45 @@ class SiteController extends Controller
 				array(
 						'data'	=> 	$order,
 				));
+	}
+
+	public function actionActives() {
+
+		// Продажи ожидающие покупки
+		$sql = "
+			select id, dtm, summ, price, buyed
+			 from sell
+			 where
+			 (summ - buyed) > 0.01
+		";
+		$sells = Yii::app()->db->createCommand($sql)->queryAll();
+		foreach ($sells as &$sell)
+		{
+			$sell['price'] = round($sell['price']);
+			$sell['percent'] = Bot::getMinIncome(time(), $sell['dtm']);
+			$sell['needPrice'] = $sell['price'] * ( 1 - $sell['percent'] );
+		}
+
+		// Покупки ожидающие продажи
+		$sql = "
+			select id, dtm, summ, count, price, sold
+			 from buy
+			 where
+			 (count - sold) > 0.0001
+		";
+		$buys = Yii::app()->db->createCommand($sql)->queryAll();
+		foreach ($buys as &$buy)
+		{
+			$buy['price'] = round($buy['price']);
+			$buy['percent'] = Bot::getMinIncome(time(), $buy['dtm']);
+			$buy['needPrice'] = $buy['price'] * ( 1 + $buy['percent'] );
+		}
+		$this->render('actives',
+			array(
+				'sells'	=> 	$sells,
+				'buys'	=> 	$buys,
+			));
+
 	}
 	
 	

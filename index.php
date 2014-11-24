@@ -1,7 +1,7 @@
 <?php
 
 ini_set('max_execution_time', 4*60*60);
-ini_set('memory_limit','64M');
+ini_set('memory_limit','256M');
 	
 ini_set('display_errors', true);
 ini_set('html_errors', true);
