@@ -1,1 +1,1 @@
-git ftp push --user gorcer-ftp --passwd - ftp://128.199.139.251/www/btcbot.gorcer.com/
+git ftp push --user gorcer-ftp --passwd - ftp://btcbot.gorcer.com/www/btcbot.gorcer.com/
