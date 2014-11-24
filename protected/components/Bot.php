@@ -33,7 +33,7 @@ class Bot {
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
 	const min_income = 0.04; // Мин. доход - 4%
-	const income_per_day = 0.0027; // доход в день для залежных покупок, в расчете на 100% в год	
+	const income_per_year = 1; // доход в день для залежных покупок, в расчете на 100% в год
 	const order_ttl = 600; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
 	
@@ -578,7 +578,15 @@ class Bot {
 	{
 		// Определяем мин. доход
 		$life_days = ceil( ($toTime - strtotime($fromTome))/60/60/24 ); // Число прошедших дней с покупки
-		$days_income = $life_days * self::income_per_day; // Ожидаемый доход
+
+		$minPercent = 0.15;
+
+		if ($life_days > 365)	$life_days=365;
+
+		// Расчитываем процент исходя из того что за год прибыль должна измениться с 100% до 15% годовых.
+		$incomePercent = ( self::income_per_year - ((self::income_per_year - $minPercent) / 365) * $life_days )/365;
+
+		$days_income = $life_days * $incomePercent; // Ожидаемый доход
 		if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.		
 				
 		return $days_income;
