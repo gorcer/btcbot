@@ -7,3 +7,5 @@ log_all.html
 /build/
 /.settings
 .idea
+/vendor/
+composer.phar
