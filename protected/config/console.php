@@ -42,4 +42,6 @@ return array(
 			),
 		),
 	),
+
+	'params'=> require dirname(__FILE__) . '/params.php'
 );

@@ -21,6 +21,8 @@ class APIProvider {
 	private $activeOrders;
 	public $balance;
 	private $balance_btc=0;
+
+	private static $BTCeAPI=false;
 	
 	public static $pairs = array('btc_usd', 'btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd', 'ltc_btc');
 	
@@ -30,7 +32,14 @@ class APIProvider {
 			self::$self = new APIProvider();
 		return self::$self;
 	}
-	
+
+	public static function getBTCeAPI() {
+		if (!self::$BTCeAPI) {
+			self::$BTCeAPI = new BTCeAPI(Yii::app()->params['api_key'], Yii::app()->params['api_secret'], Yii::app()->params['api_url']);
+		}
+		return self::$BTCeAPI;
+	}
+
 	public function __construct()
 	{
 		$this->balance = Bot::start_balance;

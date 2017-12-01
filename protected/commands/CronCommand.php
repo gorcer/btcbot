@@ -2,7 +2,7 @@
 class CronCommand extends CConsoleCommand {
 
 	public function actionIndex() {
-				
+
 		// Сохраняем информацию по всем ценам
 		foreach (APIProvider::$pairs as $pair)
 		{
@@ -67,9 +67,9 @@ class CronCommand extends CConsoleCommand {
 	{
 		// Пересчитываем рейтинги
 		$key = 'cron.bot.run.btc_usd';
-		if(Yii::app()->cache->get($key)===false)
+		if(Yii::app()->cache->get($key)===false || true)
 		{
-			Yii::app()->cache->set($key, true, 60*3);
+			Yii::app()->cache->set($key, true, 60*5);
 	
 			// Запускаем бота для анализа и сделок
 			$btc_usd = Exchange::updatePrices('btc_usd');

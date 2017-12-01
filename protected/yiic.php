@@ -17,3 +17,7 @@ require(dirname(dirname(__FILE__)) . '/vendor/yiisoft/yii/framework/yiilite.php'
 $config=dirname(__FILE__).'/config/main.php';
 
 
+$app = Yii::createConsoleApplication($config);
+$app->commandRunner->addCommands(YII_PATH . '/cli/commands');
+
+$app->run();

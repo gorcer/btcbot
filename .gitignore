@@ -9,3 +9,4 @@ log_all.html
 .idea
 /vendor/
 composer.phar
+protected/config/params.php

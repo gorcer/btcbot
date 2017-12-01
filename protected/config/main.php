@@ -93,10 +93,5 @@ return array(
 
 	// application-level parameters that can be accessed
 	// using Yii::app()->params['paramName']
-	'params'=>array(
-		// this is used in contact page
-		'adminEmail'=>'main@mail.com',
-		'api_key' => '',
-		'api_secret'=>'',
-	),
+	'params'=> require dirname(__FILE__) . '/params.php'
 );

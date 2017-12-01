@@ -302,10 +302,10 @@ class Exchange extends CActiveRecord
 	
 	public static function updatePrices($pair=self::def_curr)
 	{
-		$BTCeAPI = BTCeAPI::get_Instance();
+		$BTCeAPI = APIProvider::getBTCeAPI();
 		
 		$ticker = $BTCeAPI->getPairTicker($pair);
-		$ticker = $ticker['ticker'];
+		$ticker = $ticker[$pair];
 		
 		$exchange = new Exchange();
 		$exchange->buy = $ticker['buy'];
