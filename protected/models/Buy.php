@@ -108,7 +108,8 @@ class Buy extends CActiveRecord
 		
 	// Создание заказа
 	public static function make($order)
-	{		
+	{
+		
 		// Пробуем присоединить покупку к уже существующей
 		$buy = Buy::model()->findByAttributes(array('price'=>$order->price, 'sold'=>0));
 		
@@ -125,7 +126,7 @@ class Buy extends CActiveRecord
 			$buy->count = $order->count-$order->fee;
 			$buy->price =$order->price;
 			$buy->summ = $order->summ;
-			$buy->fee = $order->fee;			
+			$buy->fee = $order->fee;					
 		}
 		
 		$buy->save();
@@ -146,12 +147,16 @@ class Buy extends CActiveRecord
 						and
 						o.id is null	
 						and
-						b.count >= ".Bot::min_order_val."					
+						b.count >= ".Bot::min_order_val."	
+					order by price				
 					";
 		//if ($curtime == '2013-12-11 16:42:00')
 		
 		
 		$list=Buy::model()->findAllBySql($sql);
+		
+		//if (sizeof($list)) Dump::d($list[0]->attributes);
+		
 		return($list);
 	}
 	

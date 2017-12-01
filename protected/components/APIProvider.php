@@ -3,7 +3,7 @@
 
 class APIProvider {
 	
-	const isVirtual=true; // Виртуальные покупки или реальные
+	const isVirtual=false; // Виртуальные покупки или реальные
 	
 	/**
 	 * Варианты виртуального режима работы с ордерами
@@ -12,17 +12,17 @@ class APIProvider {
 	 * partial - 50 на 50
 	 * @var unknown_type
 	 */
-	const OrderPartialType = 'receive';
+	const OrderPartialType = 'remains';
 	
 	// При частичной виртуальной покупке размер доли
 	const PART_SIZE = 0.5;
 	
 	private static $self=false;
 	private $activeOrders;
-	public $balance=10000;
+	public $balance;
 	private $balance_btc=0;
 	
-	public static $pairs = array('btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd');
+	public static $pairs = array('btc_usd', 'btc_rur', 'ltc_rur', 'usd_rur', 'nvc_usd', 'nmc_usd', 'ppc_usd', 'ltc_btc');
 	
 	public static function get_Instance()
 	{
@@ -31,11 +31,16 @@ class APIProvider {
 		return self::$self;
 	}
 	
+	public function __construct()
+	{
+		$this->balance = Bot::start_balance;
+	}
+	
 	private function getInfoVirtual()
 	{
 		$result = array(
 				'funds' => array (
-						'rur'=>$this->balance,
+						'usd'=>$this->balance,
 						'btc'=>$this->balance_btc,
 						)
 				);
@@ -118,6 +123,9 @@ class APIProvider {
 	*/
 	public function makeOrder($cnt, $pair, $type, $price)
 	{
+		
+		Log::Add('Создаем ордер на '.$cnt.' шт. пара:'.$pair.' тип:'.$type.' по цене:'.$price);
+		
 		// Если покупаем виртуально
 		if (self::isVirtual)
 		{
@@ -136,7 +144,7 @@ class APIProvider {
 			$btce = $BTCeAPI->makeOrder($cnt, $pair, $type, $price);
 					
 		} catch(BTCeAPIInvalidParameterException $e) {
-			Log::Error('Не удалось создать ордер '.$e->getMessage());
+			Log::Error('Не удалось создать ордер '.$e->getMessage().' параметры: $cnt '.$cnt.', $pair '.$pair.', $type '.$type.', $price '.$price);
 			return false;
 		} catch(BTCeAPIException $e) {
 			Log::Error('Не удалось создать ордер '.$e->getMessage());
@@ -184,7 +192,7 @@ class APIProvider {
 						'funds' => array
 						(
 								'btc' => (float)$balance_btc,
-								'rur' => (float)$balance,
+								'usd' => (float)$balance,
 						)
 				)
 		);	
@@ -226,7 +234,7 @@ class APIProvider {
 						'funds' => array
 						(
 								'btc' => (float)$balance_btc,
-								'rur' => (float)$balance,
+								'usd' => (float)$balance,
 						)
 				)
 		);
@@ -235,7 +243,7 @@ class APIProvider {
 		$lastEx = Exchange::getLast();
 		$this->activeOrders[$result['return']['order_id']]= array
 		(
-				'pair' => 'btc_rur',
+				'pair' => $pair,
 				'type' => $type,
 				'amount' => $remains,
 				'rate' => $price,
@@ -280,7 +288,7 @@ class APIProvider {
 								'funds' => array
 								(										
 										'btc' => (float)$balance_btc,										
-										'rur' => (float)$balance,									
+										'usd' => (float)$balance,									
 								)
 						)
 				);
@@ -289,7 +297,7 @@ class APIProvider {
 		$lastEx = Exchange::getLast();
 		$this->activeOrders[$result['return']['order_id']]= array
 													(
-															'pair' => 'btc_rur',
+															'pair' => $pair,
 															'type' => $type,
 															'amount' => $cnt,
 															'rate' => $price,
@@ -314,7 +322,7 @@ class APIProvider {
 			(
 					88287800 => array
 					(
-							'pair' => 'btc_rur'
+							'pair' => 'btc_usd'
 							'type' => 'buy'
 							'amount' => 0.01
 							'rate' => 19157.54
@@ -324,7 +332,7 @@ class APIProvider {
 			)
 	)
 	*/
-	public function getActiveOrders($pair = 'btc_rur')
+	public function getActiveOrders($pair = 'btc_usd')
 	{		
 		// Если покупаем виртуально
 		if (self::isVirtual)
@@ -381,7 +389,7 @@ class APIProvider {
 						"return" => array (
 							"order_id"=>$order->id,
 							"funds" => array (
-								"rur"=>$balance,
+								"usd"=>$balance,
 								"btc"=>$balance_btc,																
 							)
 						)

@@ -49,7 +49,7 @@ class Order extends CActiveRecord
 			array('close_dtm', 'safe'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('buy_id, type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
+			array('buy_id,sell_id, type, id, create_dtm, price, count, fee, summ, status, close_dtm', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -63,6 +63,7 @@ class Order extends CActiveRecord
 		return array(
 			/*'buy' => array(self::HAS_ONE, 'Buy', 'order_id'),*/
 			'buy'=>array(self::BELONGS_TO, 'Buy', 'buy_id'),
+			'sell'=>array(self::BELONGS_TO, 'Sell', 'sell_id'),
 			 			
 		);
 	}
@@ -127,7 +128,7 @@ class Order extends CActiveRecord
 		if ($res['success'] == 1)
 		{
 			
-			$bot->setBalance($res['return']['funds']['rur']);
+			$bot->setBalance($res['return']['funds']['usd']);
 			$bot->setBalanceBtc($res['return']['funds']['btc']);
 			
 			$this->status = 'cancel';
@@ -135,6 +136,22 @@ class Order extends CActiveRecord
 			$this->save();
 			Dump::d($this->errors);
 		}
+	}
+	
+	public function assignObj($obj)
+	{	
+		
+		
+			if (get_class($obj) == 'Buy')
+				$this->buy_id = $obj->id;
+			elseif (get_class($obj) == 'Sell')
+			{	
+				$this->sell_id = $obj->id;				
+			}
+			
+			
+			
+			
 	}
 	
 }

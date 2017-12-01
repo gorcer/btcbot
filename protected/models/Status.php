@@ -99,4 +99,19 @@ class Status extends CActiveRecord
 		$obj->value = $val;
 		$obj->save();
 	}
+	
+	public static function getStartBalance()
+	{
+		$connection = Yii::app()->db;
+		$sql = "
+				SELECT sum(b.summ) - sum(s.summ)
+				FROM `buy` b
+				LEFT JOIN sell s ON s.buy_id = b.id
+				";
+		
+		$command = $connection->createCommand($sql);
+		$summ = $command->queryScalar() + Status::getParam('balance');
+		
+		return($summ);
+	}
 }

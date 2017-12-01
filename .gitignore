@@ -4,4 +4,6 @@
 log.html
 log_all.html
 /logs/*
-/build/*
+/build/
+/.settings
+.idea

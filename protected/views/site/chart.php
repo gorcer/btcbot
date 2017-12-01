@@ -8,18 +8,47 @@ $flags=", {
 		        type: 'flags',
 		        name: 'Flags on series',
 		        data: [";
-foreach ($orders as $order)
+foreach ($buys as $buy)
 {
+	
+	$name = 'b';
+	$color='';
+	if ($buy->sold>0)
+	{
+		$name='<s>-b</s>';
+		$color="color: '#aaffaa',";
+	}
+	
 	$flags.="{
-					x: ".(strtotime($order->close_dtm)*1000+4*60*60*1000).",
-					title: '".substr($order->type, 0, 1)."',
+					x: ".(strtotime($buy->dtm)*1000+4*60*60*1000).",
+					title: '".$name."',
+					".$color."
 					events: {
 							click: function () {
-								document.location.href = '".Yii::app()->createUrl('site/vieworder', array('id'=>$order->id))."'										
+								document.location.href = '".Yii::app()->createUrl('site/chartByTrack', array('dt'=>$buy->dtm))."'										
 								}
 							}
 				}, ";
 }
+
+foreach ($sells as $sell)
+{
+
+	$name = 's';
+	
+
+	$flags.="{
+					x: ".(strtotime($sell->dtm)*1000+4*60*60*1000).",
+					title: '".$name."',
+					color: '#ffaaaa',
+					events: {
+							click: function () {
+								document.location.href = '".Yii::app()->createUrl('site/chartByTrack', array('dt'=>$sell->dtm))."'
+								}
+							}
+				}, ";
+}
+
 $flags.="],
 		        onSeries: 'dataseries',
 		        shape: 'squarepin'
@@ -31,10 +60,50 @@ $flags.="],
 
 <div id="container" style="height: 500px; min-width: 500px"></div>
 
-Баланс (руб.): <?php echo $status['balance']; ?><br/>
+Баланс ($): <?php echo $status['balance']; ?><br/>
 Баланс (btc): <?php echo $status['balance_btc']; ?><br/>
-Заработано (руб.): <?php echo $status['total_income']; ?><br/>
+Заработано ($): <?php echo $status['total_income']; ?><br/>
 Общие активы (руб.): <?php echo $status['total_balance']; ?><br/>
+Всего вложено (руб.): <?php echo $status['start_balance']; ?><br/>
+<br/>
+<h2>Последние сделки</h2>
+<table>
+<?php foreach ($orders as $order): ?>
+<tr>
+ <td><?php echo CHtml::link($order->id, array('site/viewOrder', 'id'=>$order->id )); ?></td>
+    <td><?php  echo $order->create_dtm; ?></td>
+ <td><?php  echo $order->type; ?></td>
+ <td><?php  echo $order->price; ?> Х <?php  echo $order->count; ?> =</td>
+ <td><?php  echo $order->summ; ?></td>
+ <td><?php  echo $order->status; ?></td>
+</tr>
+<?php endforeach; ?>
+</table>
+
+<h2>Причины не покупки</h2>
+<?php 
+$i=0;
+for ($i=0;$i<5;$i++)
+{
+	$dt = strtotime('-'.$i.' days');
+	$path='logs/not-buy-'.date('Y-m-d', $dt).'.html';	
+	echo '<a href="'.$path.'">'.$path.'</a><br/>';
+}
+?>
+
+
+<h2>Причины не продажи</h2>
+<?php 
+$i=0;
+for ($i=0;$i<5;$i++)
+{
+	$dt = strtotime('-'.$i.' days');
+	$path='logs/not-sell-'.date('Y-m-d', $dt).'.html';	
+	echo '<a href="'.$path.'">'.$path.'</a><br/>';
+}
+?>
+
+
 <script>
 $(function() {
 	
@@ -49,7 +118,7 @@ $(function() {
 		    },
 
 		    title: {
-		        text: 'BTC-RUR'
+		        text: 'BTC-USD'
 		    },
 
 		    yAxis: {
@@ -69,6 +138,19 @@ $(function() {
 		        name: 'sell',
 		        data: <?php echo $data_sell; ?>,
 				id: 'dataseries',
+				tooltip: {
+					valueDecimals: 4
+				}
+		    }, {
+		        name: 'no-data',
+		        data: <?php echo $no_data; ?>,
+		        lineWidth : 0,
+				marker : {
+							enabled : true,
+							radius : 2
+						},
+				id: 'dataseries',
+				color: '#ff3333',
 				tooltip: {
 					valueDecimals: 4
 				}

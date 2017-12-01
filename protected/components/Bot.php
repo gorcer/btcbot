@@ -5,7 +5,7 @@
  * @author Zaretskiy.E
  *
  * @todo Определение кол.ва закупа - когда курс падает от среднего за двое суток на 20%, пускай бот покупает 5 минимумов
- * 
+ * @todo Бот должен искать прошлую вершину при анализе ямы и принятии решения о покупке. И от неё отсчитывать поздно или нет.
  */
 class Bot {
 	
@@ -15,32 +15,31 @@ class Bot {
 	public $balance_btc;
 	private $order_cnt;
 	private $total_income;
-	private $buy_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
-	private $sell_imp_dif; // Видимость различий, при превышении порога фиксируются изменения
+
 	
-	private $sell_periods; // Определение периодов покупки
-	private $buy_periods; // Определение периодов продажи
-	
-	private $real_trade = false;
-	
+
+
 	private static $self=false;
-	
+	private $analize;	
 	public $api; 
 	
 	private $tomail=array(); // Собираем сюда то что нужно отправить на email;
 	
 
-	const min_order_val = 0.01; // Мин. сумма покупки
-	const buy_value = 0.02; //0.02; // Сколько покупать
+	
+	const min_order_val = 0.011; // Мин. сумма покупки
+	const buy_value = 0.02; // Сколько покупать
 	const fee = 0.002; // Комиссия
 	const min_buy_interval = 86400; // 86400; // Мин. интервал совершения покупок = 1 сутки
 	const min_sell_interval = 86400;// 12 часов // Мин. интервал совершения продаж = 1 сутки
 	const min_income = 0.04; // Мин. доход - 4%
-	const long_time =  86400; // Понятие долгосрочный период - больше 2 дней
-	const order_ttl = 180; // 180
+	const income_per_year = 1; // доход в день для залежных покупок, в расчете на 100% в год
+	const order_ttl = 600; // 180
 	const min_income_time = 900; // Минимальное время отведенное на рост курса
 	
-	const freeze_warning_income = 0.01; // доход при котором есть шанс вморозить деньги, считается при падении
+	const freeze_warning_income = 0.005; // доход при котором есть шанс вморозить деньги, считается при падении
+	
+	const start_balance = 400; //$
 	
 	public function __construct($exchange=false)
 	{
@@ -51,19 +50,13 @@ class Bot {
 		$this->curtime = strtotime($exchange->dtm);
 		
 		$this->balance = Status::getParam('balance');
-		$this->balance_btc = Status::getParam('balance_btc');
-		$this->total_income=0;
-		$this->buy_imp_dif = 0.005;// Шаг при анализе покупки 5% //150;
-		$this->sell_imp_dif = 0.007; // Шаг при анализе продажи 7%
+		$this->balance_btc = Status::getParam('balance_btc');		
 		
 		$this->order_cnt=0;		
-		
-		
-		// Периоды анализа графика для покупки и продажи (в сек.)
-		$this->buy_periods = array(15*60, 30*60, 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);		
-		$this->sell_periods = array(			 60*60, 2*60*60, 6*60*60, 24*60*60, 36*60*60);
-		
+		$this->total_income=0;
+				
 		$this->api = APIProvider::get_Instance();
+		$this->analize = new Rempel();
 		
 		
 		self::$self = $this;
@@ -75,188 +68,23 @@ class Bot {
 			self::$self = new Bot();
 		return self::$self;
 	}
-	
-	/**
-	 * Получает изображение графика за период - -0+
-	 * @param  $period - период расчета в сек.
-	 * @param $name - buy, sell
-	 */
-	public function getGraphImage($curtime, $period, $name, $imp_dif)
-	{		
-		// @todo переделать - диапазоны расчитывать более точно
-		
-		$step = round($period/3);
-		$from_tm = $curtime-$period;
-		$from = date('Y-m-d H:i:s', $from_tm);		
-		$to = date('Y-m-d H:i:s', $curtime);		
-		
-		
-		$track="";
-		$prev=false;
-		for($i=0;$i<=3;$i++)
-		{			 			
-			$step_ut = $from_tm+$step*$i;
-			$step_dt = date('Y-m-d H:i:s', $step_ut);	// Делим период на 4 точки
-			$step_ut_f = date('Y-m-d H:i:s',$step_ut-$step/2); // Вокруг каждой точки отмеряем назад и вперед половину шага
-			$step_ut_t = date('Y-m-d H:i:s',$step_ut+$step/2);
-			
-			//$val=Exchange::NOSQL_getAvg($name, $step_ut_f, $step_ut_t);
-			$val=Exchange::getAvg($name, $step_ut_f, $step_ut_t);
-			
-			if (!$val) 
-			{
-				//Log::Add('Не нашел данных за период с'.$step_ut_f.' по '.$step_ut_t);
-				continue;
-			}
-				
-			$list[]=array(
-					'dtm'=>$step_dt,
-					'val'=>$val,
-			);				
-			
-			if (!$prev)
-			{
-				$prev = $val;
-				continue;
-			}		
-			
-			// Определяем направление
-			$dif = (1-$prev/$val);			
-			if ($dif<(-1*$imp_dif)) $track.="-";
-			elseif ($dif>$imp_dif) $track.="+";
-			else $track.="0";		
-			
-			$prev = $val;
-		}
-		
-		$result = array(
-				'track'=>$track,
-				'from' => $from,
-				'step' => $step,
-				'period'=>$period,			
-				'items' =>$list,	
-				);
-		
-		return($result);
-	} 
-	
-	/**
-	 * Формирует список треков на которых выгодно покупать
-	 * @param unknown_type $tracks
-	 * @return multitype:unknown
-	 */
-	private function getBuyTracks($tracks)
-	{
-		$result = array();
-		foreach($tracks as $track)
-		{
-			$ret = false;
-			switch($track['track']){
-				case '-0+':								 // \_/
-				case '--+':								 // \\/
-							// Если трек при падении не вернулся в исходную точку
-							if ((1 - $track['items'][3]['val'] / $track['items'][0]['val']) > $this->buy_imp_dif)							
-								$result[] = $track; 
-							else 
-								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][0]['val'].', а сейчас уже '.$track['items'][3]['val']);
-										
-							break; 
-				case '00+':	$result[] = $track; break; // __/
-				case '0-+':							   // _\/
-							// Если трек при падении не вернулся в исходную точку
-							if((1 - $track['items'][3]['val'] / $track['items'][1]['val']) > $this->buy_imp_dif)
-								$result[] = $track;
-							else
-								Log::notbuy('Найден удачный трек '.$track['track'].', но покупать уже поздно т.к. цена на падении была '.$track['items'][1]['val'].', а сейчас уже '.$track['items'][3]['val']);
-							
-							break; 
-							
-			// Если есть долгосрочное падение, не покупать 
-				case '---':								// \\\
-				case '+--':								// /\\
-				case '0--':								// /\\
-							if ($track['period']>self::long_time) {
-								Log::notbuy('Замечено долгосрочное падение '.$track['track'].' в течении '.($track['period']/60).' мин., не покупаем');
-								return false;								
-							}
-							break;				
-			}			
-		}		
-		return $result;		
-	}
-	
-	/**
-	 * Формирует список треков на которых выгодно продавать
-	 * @param unknown_type $tracks
-	 * @return multitype:unknown
-	 */
-	private function getSellTracks($tracks)
-	{
-		$result = array();
-		foreach($tracks as $track)
-		{
-			$ret = false;
-			switch($track['track']){
-				case '+0-':	$result[] = $track; break; // /-\				
-				case '++-':	$result[] = $track; break; // //\
-			//	case '00-':	$result[] = $track; break; // --\
-			//	case '0+-':	$result[] = $track; break; // -/\				
-			}
-		}
-		return $result;
-	}
-	
-	/**
-	 * Формирует список треков на которых может быть вынужденная продажа
-	 * @param unknown_type $tracks
-	 * @return multitype:unknown
-	 */
-	private function getNecessarySellTracks($tracks)
-	{
-		$result = array();
-		foreach($tracks as $track)
-		{
-			$ret = false;
-			switch($track['track']){
-				case '---':	$result[] = $track; break;
-				case '0--':	$result[] = $track; break;
-				case '-0-':	$result[] = $track; break;				
-			}
-		}
-		return $result;
-	}
-	
-	private function AlreadyBought($period)
-	{
-		$key = 'track.'.$period;
-		$tm = Yii::app()->cache->get($key);
-		if (!$tm || $tm<$this->curtime)
-			return false;
-		else 
-			return true;			
-	}
-	
-	private function ReservePeriod($period)
-	{
-		$key = 'track.'.$period;
-		return Yii::app()->cache->set($key, $this->curtime+$period, $period);
-	}
-	
+
 	// Создание отложенного ордера (если сразу не купили)
-	private function createOrderRemains($result, $price, $type, $reason, $buy=false)
+	private function createOrderRemains($result, $price, $type, $reason, $obj=false)
 	{
 		$order = new Order();
 		$order->price = $price;
 		$order->count = $result['remains'];
 		$order->summ = $order->count * $price;
-		
+
 		// Комиссия может быть в btc а может быть в rur
 		if ($type == 'buy')
 			$order->fee = $order->count*self::fee;
 		else
 			$order->fee = $order->summ*self::fee;
 		
-		if ($buy) $order->buy_id = $buy->id;
+		if ($obj)
+			$order->assignObj($obj);
 		
 		$order->description = json_encode($reason);
 		$order->type = $type;
@@ -270,7 +98,7 @@ class Bot {
 	}
 	
 	// Создание закрытого ордера на покупку(если сразу купили)
-	private function createOrderReceived($result, $price, $type, $reason, $buy=false)
+	private function createOrderReceived($result, $price, $type, $reason, $obj=false)
 	{
 		$order = new Order();
 		$order->price = $price;
@@ -282,8 +110,9 @@ class Bot {
 			$order->fee = $order->count*self::fee;
 		else
 			$order->fee = $order->summ*self::fee;
-		
-		if ($buy) $order->buy_id = $buy->id;
+				
+		if ($obj)
+			$order->assignObj($obj);
 		
 		$order->id = null;
 		$order->description = json_encode($reason);
@@ -291,28 +120,29 @@ class Bot {
 		$order->status = 'close';
 		$order->create_dtm = $this->current_exchange->dtm;
 		$order->close_dtm = $this->current_exchange->dtm;
+		
 		$order->save();
 		
 		return ($order);
 	}
 	
-	private function makeOrder($cnt, $price, $type, $reason='', $buy=false)
+	private function makeOrder($cnt, $price, $type, $reason='', $obj=false)
 	{		
 		// Цена покупки / продажи
 	//	$price = $this->current_exchange->$type;
 		
 		// Пытаемся создать заказ на бирже
-		$result = $this->api->makeOrder($cnt, 'btc_rur', $type, $price);
+		$result = $this->api->makeOrder($cnt, 'btc_usd', $type, $price);
 
 		if (!$result) return false;
 		
 		$orders = array();
-		if ($result['remains']>0) $orders['remains'] = $this->createOrderRemains($result, $price, $type, $reason, $buy);
-		if ($result['received']>0) $orders['received'] = $this->createOrderReceived($result, $price, $type, $reason, $buy);
+		if ($result['remains']>0) $orders['remains'] = $this->createOrderRemains($result, $price, $type, $reason, $obj);
+		if ($result['received']>0) $orders['received'] = $this->createOrderReceived($result, $price, $type, $reason, $obj);
 		
 		
 		// Актуализируем баланс
-		$this->setBalance($result['funds']['rur']);
+		$this->setBalance($result['funds']['usd']);
 		$this->setBalanceBtc($result['funds']['btc']);		
 		
 		$this->order_cnt+=sizeof($orders);
@@ -324,19 +154,28 @@ class Bot {
 	 * Подготовка к покупке (создание ордера, записей в бд)
 	 * @return boolean
 	 */
-	public function startBuy($reason)
+	public function startBuy($sell, $cnt, $reason)
 	{		
 		// Создаем ордер		
-		$orders = $this->makeOrder(self::buy_value, $this->current_exchange->buy, 'buy', $reason);		
+		$orders = $this->makeOrder($cnt, $this->current_exchange->buy, 'buy', $reason, $sell);		
+		
+		if (!$orders) return false;
 		
 		// Если создался
 		if (sizeof($orders)>0)
 		{	
+			
 			// Если сразу купили
 			if (isset($orders['received']))
 			{
 				// Пишем в сводку
-				Balance::add('rur', 'Создан ордер №'.$orders['received']->id.' на покупку '.$orders['received']->count.' btc', -1*$orders['received']->summ);
+				Balance::add('usd', 'Создан ордер №'.$orders['received']->id.' на покупку '.$orders['received']->count.' btc', -1*$orders['received']->summ);
+				
+				// Отнимаем потраченные деньги
+				$sell = $orders['received']->sell;
+				$sell->buyed+=$orders['received']->summ;
+				$sell->update(array('buyed'));
+				
 				$this->completeBuy($orders['received']);
 			}
 			
@@ -344,7 +183,14 @@ class Bot {
 			if (isset($orders['remains']))
 			{
 				// Пишем в сводку
-				Balance::add('rur', 'Создан ордер №'.$orders['remains']->id.' на покупку '.$orders['remains']->count.' btc', -1*$orders['remains']->summ);
+				Balance::add('usd', 'Создан ордер №'.$orders['remains']->id.' на покупку '.$orders['remains']->count.' btc', -1*$orders['remains']->summ);
+				
+				// Отнимаем потраченные деньги
+				$sell = $orders['remains']->sell;
+				$sell->buyed+=$orders['remains']->summ;
+				$sell->update(array('buyed'));
+				
+				
 				Log::Add('<b>Создан ордер на покупку '.$orders['remains']->count.' ед. за '.$orders['remains']->price.' ('.($orders['remains']->fee).' комиссия) на сумму '.$orders['remains']->summ.' руб.</b>', 1);
 			}			
 			
@@ -376,7 +222,7 @@ class Bot {
 				// Пишем в сводку
 				Balance::add('btc', 'Создан ордер №'.$orders['received']->id.' на продажу '.$orders['received']->count.' btc', -1*$orders['received']->count);
 				
-				$sell = $this->completeSell($orders['received']);
+				$this->completeSell($orders['received']);
 			}
 			
 			// Если отложенная покупка
@@ -417,9 +263,9 @@ class Bot {
 		// Пишем в сводку
 		Balance::add('btc', 'Закрыт ордер №'.$order->id.' на покупку '.$order->count.' btc', $order->count);
 		Balance::add('btc', 'Начислена комиссия '.$order->fee.' btc', -1 * $order->fee);
-		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>', 1);
+		Log::Add('<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.'$.</b>', 1);
 				
-		$this->tomail[]='<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.' руб.</b>';
+		$this->tomail[]='<b>Совершена покупка №'.$buy->id.' '.$order->count.' ед. за '.$order->price.' ('.$order->fee.' btc комиссия) на сумму '.$order->summ.'$.</b>';
 		
 		$this->order_cnt++;
 	}
@@ -440,25 +286,25 @@ class Bot {
 			$this->balance = $this->api->CompleteVirtualSell($order);
 		
 		// Пишем в сводку
-		Balance::add('rur', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
-		Balance::add('rur', 'Начислена комиссия '.$order->fee.' rur', -1*$order->fee);
-		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>', 1);
-		$this->tomail[]='<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' руб.</b>';
+		Balance::add('usd', 'Закрыт ордер №'.$order->id.' на продажу '.$order->count.' btc', $order->summ);
+		Balance::add('usd', 'Начислена комиссия '.$order->fee.' usd', -1*$order->fee);
+		Log::Add('<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' $.</b>', 1);
+		$this->tomail[]='<b>Совершена продажа (№'.$order->buy->id.')  '. $order->count.' ед. (купленых за '.$order->buy->summ.') за '.$sell->summ.', комиссия='.$sell->fee.', доход = '.($sell->income).' $.</b>';
 		
 		$this->total_income+=$sell->income;
 		$this->order_cnt++;
 	}
 	
-	
 	public function NeedBuy()
 	{		
-		
+		echo "Проверяем, нужно ли покупать".PHP_EOL;
+
 		$reason = array(); // Фиксируем причину покупки
 		
-		$curtime = $this->curtime; //Дата операции
-		$dt = date('Y-m-d H:i:s', $curtime);		
-		
+		$curtime = $this->curtime; //Дата операции		
+        $reason['info'] = 'Время: '.date('Y-m-d H:i:s')." покупка ". $this->current_exchange->buy . ", продажа " .$this->current_exchange->sell;
 		// Есть ли деньги
+		
 		if ($this->balance<$this->current_exchange->buy*self::buy_value) 
 		{
 			Log::notbuy('Не хватает денег, осталось '.$this->balance.', нужно '.($this->current_exchange->buy*self::buy_value));
@@ -466,6 +312,7 @@ class Bot {
 		}
 		else
 			$reason['balance']='Хватает денег '.$this->balance.'>'.($this->current_exchange->buy*self::buy_value); 
+	
 		/*
 		// Если текущая цена выше средней не покупаем
 		$from = date('Y-m-d H:i:s',$this->curtime-60*60*24*7);
@@ -481,75 +328,131 @@ class Bot {
 		
 		$lastBuy = Buy::getLast();
 		$lastSell = Sell::getLast();
-				
+
+		
+		
 		if ($lastBuy)
 		{
-			$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;
-			$diff = (1 - $this->current_exchange->buy / $lastBuy->price);		
+			$tm = strtotime($lastBuy->dtm)+self::min_buy_interval;			
+			$diff_buy = (1 - $this->current_exchange->buy / $lastBuy->price);
+			
+			if ($lastSell)  $diff_sell = (1 - $this->current_exchange->buy / $lastSell->price);
 
 			if ( $tm > $this->curtime 								// была ли уже покупка за последнее время 
-				&& $diff < $this->buy_imp_dif  						// цена была более выгодная
-			//	&&  (!$lastSell || $lastSell->dtm < $lastBuy->dtm) 	// небыло после последней покупки продажи
+				&& $diff_buy < $this->analize->buy_imp_dif  					// и цена была более выгодная
+				&&  (!$lastSell  || $lastSell->dtm < $lastBuy->dtm	// и небыло до этого продажи
+						|| $diff_sell < $this->buy_imp_dif	// или была но цена была ниже текущей цены покупки
+					)
 				)
 			{	
 					// Не покупаем		
-					Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'%.');
-				//	if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
+					Log::notbuy('Уже была покупка '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60/60).' часов. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.($diff_buy*100).'% , мин. порог для покупки '.($this->analize->buy_imp_dif*100).'%.');
+					if ($lastSell) Log::notbuy('Прошлая продажа была '.$lastSell->dtm.', это до последней покупки '.$lastBuy->dtm);
 					return false;
 				
 			}
 			else {
-				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60).' мин. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.$diff.'% , мин. порог для покупки '.($this->sell_imp_dif*100).'% ';
-				//if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm;
+				$reason['last_buy'] = 'Прошлая покупка была '.(($this->curtime-strtotime($lastBuy->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_buy_interval/60/60).' часов. при отсутствии ощутимого падения цены), прошлая цена '.$lastBuy->price.' руб., текущая '.$this->current_exchange->buy.' руб., разница '.($diff_buy*100).'% , мин. порог для покупки '.($this->analize->buy_imp_dif*100).'% ';
+				if ($lastSell) $reason['last_sell'] = 'Прошлая продажа была '.$lastSell->dtm.', это после последней покупки '.$lastBuy->dtm.' и цена последней покупки '.$lastSell->price.' выше текущей '.$this->current_exchange->buy;
 			}
-		}		
+		}
 		
+		$all_tracks = $this->analize->getAllTracks($curtime, 'buy');
 		
-		$all_tracks=array();		
-		foreach($this->buy_periods as $period)		
-			$all_tracks[] = $this->getGraphImage($curtime, $period, 'buy', $this->buy_imp_dif);
-
 		
 		//Анализируем треки
 		$tracks=array();
-		$tracks = $this->getBuyTracks($all_tracks);
+		$tracks = $this->analize->getBuyTracks($all_tracks);
+		
 		if (!$tracks || sizeof($tracks) == 0) 
 		{
-			Log::notbuy('Не найдено подходящих для покупки треков'/*.Dump::d($all_tracks, true)*/);
-			
+			Log::notbuy('Не найдено подходящих для покупки треков');			
 			return false;
 		}
 		
-		
-		//Удаляем треки по которым уже были покупки
-		foreach($tracks as $key=>$track)		
-			if ($this->AlreadyBought($track['period']))		
+
+		foreach($tracks as $key=>$track)	
+		{	
+			//Удаляем треки по которым уже были покупки			
+			if (Exchange::AlreadyBought_period($track['period'], $this->curtime))		
 			{
-				Log::notbuy('Уже была покупка PERIOD назад по треку '.print_r($track, true));
+				Log::notbuy('Уже была покупка '.$track['period'].' назад по треку '.print_r($track, true));
+				unset($tracks[$key]);
+				continue;
+			}
+			
+			// Удаляем треки которые происходят из ям по которым уже были покупки
+			$last_pit = Exchange::getLastPit($track['period']);
+			if ($last_pit == $track['pit']['dtm'])
+			{
+				Log::notbuy('Уже была покупка в яме '.$track['pit']['dtm'].' по треку '.print_r($track, true));
 				unset($tracks[$key]);
 			}
-								//	Log::AddText($this->curtime, 'Оставшиеся после отсеивания треки '.print_r($tracks, true));
 			
+		}
+	
+		
 		// Если остались треки
 		if (sizeof($tracks)>0)
 		{
+			echo "Найдены удачные треки".PHP_EOL;
+
 			// Треки
 			$reason['tracks']=$tracks;
 			$reason['all_tracks'] = $all_tracks;
 			
-			// Покупаем
-			if ($this->startBuy($reason))	
-			{		
-			// Резервируем время покупки
-				foreach($tracks as $track)	
-				{
-					//Log::AddText($this->curtime, 'Трек <b>'.$track['track'].'</b> за '.($track['period']/60).' мин.');
-					//Dump::d($track);
-					$this->ReservePeriod($track['period']);					
+			// Берем первый удачный трек и по нему проводим покупку
+			reset($tracks);
+			$first_track = current($tracks);
+			$reason['period'] = $first_track['period'];
+			
+			//Смотрим, с какой продажи покупать
+			$sells = Sell::getNotBuyed();			
+			// Если не с чего поупать выходим
+			if (sizeof($sells) == 0) return false;
+
+			foreach ($sells as $sell)
+			{	
+						
+				// Расчитываем обратную прибыль						
+				$cnt = self::buy_value; // кол-во
+				$cost = $this->current_exchange->buy * $cnt; // стоимость
+				$summ = $sell->summ - $sell->buyed;
+				
+				// Если после покупки не останется денег на ещё одну такую же, то берем на все
+				if ($cost * 2 > $summ) { 
+					$cost = $summ; 
+					$cnt = round($cost / $this->current_exchange->buy, 6); // В случае округления в большую сторону денег может не хватить
 				}
+				$old_cost = $sell->price*$cnt; // Стоимость по старой цене
+				
+				$income = $old_cost - $cost;
+	
+				$need_income = $old_cost * $this::getMinIncome($this->curtime, $sell->dtm);
+							
+				// Достаточно ли заработаем
+				if ($income < $need_income)
+				{
+					if ($income>0) Log::notbuy('Не купили (№'.$sell->id.'), доход слишком мал '.$income.' < '.$need_income.'. Продали за '.$old_cost.' можно купить за '.$cost.' цена покупки='.$this->current_exchange->buy);
+					continue;
+				}
+
+				//echo "Найдена подходящая продажа".$sell->id.PHP_EOL;
+				$reason['sell'] = 'Найдена подходящая продажа №'.$sell->id.' с доходом от сделки '.$income.'$., что составляет '.($income/$sell->summ*100).'% от цены покупки. А требуется не менее '.$need_income.'$';
+				
+					// Покупаем
+					if ($this->startBuy($sell, $cnt, $reason))	
+					{	
+						// Резервируем время покупки по резерву 
+						Exchange::ReservePeriod($first_track['period'], $this->curtime);
+						// Резервируем яму				
+						Exchange::ReservePit($first_track['pit']['dtm'], $first_track['period']);
+						continue;
+					}
+					else
+						Log::notbuy('Ошибка, не удалось начать покупку');
+			
 			}
-			else
-				Log::notbuy('Ошибка, не удалось начать покупку');
 		}				
 		else
 		Log::notbuy('Нет интересных покупок');		
@@ -559,8 +462,8 @@ class Bot {
 	{
 		// Составляем причину покупки
 		$reason=array();
+        $reason['info'] = 'Время: '.date('Y-m-d H:i:s')." покупка ". $this->current_exchange->buy . ", продажа " .$this->current_exchange->sell;
 		$curtime = $this->curtime; //Дата операции
-		$dt = date('Y-m-d H:i:s', $curtime);		
 
 		//Смотрим, что продать
 		//$bought = Buy::model()->findAll(array('condition'=>'sold=0 and order_id=0'));
@@ -580,84 +483,129 @@ class Bot {
 		}
 		else
 			$reason['avg_price'] = 'Текущая цена выше средней за 7 дней '.('.$this->avg_sell.'>'.$this->current_exchange->buy.'); 
-		*/
-		
-		// Проверяем была ли уже продажа за последнее время, если была и цена была более выгодная чем текущая то не продаем		
-		$lastSell = Sell::getLast();
-		if ($lastSell)
-		{
-			$tm = strtotime($lastSell->dtm)+self::min_sell_interval;		
-			$diff = (1-$lastSell->price / $this->current_exchange->sell);	
-			
-			if ($tm>$this->curtime && $diff < $this->sell_imp_dif) 
-			{
-				Log::notsell('Уже была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше прошлой '.$lastSell->price);
-				return false;
-			}
-			else
-			$reason['avg_price'] = 'Прошлая продажа была '.(($this->curtime-strtotime($lastSell->dtm))/60).' мин. назад (допустимы покупки раз в '.(self::min_sell_interval/60).' мин. при отсутствии ощутимого роста цены), цена отличалась от текущей на '.($diff*100).'%, минимальное отличие должно быть '.($this->sell_imp_dif*100).'% ';
-		}
+		*/		
 		
 		//Перебираем периоды		
-		$all_tracks=array();
-		foreach($this->sell_periods as $period)		
-			$all_tracks[] = $this->getGraphImage($curtime, $period, 'sell', $this->sell_imp_dif);		
+		$all_tracks=$this->analize->getAllTracks($curtime, 'sell');
 		
+		// Совершаем вынужденные продажи
+//		$this->NecesarySell($all_tracks, $bought);
 		
 		//Анализируем треки
-		$tracks = $this->getSellTracks($all_tracks);		
-		
+		$tracks = $this->analize->getSellTracks($all_tracks);
 		if (sizeof($tracks) == 0)
 		{	
 			Log::notsell('Нет подходящих треков для продажи');
 			return false;
 		}
+		reset($tracks);
+		$first_track = current($tracks);
+		
+		// Проверка прошлой продажи
+		$lastSell = Sell::getLast();
+		if ($lastSell)
+		{
+			$tm = strtotime($lastSell->dtm)+self::min_sell_interval;
+			$diff = (1-$lastSell->price / $this->current_exchange->sell);				
+			$last_hill = Exchange::getLastSellHill();
+			
+			$lastBuy = Buy::getLast();
+			
+			if ($tm>$this->curtime // Если с прошлой покупки не вышло время
+					&& $diff < $this->analize->sell_imp_dif // и цена не лучше
+					&& (!$last_hill || $last_hill == $first_track['hill']['dtm'])// и прошлая продажа была на той же горке
+					&& (!$lastBuy || $lastBuy->dtm < $lastSell->dtm) // и с последней продажи небыло покупок
+			)
+			{
+				Log::notsell('Уже была продажа, ждем до '.date('Y-m-d H:i:s', $tm).' текущая цена '.$this->current_exchange->sell.' меньше прошлой '.$lastSell->price);
+				if ($last_hill) Log::notsell('Была уже продажа на этой ('.$last_hill.') горке');
+				if ($lastBuy) Log::notsell('С последней продажи небыло покупок');
+				
+				return false;
+			}
+			else
+			{
+				$reason['last_sell'] = 'Прошлая продажа была '.(($this->curtime-strtotime($lastSell->dtm))/60).' мин. назад (допустимы продажи раз в '.(self::min_sell_interval/60/60).' ч. при отсутствии ощутимого роста цены), цена отличалась от текущей на '.($diff*100).'%, минимальное отличие должно быть '.($this->analize->sell_imp_dif*100).'% ';
+				if ($last_hill) $reason['last_hill'] = 'Прошлая продажа была на горке '.$last_hill.', а текущая на горке '.$first_track['hill']['dtm']; 
+			}
+		}		
 		
 		$reason['tracks']=$tracks;
 		$reason['all_tracks']=$all_tracks;
-
-		// Совершаем вынужденные продажи
-		$this->NecesarySell($all_tracks, $bought);
 		
 		// Ищем выгодные продажи
-		foreach($bought as $key=>$buy)
+		foreach($bought as $buy)
 		{
 			// Цена продажи
 			$curcost = $buy->count*$this->current_exchange->sell*(1-self::fee);
 									
 			// Сколько заработаем при продаже (комиссия была уже вычтена в btc при покупке)
 			$income = $curcost - $buy->summ;						
+		
+			$need_income = $buy->summ * $this::getMinIncome($this->curtime, $buy->dtm);
 			
 			// Достаточно ли заработаем
-			if ($income/$buy->summ < self::min_income)
+			if ($income < $need_income)
 			{
-				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.(self::min_income*$curcost).' купил за '.$buy->summ.' можно продать за '.$curcost.' sell='.$this->current_exchange->sell);							
+				if ($income>0) Log::notsell('Не продали (№'.$buy->id.'), доход слишком мал '.$income.' < '.$need_income.'. Купил за '.$buy->summ.' можно продать за '.$curcost.' цена продажи='.$this->current_exchange->sell);							
 				continue;
 			}			
 			
+					
 			// Записываем причину покупки
-			$reason['buy'] = 'Найдена подходящая продажа №'.$buy->id.' с доходом от сделки '.$income.' руб., что составляет '.($income/$buy->summ*100).'% от цены покупки'; 
-			Log::Add('Начало продажи №'.$buy->id);
-			$this->startSell($buy, $reason);
-			//unset($bought[$key]);
-			break; // не более одной продажи по расчету за раз
+			$reason['buy'] = 'Найдена подходящая покупка №'.$buy->id.' с доходом от сделки '.$income.' руб., что составляет '.($income/$buy->summ*100).'% от цены покупки'; 
+			//Log::Add('Начало продажи №'.$buy->id);
+			
+			$reason['period'] = $first_track['period'];
+			if ($this->startSell($buy, $reason))
+			{				
+				
+				Exchange::ReserveLastSellHill($first_track['hill']['dtm']); // резервируем холм
+				break; 	// не более одной продажи по расчету за раз
+			}
 			
 		}
 		
+	}
+	
+	/**
+	 * Возвращает накопленный процент прибыли
+	 * @param int $fromTome
+	 * @param string $fromTome
+	 * @return number
+	 */
+	public static function getMinIncome($toTime, $fromTome)
+	{
+		// Определяем мин. доход
+		$life_days = ceil( ($toTime - strtotime($fromTome))/60/60/24 ); // Число прошедших дней с покупки
+
+		$minPercent = 0.15;
+
+		if ($life_days > 365)	$life_days=365;
+
+		// Расчитываем процент исходя из того что за год прибыль должна измениться с 100% до 15% годовых.
+		$incomePercent = ( self::income_per_year - ((self::income_per_year - $minPercent) / 365) * $life_days )/365;
+
+		$days_income = $life_days * $incomePercent; // Ожидаемый доход
+		if ($days_income < self::min_income) $days_income = self::min_income; // Если меньше мин. дохода то увеличиваем до мин.		
+				
+		return $days_income;
 	}
 	
 	// Вынужденная продажа, совершается когда купленный btc может залежаться
 	private function NecesarySell($all_tracks, $bought)
 	{
 		$reason = array();
-		//Анализируем треки
-		$tracks = $this->getNecessarySellTracks($all_tracks);
+		//Анализируем треки		
+		$tracks = $this->analize->getNecessarySellTracks($all_tracks);
+		
 		if (sizeof($tracks) == 0)
 		{
 			return false;
 			Log::notsell('Нет подходящих треков для вынужденной продажи');
 		}
-		
+		reset($tracks);
+		$first_track = current($tracks);
 		
 		// Продаем то что может залежаться
 		foreach($bought as $buy)
@@ -674,16 +622,21 @@ class Bot {
 			// Сколько заработаем при продаже
 			$income = $curcost - $buy->summ*(1+self::fee);
 			// Достаточно ли заработаем
-			if ($income>0 && $income/$buy->summ < self::freeze_warning_income)
+			
+			if ( ($income>0 && $income/$buy->summ < self::freeze_warning_income) )
+			//if (abs($income/$buy->summ) < self::freeze_warning_income)				
 			{
 				
 				$reason['sale'] = 'Вынужденная продажа №'.$buy->id.', купили за '.$buy->summ.', текущая цена '.$curcost.', доход '.$income.' ('.($income/$buy->summ*100).'% < '.(self::freeze_warning_income*100).'%)';
 				$reason['tracks']=$tracks;
 				$reason['all_tracks']=$all_tracks;
+				
+				$reason['period'] = $first_track['period'];
+				
 				$this->startSell($buy, $reason);
 				continue;
 			}
-			//else Log::Add($this->curtime, 'Вынужденная продажа №'.$buy->id.' не состоялась $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);
+			//else Log::Add('Вынужденная продажа №'.$buy->id.' не состоялась $income='.$income.' $income/$buy->summ='.($income/$buy->summ).' self::freeze_warning_income='.self::freeze_warning_income);
 		
 				
 		}
@@ -691,15 +644,13 @@ class Bot {
 	}
 	
 	public function cancelOrder($order)
-	{
-	
-		
+	{	
 		$res = $this->api->CancelOrder($order); 
 		
 		if ($res['success'] == 1)
 		{
 			
-			$this->setBalance($res['return']['funds']['rur']);
+			$this->setBalance($res['return']['funds']['usd']);
 			$this->setBalanceBtc($res['return']['funds']['btc']);
 			
 			$order->status = 'cancel';
@@ -708,9 +659,25 @@ class Bot {
 			
 			// Пишем баланс
 			if ($order->type == 'buy')			
-				Balance::add('rur', 'Отмена ордера №'.$order->id.' на покупку', $order->summ);			
+				Balance::add('usd', 'Отмена ордера №'.$order->id.' на покупку', $order->summ);			
 			else
 				Balance::add('btc', 'Отмена ордера №'.$order->id.' на продажу', $order->count);
+
+            if ($order->sell !== null)
+            {
+                // Возвращаем деньги в продажу
+                $sell = $order->sell;
+                $sell->buyed-=$order->summ;
+                $sell->update(array('buyed'));
+            }
+            else
+            if ($order->buy !== null)
+            {
+                // Возвращаем деньги в продажу
+                $buy = $order->buy;
+                $buy->sold-=$order->count;
+                $buy->update(array('sold'));
+            }
 		}
 	}
 
@@ -762,6 +729,8 @@ class Bot {
 	public function run()
 	{
 		
+		
+		echo "Run bot".PHP_EOL;
 		$info = $this->api->getInfo();
 		
 		$start_balance = 0;
@@ -769,16 +738,16 @@ class Bot {
 		
 		if ($info)
 		{
-			$this->balance = $info['funds']['rur'];
+			$this->balance = $info['funds']['usd'];
 			$this->balance_btc = $info['funds']['btc'];
 			
-			Status::setParam('balance', $info['funds']['rur']);
+			Status::setParam('balance', $info['funds']['usd']);
 			Status::setParam('balance_btc', $info['funds']['btc']);
 
 			$start_balance = $this->balance;
 			$start_balance_btc = $this->balance_btc;
 			
-			Balance::actualize('rur', $this->balance);
+			Balance::actualize('usd', $this->balance);
 			Balance::actualize('btc', $this->balance_btc);
 		}	
 		
@@ -807,14 +776,20 @@ class Bot {
 			Log::Add('Всего заработано: '.$this->total_income, 1);
 		}
 		
+		
+		
 	}
 	
 	private function sendMail()
 	{
 		$text='';
 		foreach ($this->tomail as $item)
-			$text.=$item.' <br/>';		
-		mail('gorcer@gmail.com', 'Btcbot - Новые сделки', $text);
+			$text.=$item.' <br/>';
+
+		$headers  = 'MIME-Version: 1.0' . "\r\n";
+		$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+		
+		mail('gorcer@gmail.com', 'Btcbot - Новые сделки', $text, $headers);
 	}
 	
 	public function setBalance($summ)
@@ -828,7 +803,7 @@ class Bot {
 	}
 	
 	
-	public static function getAvgMargin($period, $pair='btc_rur')
+	public static function getAvgMargin($period, $pair='btc_usd')
 	{
 		$connection = Yii::app()->db;
 		$sql = "

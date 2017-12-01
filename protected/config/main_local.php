@@ -26,11 +26,12 @@ return CMap::mergeArray(
 					'class'=>'system.caching.CDummyCache',
 			),*/
 		'db'=>array(
-			'connectionString' => 'mysql:host=localhost;dbname=btcbot_github',
+			'connectionString' => 'mysql:host=localhost;dbname=btcbot',
 			'emulatePrepare' => true,
-			'username' => 'root',
+			'username' => 'testuser',
 			'password' => '159357',
-			'charset' => 'utf8',			
+			'charset' => 'utf8',
+			'tablePrefix' => '',
 			'enableProfiling' => true,
 			'enableParamLogging' => true,
 			'schemaCachingDuration' => 60*60*24,			

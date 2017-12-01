@@ -107,18 +107,43 @@ class SiteController extends Controller
 		$this->redirect(Yii::app()->homeUrl);
 	}
 	
+
+	public function actionUploadData()
+	{
+		// Сохраняем информацию по всем ценам		
+			foreach (APIProvider::$pairs as $pair)
+			Exchange::updatePrices($pair);
+			
+	}
+	
 	public function actionCron()
 	{	
 		// Пересчитываем рейтинги
-		$key = 'cron.bot.run.btc_rur';
+		$key = 'cron.bot.run.btc_usd.3';
 		if(Yii::app()->cache->get($key)===false)
 		{	
 			Yii::app()->cache->set($key, true, 60*3);
 						
 			// Запускаем бота для анализа и сделок
-			$btc_rur = Exchange::updatePrices('btc_rur');
-			$bot = new Bot($btc_rur);
+			$exch = Exchange::updatePrices('btc_usd');
+			$bot = new Bot($exch);
 			$bot->run();
+		//	echo 'bot run ok';
+		}
+		
+		// Првоеряем error_log
+		$key = 'cron.email.error-logs';
+		if(Yii::app()->cache->get($key)===false)
+		{
+			Yii::app()->cache->set($key, true, 60*60);
+			$fn='error.log';		
+			if (file_exists($fn))
+			{
+					$headers  = 'MIME-Version: 1.0' . "\r\n";
+					$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
+					$text = file_get_contents($fn);
+					mail('gorcer@gmail.com', 'Btcbot - ошибки', $text, $headers);
+			}
 		}
 		
 		
@@ -135,10 +160,10 @@ class SiteController extends Controller
 	public function actionRun()
 	{
 	
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$BTCeAPI = new BTCeAPI();
-		$ticker = $BTCeAPI->getPairTicker('btc_rur');
+		$ticker = $BTCeAPI->getPairTicker('btc_usd');
 		$ticker = $ticker['ticker'];
 	/*	
 		$exchange = new Exchange();
@@ -155,35 +180,54 @@ class SiteController extends Controller
 	
 	public function actionClear() {
 		
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		Yii::app()->cache->flush();
+		/*
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
-		Status::setParam('balance', 5000);
-		Status::setParam('balance_btc', 0);
+		Status::setParam('balance', Bot::start_balance);
+		Status::setParam('balance_btc', 0);*/
 		
 	}
 	
 	public function actionTest()
-	{	
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+	{			
+		
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
+		if (APIProvider::isVirtual == false) return;
+			
 		
 		$start = time();
-		
+		/*
 		Yii::app()->cache->flush();
 		Yii::app()->db->createCommand()->truncateTable(Buy::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Sell::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Order::model()->tableName());
 		Yii::app()->db->createCommand()->truncateTable(Balance::model()->tableName());
-					
-		Status::setParam('balance', 5000);
-		Status::setParam('balance_btc', 0);
+*/
+		$exs = Exchange::getAllByDt('btc_usd','2014-03-04 20:00', '2015-01-08 07:00');
+		/*
+		$sell = new Sell();
+		$sell->buy_id=0;
+		$sell->price=1000;
+		$sell->fee = 0;		
+		$sell->summ = Bot::start_balance;;
+		$sell->count=$sell->summ / $sell->price;
+		$sell->income = 0;
+		$sell->dtm = $exs[0]['dt'];
+		$sell->buyed=0;
+		$sell->save();
 		
+		Status::setParam('balance', $sell->summ);
+		Status::setParam('balance_btc', 0);
+		*/
+		$min_balance = false;;
 				
-		$exs = Exchange::getAll();
+		
 		$cnt=0;
 		foreach($exs as $exchange)
 		{
@@ -194,19 +238,22 @@ class SiteController extends Controller
 			
 			$cnt++;
 			$bot = new Bot($obj);
-			$bot->run();			
+			$bot->run();	
+
+			if (!$min_balance || $min_balance > $bot->balance) $min_balance = $bot->balance;			
 		}
 		
 		$end = time();
 		
 		echo '<b>Время выполнения: '.(($end-$start)/60).' мин.<br/>';
 		echo '<b>Сделано шагов: '.($cnt).'<br/>';
+		echo '<b>Мин. баланс: '.($min_balance).'<br/>';
 		//$this->render('index');
 	}
 	
-	public function actionBuy()
+	/*public function actionBuy()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -230,7 +277,7 @@ class SiteController extends Controller
 	
 	public function actionSell()
 	{
-		if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+		if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -255,7 +302,7 @@ class SiteController extends Controller
 	
 	public function actionOrders()
 	{
-			if ($_SERVER['HTTP_HOST'] !=='btcbot.loc') return;
+			if ($_SERVER['HTTP_HOST'] =='btcbot.gorcer.com') return;
 		
 		$btc_rur = Exchange::updatePrices('btc_rur');			
 				
@@ -275,40 +322,120 @@ class SiteController extends Controller
 		}	
 			
 		$bot->checkOrders();
-	}
+	}*/
 	
-	public function actionChart($type='btc_rur')
-	{	
-		$buy = new Buy();	
-	
-		$exch = Exchange::getAllByDt('btc_rur','2013-12-16', '2014-01-06');
+	public function actionChartByTrack($dt)	
+	{		
 		
-		$data_buy=array();
-		$data_sell=array();
-		
+		$exch = Exchange::getAllByDt('btc_usd', date('Y-m-d H:i:s', strtotime($dt." - 2 days")),date('Y-m-d H:i:s', strtotime($dt." + 2 days")));
 		
 		foreach($exch as $item)
 		{
 			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
-			$data_buy[]=array($tm, (float)$item['buy']);
-			$data_sell[]=array($tm, (float)$item['sell']);
+			$data_buy[]=array((float)$tm, (float)$item['buy']);
+			$data_sell[]=array((float)$tm, (float)$item['sell']);
 		}
 		
+		$curtime = strtotime($dt);
+		$analize = Rempel::get_Instance();
+		$tracks = $analize->getAllTracks($curtime, 'buy');
+		
+		$tracks_formed = array();
+		foreach($tracks as $track)
+		{
+			$name = $track['period'].' '.$track['track'];
+			foreach ($track['items'] as $point)
+			{
+				$tm = strtotime($point['dtm'])*1000+4*60*60*1000;				
+				$tracks_formed[$name][]=array($tm, (float)$point['val']);				
+			}
+			$tracks_formedj[$name] = json_encode($tracks_formed[$name]);
+		}
+		
+				$this->render('chart_by_tracks',
+				array(
+						'data_buy'	=> 	json_encode($data_buy),
+						'data_sell'	=> 	json_encode($data_sell),
+						'tracks' => $tracks_formedj,		
+						'tracks_origin' => $tracks,				
+						));		
+	}
+	
+	public function actionChart($type=Exchange::def_curr)
+	{	
+		$buy = new Buy();
+		//$exch = Exchange::getAll($type, '%Y-%m-%d %H:00:00');
+		//$exch = Exchange::getAll($type);
+		$exch = Exchange::getAllByDt($type,'2014-07-11', '2015-01-06');
 				
-		// Покупки
-		$orders = Order::model()->findAll();
+		$data_buy=array();
+		$data_sell=array();
+		$no_data=array();
+		$last=false;
+		
+		$min_interval = 60 * 10 * 1000; 
+	
+		foreach($exch as $item)
+		{
+			$tm = strtotime($item['dt'])*1000+4*60*60*1000;
+			$data_buy[]=array((float)$tm, (float)$item['buy']);
+			$data_sell[]=array((float)$tm, (float)$item['sell']);
+			
+			// Заполняем информацию по пустым периодам
+			$i=0;
+			
+			
+			
+			//Dump::d('tm='.date('Y-m-d H:i:s', $tm/1000).' last='.date('Y-m-d H:i:s', $last/1000).' diff='.($tm - $last));
+			
+			if ($last)
+			while ($tm - $last > $min_interval)
+			{
+				//Dump::d('LOST='.date('Y-m-d H:i:s', $last/1000));
+			//	echo $tm- $last.'<br/>';
+				$i++;
+				$last=(float)($last+$i*$min_interval);
+				$no_data[] = array($last, (float)$item['buy']);				
+			}
+			
+			$last = $tm;
+		}
+		
+		
+				
+		if ($type == Exchange::def_curr)
+		{
+		
+			// Покупки
+			$orders = Order::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));		
+			$buys = Buy::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
+			$sells = Sell::model()->findAll(array('limit'=>'10', 'order'=>'id desc'));
+		}
+		else
+		{
+			$orders = array();
+			$buys = array();
+			$sells = array();
+			
+		}
 		
 		$lastEx = Exchange::getLast();
+		
+		
 		$status['total_income'] = Sell::getTotalIncome();
 		$status['balance'] = Status::getParam('balance');
 		$status['balance_btc'] = Status::getParam('balance_btc');
 		$status['total_balance'] = $status['balance'] + $status['balance_btc']*$lastEx->sell;
+		$status['start_balance'] = Status::getStartBalance();
 		
 		$this->render('chart',
 				array(
 						'data_buy'	=> 	json_encode($data_buy),
-						'data_sell'	=> 	json_encode($data_sell),						
+						'data_sell'	=> 	json_encode($data_sell),
+						'no_data' => json_encode($no_data),
+						'buys'	=>	$buys,
 						'orders'	=>	$orders,
+						'sells'	=>	$sells,
 						'status'	=>	$status,
 						));
 	}
@@ -360,9 +487,52 @@ class SiteController extends Controller
 		
 		$order->description = json_decode($order->description, false);
 		 
+		
+		
 		$this->render('order',
 				array(
 						'data'	=> 	$order,
 				));
 	}
+
+	public function actionActives() {
+
+		// Продажи ожидающие покупки
+		$sql = "
+			select id, dtm, summ, price, buyed
+			 from sell
+			 where
+			 (summ - buyed) > 0.01
+		";
+		$sells = Yii::app()->db->createCommand($sql)->queryAll();
+		foreach ($sells as &$sell)
+		{
+			$sell['price'] = round($sell['price']);
+			$sell['percent'] = Bot::getMinIncome(time(), $sell['dtm']);
+			$sell['needPrice'] = $sell['price'] * ( 1 - $sell['percent'] );
+		}
+
+		// Покупки ожидающие продажи
+		$sql = "
+			select id, dtm, summ, count, price, sold
+			 from buy
+			 where
+			 (count - sold) > 0.0001
+		";
+		$buys = Yii::app()->db->createCommand($sql)->queryAll();
+		foreach ($buys as &$buy)
+		{
+			$buy['price'] = round($buy['price']);
+			$buy['percent'] = Bot::getMinIncome(time(), $buy['dtm']);
+			$buy['needPrice'] = $buy['price'] * ( 1 + $buy['percent'] );
+		}
+		$this->render('actives',
+			array(
+				'sells'	=> 	$sells,
+				'buys'	=> 	$buys,
+			));
+
+	}
+	
+	
 }

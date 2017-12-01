@@ -1,0 +1,38 @@
+<project name="Test_bot" default="build" basedir=".">
+    <property name="source" value="protected"/>
+    <target name="clean">
+        <!-- Clean up -->
+        <delete dir="build"/>
+        <!-- Create build directories -->
+        <mkdir dir="${basedir}/build/coverage"/>
+        <mkdir dir="${basedir}/build/logs"/>
+    </target>
+
+    <target name="migrations">
+        <exec dir="${basedir}/protected" executable="php" failonerror="true">         
+         <arg line="yiic" />
+         <arg line="migrate" />
+         <arg line="--interactive=0" />
+        </exec>
+    </target>
+
+    <target name="phpunit">
+        <exec dir="${basedir}/protected/tests" executable="phpunit" failonerror="true">
+            <arg line="unit" />
+        </exec>
+    </target>
+
+
+	<target name="phpmd" description="Perform project mess detection using PHPMD creating a log file for the continuous integration server">
+		<exec executable="phpmd">
+			<arg path="${basedir}/protected" />
+			<arg value="xml" />
+			<arg value="codesize,unusedcode,naming" />
+			<arg value="--reportfile" />
+			<arg value="${basedir}/build/logs/pmd.xml" />
+		</exec>
+	</target>
+
+
+    <target name="build" depends="clean,migrations,phpunit,phpmd"/>
+</project>

@@ -34,15 +34,3 @@ How to start earn money?
 * Enjoy
  
 WARNING: You can lose all your money, and author doesn't guarantee you anything.
- 
- 
-It's not last version!
-=====================
- 
-In private repo we have enchanced version of this bot and we use it to earn more money $)
-If you want to get last version, you can join to our team.
-But we have some regulations:
-* If you do not contribute a project for a long time, you are kicked out from the project and you have a version of the bot which was last downloaded.
-* To join to our team you need to fork this project and make some enchance. We take your in team if it will be a good work.
-* 
-P.S.: Sorry for bad code and russian comments, in future i'll fix it ;)

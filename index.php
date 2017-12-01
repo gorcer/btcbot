@@ -1,7 +1,13 @@
 <?php
+
 ini_set('max_execution_time', 4*60*60);
-ini_set('memory_limit','64M');
+ini_set('memory_limit','256M');
+	
+ini_set('display_errors', true);
+ini_set('html_errors', true);
 error_reporting(E_ALL);
+ini_set('error_reporting', E_ALL);
+	
 // change the following paths if necessary
 
 //$config=dirname(__FILE__).'/protected/config/main.php';
@@ -9,18 +15,18 @@ error_reporting(E_ALL);
 defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
 
 
-if ($_SERVER['HTTP_HOST']=='btcbot.loc')
+if ($_SERVER['HTTP_HOST']=='btcbot.gorcer.com' || $_SERVER['HTTP_HOST']=='btcbot.gorcer.my')
 {
+	$yii=dirname(__FILE__).'/../yii/framework/yii.php';
+	$config=dirname(__FILE__).'/protected/config/main.php';
+	define('YII_DEBUG',false);
+}
+else
+{	
 	$yii=dirname(__FILE__).'/../yii/framework/yii.php';
 	$config = dirname(__FILE__).'/protected/config/main_local.php';
 	define('YII_DEBUG',true);
 	defined('YII_TRACE_LEVEL') or define('YII_TRACE_LEVEL',3);
-}
-else
-{
-	$yii=dirname(__FILE__).'/../../yii/framework/yii.php';
-	$config=dirname(__FILE__).'/protected/config/main.php';
-	define('YII_DEBUG',false);
 }
 
 // remove the following lines when in production mode
